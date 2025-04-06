@@ -1,7 +1,8 @@
 """
 Get data from SoGE cluster. Run from repository root.
 
-snakemake --profile profiles/cluster/ all_slices --use-conda
+snakemake --profile profiles/cluster/ all_slices --use-conda -n
+snakemake --profile profiles/local/ all_slices --use-conda -n
 """
 rule all_slices:
     input:
@@ -21,8 +22,7 @@ rule get_data:
         xmax=config["longitude"]["max"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
-        fields=FIELDS,
-        field_long=FIELD_LONG
+        fields=FIELDS
     resources:
         partition="Short",
         nodes=4,

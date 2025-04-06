@@ -14,6 +14,7 @@ import xarray as xr
 import numpy as np
 import logging
 
+import era5_utils as era5
 
 logging.basicConfig(
     filename=snakemake.log[0],
@@ -39,15 +40,16 @@ if __name__ == '__main__':
     YMIN       = snakemake.params.ymin
     YMAX       = snakemake.params.ymax
     FIELDS     = snakemake.params.fields
-    FIELD_LONG = snakemake.params.field_long
     OUTPUT     = snakemake.output.netcdf
 
     # load data for year
     files = []
-    for field in FIELD_LONG.values():
-        field_files = glob(os.path.join(INDIR, field, 'nc', '*'))
-        field_files = [f for f in field_files if str(YEAR) in f]
-        files += field_files
+    for field, info in FIELDS.items():
+        infields = info.get("args", [])
+        for infield in infields:
+            field_files = glob(os.path.join(INDIR, era5.long_names[infield], 'nc', '*'))
+            field_files = [f for f in field_files if str(YEAR) in f]
+            files += field_files
     logging.info(f"Found {len(files)} files for {YEAR}...")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
@@ -57,9 +59,14 @@ if __name__ == '__main__':
 
     # resample data to daily
     resampled = {}
-    for var, func in FIELDS.items():
-        resampled[var] = getattr(data[var].resample(time='1D'), func)()
-        logging.info(f"Resampled {var} using {func}.")
+    for field, info in FIELDS.items():
+        infields = info.get("args", [])
+        func = info.get("func", "identity")
+        agg = info.get("agg", "mean")
+        data[field] = getattr(era5, func)(*[data[i] for i in infields]) # this might not work
+        logging.info(f"Applied {func}(...) to {field}.")
+        resampled[field] = getattr(data[field].resample(time='1D'), agg)()
+        logging.info(f"Resampled {field} using {agg}.")
     data_resampled = xr.Dataset(resampled)
 
     # save data
