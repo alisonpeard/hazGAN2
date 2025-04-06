@@ -1,0 +1,5 @@
+era5dir: "/Users/alison/Documents/DPhil/data/era5"
+datadir: "/Users/alison/Documents/DPhil/data"
+
+metadata:
+  description: "Analysis on Apple Silicon M2"

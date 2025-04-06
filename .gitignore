@@ -172,3 +172,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Custom
+.DS_Store
+.Rhistory
+.env
+._*
+*.so
+workflow.svg
