@@ -1,0 +1,31 @@
+# year range
+year0: 1940
+yearn: 2023
+
+# geographical boundaries
+longitude:
+  min: 80.0
+  max: 95.0
+latitude:
+  min: 10.0
+  max: 25.0
+
+# output fields
+fields:
+  ws:
+    args:
+      - u10
+      - v10
+    func: l2norm
+    agg: max
+  msl:
+    args:
+      - msl
+    func: identity
+    agg: min
+  tp:
+    args:
+      - tp
+    func: identity
+    agg: sum
+
