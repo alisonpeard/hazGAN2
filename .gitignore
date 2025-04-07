@@ -179,4 +179,5 @@ cython_debug/
 .env
 ._*
 *.so
+*.lock
 workflow.svg
