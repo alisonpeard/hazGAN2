@@ -9,6 +9,7 @@ To set up snakemake on your machine, use the following steps:
 ```bash
 micromamba create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
+conda config --set channel_priority strict
 conda install -c conda-forge conda=24.7.1
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0
 ```
@@ -55,7 +56,7 @@ To run this rule (on SLURM):
 
 
 ## Processing the data
-### 1. Resampling to correct resolution
+### 1. Resampling to desired resolution
 ```bash
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
@@ -63,9 +64,17 @@ snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 
 ### 2. Processing resampled data for analysis
 
-> ❓ is this step needed?
+This consists of two rules:
+- `concatenate_data`: concatenates the data from all years into a single file and assignes grid indices
+- `remove_windbombs`: specific to `bayofbengal` project, this removes windbombs from the data.
 
 ### 3. Extracting event footprints
+
+This rules requires Rscripts.
+
 ### 4. Fitting marginal distributions
+
+This rules requires Rscripts.
+
 ### 5. Making netCDFs for custom training
 ### 6. Making JPEGs for StyleGAN2

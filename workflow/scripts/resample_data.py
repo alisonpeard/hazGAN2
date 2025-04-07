@@ -3,13 +3,9 @@ Resample ERA5 (or other gridded) data to another lower resolution using GDAL
 """
 # %%
 import os
-import numpy as np
 import xarray as xr
-from tqdm import tqdm
-import argparse
 import time
 import logging
-import glob
 
 
 logging.basicConfig(
