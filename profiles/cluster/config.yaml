@@ -1,7 +1,7 @@
 config: ["environment=cluster"]
 
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
-jobs: 10
+jobs: 1 # modify later
 default-resources:
     slurm_account: "spet5107"
     slurm_partition: "Short"
