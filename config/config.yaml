@@ -1,0 +1,18 @@
+# Global config file
+project: "bayofbengal"
+
+# environment specs
+environments:
+  local:
+    era5dir: "/Users/alison/Documents/DPhil/data/era5"
+    datadir: "results"
+    environment: 'workflow/environments/local.yaml'
+    metadata:
+      description: "Analysis on Apple Silicon M2"
+  cluster:
+    era5dir: '/soge-home/data/analysis/era5/0.28125x0.28125/hourly/'
+    datadir: 'results'
+    environment: 'workflow/environments/linux.yaml'
+    metadata:
+      institution: "Oxford School of Geography and the Environment"
+      description: "Analysis on departmental cluster"
