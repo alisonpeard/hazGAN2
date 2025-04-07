@@ -225,3 +225,34 @@ rule download_data:
 - **Singularity/Docker**: Package dependencies in containers
 - **GitHub Actions**: CI/CD for workflow testing
 - **DVC**: Data version control alongside workflow
+
+
+
+## Recommended directory structure from docs
+```
+├── .gitignore
+├── README.md
+├── LICENSE.md
+├── workflow
+│   ├── rules
+|   │   ├── module1.smk
+|   │   └── module2.smk
+│   ├── envs
+|   │   ├── tool1.yaml
+|   │   └── tool2.yaml
+│   ├── scripts
+|   │   ├── script1.py
+|   │   └── script2.R
+│   ├── notebooks
+|   │   ├── notebook1.py.ipynb
+|   │   └── notebook2.r.ipynb
+│   ├── report
+|   │   ├── plot1.rst
+|   │   └── plot2.rst
+|   └── Snakefile
+├── config
+│   ├── config.yaml
+│   └── some-sheet.tsv
+├── results
+└── resources
+```

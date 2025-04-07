@@ -1,0 +1,33 @@
+"""
+snakemake --profile local
+snakemake --profile cluster
+"""
+import os
+import yaml
+
+# load configuration files
+configfile: "config/config.yaml"
+
+PROJECT = config["project"]
+configfile: f"config/projects/{PROJECT}.yaml"
+
+# set up paths
+ENV = config.get("environment", "local") 
+INDIR = config['environments'][ENV]['era5dir']
+WD = config['environments'][ENV]['datadir']
+PROJDIR = os.path.join(WD, config['project'])
+PROCESSING_DIR = os.path.join(PROJDIR, "processing")
+
+for directory in [PROJDIR, PROCESSING_DIR]:
+    os.makedirs(directory, exist_ok=True)
+
+# set up conda environment
+CONDA = config['environments'][ENV]['environment']
+
+# set up project parameters
+YEARS = list(range(config["year0"], config["yearn"]))
+FIELDS = config["fields"]
+
+# load rules
+include: "rules/get_data.smk"
+
