@@ -34,11 +34,11 @@ rule get_year:
         fields=FIELDS
     resources:
         cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/%A_%a.out --error=sbatch_dump/%A_%a.err"
+        slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
     conda:
-        "/lustre/soge1/users/spet5107/micromamba/envs/hazGAN-torch"
-        # os.path.join("..", "..", CONDA) # or existing named env since 6.14.0 (discouraged)
+        # "/lustre/soge1/users/spet5107/micromamba/envs/hazGAN-torch"
+        os.path.join("..", "..", CONDA) 
     log:
-        "logs/get_data_{year}.log"
+        "logs/get_{year}.log"
     script:
         "../scripts/get_data.py"
