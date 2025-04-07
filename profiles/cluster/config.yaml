@@ -1,1 +1,9 @@
 config: ["environment=cluster"]
+
+# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
+jobs: 10
+default-resources:
+    slurm_account: "spet5107"
+    slurm_partition: "Short"
+    mem_mb_per_cpu: 1800 # take a sensible default for your cluster
+    runtime: "30m"

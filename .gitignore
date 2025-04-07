@@ -181,3 +181,4 @@ cython_debug/
 *.so
 *.lock
 workflow.svg
+.snakemake/

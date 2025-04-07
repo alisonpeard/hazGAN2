@@ -1,6 +1,6 @@
 # year range
-year0: 1940
-yearn: 1941 #2023
+year0: 1940 # 1940
+yearn: 2023 #2023
 
 # geographical boundaries
 longitude:
@@ -12,7 +12,7 @@ latitude:
 
 # output fields
 fields:
-  ws:
+  ws10:
     args:
       - u10
       - v10

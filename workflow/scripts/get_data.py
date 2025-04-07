@@ -5,7 +5,6 @@ Load ERA5 data from hourly netcdf files, resample to daily aggregates, and save 
 #%%
 import os
 import sys
-from environs import Env
 import dask
 import time
 from glob import glob
@@ -13,7 +12,6 @@ from pprint import pp as prettyprint
 import xarray as xr
 import numpy as np
 import logging
-
 import era5_utils as era5
 
 logging.basicConfig(
@@ -26,11 +24,11 @@ if __name__ == '__main__':
     start = time.time()
     logging.info("Starting data acquisition script.")
 
-    # check we are on the cluster
-    env = snakemake.config.get("env", os.environ.get("env", "local"))
-    if env != "cluster":
-        logging.error(f"Error: This script can only be run in the cluster environment. Current env: {env}", file=sys.stderr)
-        sys.exit(1)
+    # # check we are on the cluster
+    # env = snakemake.config.get("env", os.environ.get("ENV", "local"))
+    # if env != "cluster":
+    #     logging.error(f"Error: This script can only be run in the cluster environment. Current env: {env}", file=sys.stderr)
+    #     sys.exit(1)
 
     # snakemake params
     YEAR       = int(snakemake.params.year)
@@ -53,7 +51,12 @@ if __name__ == '__main__':
     logging.info(f"Found {len(files)} files for {YEAR}...")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-        data = xr.open_mfdataset(files, engine='netcdf4', chunks={"time": "500MB", 'longitude': '500MB', 'latitude': '500MB'})
+        data = xr.open_mfdataset(files, engine='netcdf4',
+                                 chunks={
+                                     "time": "500MB",
+                                     'longitude': '500MB',
+                                     'latitude': '500MB'
+                                     })
         data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
     logging.info("Data loaded.")
 
@@ -64,7 +67,7 @@ if __name__ == '__main__':
         func = info.get("func", "identity")
         agg = info.get("agg", "mean")
         data[field] = getattr(era5, func)(*[data[i] for i in infields]) # this might not work
-        logging.info(f"Applied {func}(...) to {field}.")
+        logging.info(f"Calculated {field} = {func}{*infields,}.")
         resampled[field] = getattr(data[field].resample(time='1D'), agg)()
         logging.info(f"Resampled {field} using {agg}.")
     data_resampled = xr.Dataset(resampled)
@@ -76,6 +79,11 @@ if __name__ == '__main__':
     logging.info(f"Saving data to {OUTPUT}")
     data_resampled.to_netcdf(OUTPUT, engine='netcdf4')
     logging.info(f"Saved. File size: {os.path.getsize(OUTPUT) * 1e-6:.2f} MB")
+
+    # print data summary to logs
+    logging.info("Data summary:")
+    logging.info(f"Data variables: {data_resampled.data_vars}")
+    logging.info(f"Data coordinates: {data_resampled.coords}")
 
     # tidy up
     data.close()
