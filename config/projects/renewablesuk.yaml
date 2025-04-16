@@ -10,27 +10,27 @@ latitude:
   min: 49.0
   max: 60.0
 
-# resolution---check if other values allowed (unlikely?)
+# resolution---check if nonstandard allowed in StyleGAN2
 resolution:
   lon: 28 # 53
   lat: 28 # 45
-
+ 
 # output fields
 fields:
   v:
     args:
       - u10
       - v10
-    func: wind_potential
+    func: wind_power
     hfunc: sum
     obj: min
   g:
     args:
+      - t2m
       - ssrd
       - u10
       - v10
-      - t2m
-    func: pv_potential
+    func: solar_power
     hfunc: sum
     obj: min
   t2m:
