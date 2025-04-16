@@ -30,7 +30,12 @@ if __name__ == '__main__':
     YMIN       = snakemake.params.ymin
     YMAX       = snakemake.params.ymax
     FIELDS     = snakemake.params.fields
+    INPUT      = snakemake.input.params
     OUTPUT     = snakemake.output.netcdf
+
+    # load params and clip to XMIN, XMAX, YMIN, YMAX
+    params = xr.open_dataset(INPUT)
+    params = params.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
 
     # load data for year
     files = []
@@ -57,11 +62,13 @@ if __name__ == '__main__':
     for field, info in FIELDS.items():
         infields = info.get("args", [])
         func = info.get("func", "identity")
-        hfunc = info.get("hfunc", "mean")
-        data[field] = getattr(era5, func)(*[data[i] for i in infields]) # this might not work
-        logging.info(f"Calculated {field} = {func}{*infields,}.")
-        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
-        logging.info(f"Resampled {field} using {hfunc}.")
+        agg = info.get("agg", "mean")
+        #! This is where output variables are created
+        #! Add parameter loading here
+        data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params) # this might not work
+        logging.info(f"Applied {func}(...) to {field}.")
+        resampled[field] = getattr(data[field].resample(time='1D'), agg)()
+        logging.info(f"Resampled {field} using {agg}.")
     data_resampled = xr.Dataset(resampled)
 
     # save data
