@@ -13,6 +13,7 @@ INDIR = config['environments'][ENV]['era5dir']
 WD = config['environments'][ENV]['datadir']
 PROJDIR = os.path.join(WD, config['project'])
 PROCESSING_DIR = os.path.join(PROJDIR, "processing")
+RESOURCES_DIR = config["resources"]
 
 for directory in [PROJDIR, PROCESSING_DIR]:
     os.makedirs(directory, exist_ok=True)
