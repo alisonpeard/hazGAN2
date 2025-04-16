@@ -14,9 +14,9 @@ PROJECT = "renewablesuk"
 input_file = "/Users/alison/Downloads/db284e6db9f28be19af6109191395be2.nc"
 output_file = f"../resources/params/{PROJECT}.nc" # poject name
 
-solar_params = {'g_stc': 1000, 't_ref': 25, 'c_0': 4.3, 'c_1': 0.943, 'c_2': 0.028, 'c_3': -1.528,}
-onshore_wind_params = {'h': 80, 'gamma': 0.143, 'alpha': 2014.2, 'beta': 0.6846, 'ws0': 9.0431}
-offshore_wind_params = {'h': 120, 'gamma': 0.111, 'alpha': 7038.5, 'beta': 0.7615, 'ws0': 8.7436}
+solar_params         = {'g_stc': 1000, 't_ref': 25, 'c_0': 4.3, 'c_1': 0.943, 'c_2': 0.028, 'c_3': -1.528, 'gamma': -0.005}
+onshore_wind_params  = {'hub_height': 80, 'roughness': 0.143, 'alpha': 2014.2, 'beta': 0.6846, 'ws0': 9.0431}
+offshore_wind_params = {'hub_height': 120, 'roughness': 0.111, 'alpha': 7038.5, 'beta': 0.7615, 'ws0': 8.7436}
 onshore_params = solar_params | onshore_wind_params
 offshore_params = solar_params | offshore_wind_params
 
@@ -48,3 +48,7 @@ if __name__ == "__main__":
         for var_name in params.data_vars
     })
 
+    # unpack variables as named dict
+    params = {var: params[var] for var in params.data_vars}
+
+# %%
