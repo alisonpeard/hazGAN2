@@ -77,6 +77,7 @@ def solar_power(t2m:xr.DataArray, ssrd:xr.DataArray, u10:xr.DataArray,
         For this function need:
             - solar cell temperature parameters (c_0, c_1, c_2, c_3)
             - performance ratio parameters (g_stc, t_ref, gamma)
+    
     References:
     ..[1] https://doi.org/10.1016/j.rser.2019.04.065
     """
