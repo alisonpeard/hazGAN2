@@ -17,12 +17,18 @@ PROCESSING_DIR = os.path.join(PROJDIR, "processing")
 for directory in [PROJDIR, PROCESSING_DIR]:
     os.makedirs(directory, exist_ok=True)
 
-# set up conda environment
+# set up conda environments
 CONDA = config['environments'][ENV]['environment']
+RENV  = config['renv']
 
 # set up project parameters
 YEARS = list(range(config["year0"], config["yearn"]))
 FIELDS = config["fields"]
+RESOLUTION = config["resolution"]
+LONGITUDE = config["longitude"]
+LATITUDE  = config["latitude"]
+RFUNC     = config["rfunc"]
+SFUNC     = config["sfunc"]
 
 # load rules
 include: "rules/get_data.smk"

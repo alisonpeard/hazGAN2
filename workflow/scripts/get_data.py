@@ -57,11 +57,11 @@ if __name__ == '__main__':
     for field, info in FIELDS.items():
         infields = info.get("args", [])
         func = info.get("func", "identity")
-        agg = info.get("agg", "mean")
+        hfunc = info.get("hfunc", "mean")
         data[field] = getattr(era5, func)(*[data[i] for i in infields]) # this might not work
         logging.info(f"Calculated {field} = {func}{*infields,}.")
-        resampled[field] = getattr(data[field].resample(time='1D'), agg)()
-        logging.info(f"Resampled {field} using {agg}.")
+        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
+        logging.info(f"Resampled {field} using {hfunc}.")
     data_resampled = xr.Dataset(resampled)
 
     # save data
