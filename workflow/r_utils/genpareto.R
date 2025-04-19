@@ -1,0 +1,94 @@
+"
+Distribution definition script.
+
+Must include functions:
+- cdf(q:vector, params:list) -> vector
+- threshold_selector(var:vector) -> list(params:list, p.value:float, pk:float)
+"
+library(eva)
+
+cdf <- function(q, params) {
+  return(pgpd(q, scale = scale, shape = shape, loc = 0))
+}
+
+threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
+  thresholds <- quantile(var, probs = seq(0.7, 0.98, length.out = nthresholds))
+  fits <- gpdSeqTestsWithFallback(var, thresholds, method = "ad", nsim = nsim)
+  valid_pk <- fits$ForwardStop
+  
+  k    <- min(which(valid_pk > alpha)); # lowest index being "accepted"
+  if (!is.finite(k)) {
+    stop("All thresholds rejected under H0:X~GPD with α=0.05")
+    k <- 1
+  }
+  
+  return(list(
+    params   = list(
+      thresh = fits$threshold[k],
+      scale  = fits$est.scale[k],
+      shape  = fits$est.shape[k]
+    ),
+    p.value  = fits$p.values[k],
+    pk       = fits$ForwardStop[k],
+  ))
+}
+
+gpdBackup <- function(var, threshold) {
+  library(POT)
+  ad_test <- function(x, shape, scale, eps=0.05){
+    cdf <- function(x) pgpd(x, loc = 0, shape = shape, scale = scale)
+    result <- ad.test(x, cdf)
+    return(list(p.value = result$p.value))
+  }
+  
+  # extract exceedances
+  exceedances <- var[var > threshold] - threshold
+  exceedances <- sort(exceedances)
+  num.above <- length(exceedances)
+  
+  fit <- fitgpd(var, threshold = threshold, est = "pwmu")
+  scale <- fit$fitted.values[1]
+  shape <- fit$fitted.values[2]
+  
+  # goodness-of-fit test
+  gof  <- ad_test(exceedances, threshold, scale, shape)
+  
+  # results
+  return(list(thresh=threshold, shape=shape, scale=scale,
+              p.value=gof$p.value,
+              num.above = num.above))
+}
+
+gpdBackupSeqTests <- function(var, thresholds) {
+  nthresh <- length(thresholds)
+  shapes <- vector(length=nthresh)
+  scales <- vector(length=nthresh)
+  p.values <- vector(length=nthresh)
+  num.above <- vector(length=nthresh)
+  
+  for (k in seq_along(thresholds)) {
+    thresh        <- thresholds[k]
+    fit           <- gpdBackup(var, thresh)
+    shapes[k]     <- fit$shape
+    scales[k]     <- fit$scale
+    p.values[k]   <- fit$p.value
+    num.above[k]  <- fit$num.above
+  }
+  
+  # ForwardStop <-  cumsum(-log(1 - p.values)) / (seq_along(p.values))
+  ForwardStop <- rev(eva:::pSeqStop(rev(p.values))$ForwardStop)
+  
+  out <- list(threshold = thresholds, num.above = num.above, p.value = p.values, 
+              ForwardStop = ForwardStop, est.scale = scales,
+              est.shape = shapes)
+  return(as.data.frame(out))
+}
+
+gpdSeqTestsWithFallback <- function(var, thresholds, method, nsim) {
+  fits <- tryCatch({
+    fits <- gpdSeqTests(var, thresholds = thresholds, method = method, nsim = nsim)
+  },
+  error = function(e) {
+    fits <- gpdBackupSeqTests(var, thresholds)
+  })
+}

@@ -1,14 +1,17 @@
+# add custom named sfuncs here
 library(dplyr)
 library(lubridate)
+source("utils.R")
 
 deseasonalize <- function(df, vars, method = "additive") {
-  # add more methods below, var is a list of variables
+  # add more methods below, var is a list of variables
   method <- match.fun(method)
   if (is.null(method)) {
     stop(paste0("Unrecognized deseasonalization method: ", method))
   }
-  return(method, vars)
+  return(vars)
 }
+
 additive <- function(df, vars) {
   df$month <- months(df$time)
   df <- df[, c(vars, "month", "grid")]
@@ -21,6 +24,7 @@ additive <- function(df, vars) {
   df[vars] <- df[vars] - df$monthly_median
   return(df[vars])
 }
+
 monthly_medians <- function(df, var) {
   df <- df[, c(var, "time", "grid")]
   df$month <- months(df$time)

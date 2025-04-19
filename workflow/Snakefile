@@ -1,35 +1,38 @@
 import os
 import yaml
 
-# load configuration files
+# load device configuration
 configfile: "config/config.yaml"
-
 PROJECT = config["project"]
-configfile: f"config/projects/{PROJECT}.yaml"
+ENV     = config.get("environment", "local") 
+INDIR   = config['environments'][ENV]['era5dir']
+WD      = config['environments'][ENV]['datadir']
+RESOURCES_DIR  = config["resources"]
 
-# set up paths
-ENV = config.get("environment", "local") 
-INDIR = config['environments'][ENV]['era5dir']
-WD = config['environments'][ENV]['datadir']
-PROJDIR = os.path.join(WD, config['project'])
+# set up paths on device
+PROJDIR        = os.path.join(WD, PROJECT)
 PROCESSING_DIR = os.path.join(PROJDIR, "processing")
-RESOURCES_DIR = config["resources"]
-
-for directory in [PROJDIR, PROCESSING_DIR]:
+TRAINING_DIR   = os.path.join(PROJDIR, "training")
+GENERATED_DIR  = os.path.join(PROJDIR, "generated")
+for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR]:
     os.makedirs(directory, exist_ok=True)
 
-# set up conda environments
-CONDA = config['environments'][ENV]['environment']
+# choose device-specific conda environments
+PYENV = config['environments'][ENV]['environment']
 RENV  = config['renv']
 
-# set up project parameters
-YEARS = list(range(config["year0"], config["yearn"]))
-FIELDS = config["fields"]
+# load project-specific configuration
+configfile: f"config/projects/{PROJECT}.yaml"
+
+YEAR0      = config["year0"]
+YEARN      = config["yearn"]
+FIELDS     = config["fields"]
 RESOLUTION = config["resolution"]
-LONGITUDE = config["longitude"]
-LATITUDE  = config["latitude"]
-RFUNC     = config["rfunc"]
-SFUNC     = config["sfunc"]
+LONGITUDE  = config["longitude"]
+LATITUDE   = config["latitude"]
+RFUNC      = config["rfunc"]
+SFUNC      = config["sfunc"]
+YEARS      = list(range(YEAR0, YEARN))
 
 # load rules
 include: "rules/get_data.smk"
