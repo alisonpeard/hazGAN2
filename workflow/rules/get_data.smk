@@ -23,12 +23,12 @@ rule get_data:
 
 rule get_data:
     input:
+        indir=INDIR,
         params=os.path.join(RESOURCES_DIR, "params", "{PROJECT}.nc")
     output:
         netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")
     params:
-        year="{year}", 
-        indir=INDIR,
+        year="{year}",
         xmin=config["longitude"]["min"],
         xmax=config["longitude"]["max"],
         ymin=config["latitude"]["min"],
