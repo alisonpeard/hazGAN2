@@ -1,7 +1,8 @@
 # add custom named sfuncs here
 library(dplyr)
 library(lubridate)
-source("utils.R")
+library(methods) # for S4 methods / snakemake
+# source("workflow/r_utils/utils.R")
 
 deseasonalize <- function(df, vars, method = "additive") {
   # add more methods below, var is a list of variables
