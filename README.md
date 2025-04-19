@@ -42,7 +42,10 @@ or if using SLURM:
 ```bash
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
-
+Sample rules:
+```
+snakemake --profile profiles/local/ process_data --use-conda --cores 2
+```
 ## Modifications and extensions
 
 Touchpoints for modifications:

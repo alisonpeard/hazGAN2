@@ -87,7 +87,7 @@ rule extract_storms:
     output:
         medians=os.path.join(PROCESSING_DIR, "medians.csv"),
         metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
-        parquet=os.path.join(PROCESSING_DIR, "daily.parquet"),
+        daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
@@ -102,14 +102,11 @@ rule extract_storms:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/storms_%A_%a.out --error=sbatch_dump/storms_%A_%a.err"
     conda:
-        # os.path.join("..", "..", RENV)
         RENV
     log:
-        os.path.join("logs", "stormsr.log")
+        os.path.join("logs", "extract_storms.log")
     script:
-        # os.path.join("..", "scripts", "extract_storms.R")
-        os.path.join("workflow", "scripts", "extract_storms.R")
-
+        os.path.join("..", "scripts", "extract_storms.R")
 
 rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""
@@ -142,11 +139,11 @@ rule resample_year:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
         fields=FIELDS
+    conda:
+        PYENV
     resources:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
-    conda:
-        PYENV
     log:
         os.path.join("logs", "resample_{year}.log")
     script:

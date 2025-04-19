@@ -28,17 +28,23 @@ fields:
       - u10
       - v10
     func: wind_speed
-    agg: max
+    hfunc: max
+    obj: max
+    distn: weibull
   msl:
     args:
       - msl
     func: identity
-    agg: min
+    hfunc: min
+    obj: min
+    distn: genpareto
   tp:
     args:
       - tp
     func: identity
-    agg: sum
+    hfunc: sum
+    obj: max
+    distn: genpareto
 
 rfunc:
   args:

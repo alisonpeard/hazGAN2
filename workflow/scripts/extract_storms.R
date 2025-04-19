@@ -1,5 +1,4 @@
-"Identify independent storm events using runs declustering."
-rm(list = ls())
+# Identify independent storm events using runs declustering.
 library(logger)
 library(arrow)
 library(lubridate)
@@ -8,34 +7,38 @@ require(ggplot2)
 library(CFtime)
 library(tidync)
 
-source("workflow/r_utils/dfuncs")
-source("workflow/r_utils/sfuncs")
+source("workflow/r_utils/dfuncs.R")
+source("workflow/r_utils/sfuncs.R")
 
 # configure logging
 log_appender(appender_file(snakemake@log[[1]]))
-log_layout(layout_glue("{time} - {level} - {msg}"))
+# log_layout(layout_glue("{time} - {levelname} - {msg}"))
+log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 
 # load snakemake config
-INPUT        <- snakemake@input[['netcdf']]
-MEDIANS_OUT  <- snakemake@output[['medians']]
-METADATA_OUT <- snakemake@output[['metadata']]
-DAILY_OUT    <- snakemake@output[['daily']]
-RESX         <- snakemake@params[['resx']]
-RESY         <- snakemake@params[['resy']]
-XMIN         <- snakemake@params[['xmin']]
-XMAX         <- snakemake@params[['xmax']]
-YMIN         <- snakemake@params[['ymin']]
-YMAX         <- snakemake@params[['ymax']]
-FIELDS       <- snakemake@params[['fields']]
-RFUNC        <- snakemake@params[['rfunc']]
-SFUNC        <- snakemake@params[['sfunc']]
+log_info("Loading snakemake config...")
+INPUT        <- snakemake@input[["netcdf"]]
+MEDIANS_OUT  <- snakemake@output[["medians"]]
+METADATA_OUT <- snakemake@output[["metadata"]]
+DAILY_OUT    <- snakemake@output[["daily"]]
+RESX         <- snakemake@params[["resx"]]
+RESY         <- snakemake@params[["resy"]]
+XMIN         <- snakemake@params[["xmin"]]
+XMAX         <- snakemake@params[["xmax"]]
+YMIN         <- snakemake@params[["ymin"]]
+YMAX         <- snakemake@params[["ymax"]]
+FIELDS       <- snakemake@params[["fields"]]
+RFUNC        <- snakemake@params[["rfunc"]]
+SFUNC        <- snakemake@params[["sfunc"]]
 FIELD_NAMES  <- names(FIELDS)
 
 # ====== 1.LOAD AND DESEASONALIZE DATA =========================================
 log_info("Loading data and removing seasonality...")
 start <- Sys.time()
 src <- tidync(INPUT)
+
+print(FIELDS)
 
 daily  <- src |> hyper_tibble(force = TRUE)
 coords <- src |> activate("grid") |> hyper_tibble(force = TRUE)
@@ -44,9 +47,9 @@ daily  <- left_join(daily, coords, by = c("lon", "lat"))
 rm(coords)
 
 # negate any variables where minimum is of interest
-daily <- daily[, cbind(c("grid", "time"), FIELD_NAMES)]
+daily <- daily[, c(c("grid", "time"), FIELD_NAMES)]
 for (k in seq_along(FIELDS)) {
-  if (FIELDS[k]$obj == "min") {
+  if (FIELDS[[k]]$obj == "min") {
     daily[[FIELD_NAMES[k]]] <- (-1) * daily[[FIELD_NAMES[k]]]
   }
 }
