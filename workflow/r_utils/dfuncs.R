@@ -1,7 +1,8 @@
 "Functions related to creating and declustering an event intensity
 time series. Coles (2001) runs declustering."
 library(extRemes)
-source("utils.R")
+library(methods) # for S4 methods / snakemake
+# source("workflow/r_utils/utils.R")
 
 `%ni%` <- Negate(`%in%`)
 
