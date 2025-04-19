@@ -15,6 +15,12 @@ resolution:
   lon: 64
   lat: 64
 
+# event threshold
+event_threshold:
+  field: ws
+  value: 15
+  func: max
+
 # output fields
 fields:
   ws:

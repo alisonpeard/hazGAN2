@@ -1,3 +1,10 @@
+"""
+Functions to create variables of interest from ERA5 data.
+
+Add custom functions as needed, inputs must be xarray DataArrays of
+ERA5 variables, outputs must be xarray DataArrays the same shape.
+
+"""
 import numpy as np
 import xarray as xr
 
@@ -6,7 +13,7 @@ long_names = {
     "v10": "10m_v_component_of_wind",
     "msl": "mean_sea_level_pressure",
     "tp": "total_precipitation",
-    "ssrd": "surface_solar_radiation_downwards",
+    "ssrd": "surface_solar_radiation_downwards", 
     "t2m": "2m_temperature",
 }
 

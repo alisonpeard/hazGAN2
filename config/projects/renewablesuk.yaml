@@ -24,6 +24,7 @@ fields:
     func: wind_power
     hfunc: sum
     obj: min
+    distn: genpareto
   g:
     args:
       - t2m
@@ -33,12 +34,14 @@ fields:
     func: solar_power
     hfunc: sum
     obj: min
+    distn: genpareto
   t2m:
     args:
       - t2m
     func: identity
     hfunc: mean
     obj: min
+    distn: genpareto # exponential (not implemented yet)
 
 rfunc:
   args:
@@ -46,4 +49,4 @@ rfunc:
     - g
   func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
 
-sfunc: additive
+sfunc: additive 
