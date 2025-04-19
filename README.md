@@ -1,90 +1,68 @@
- # hazGAN2
-Centralised repo for hazGAN methods and snakemake workflows, will publish later.
+ # hazGAN2 Readme
 
-Repository structure:
+### Data input structure
 ```
-hazGAN2/
-├── .env
-├── README.md
-├── config
-│   ├── csv files with metadata e.g., cost curves
-│   ├── folder with arc cluster config
-│   └── config.yaml: paths to datasets
-├── StyleGAN2-DA
-│   ├── environments
-│   ├── pyproject.toml
-│   └── src
-│       └── *
-├── hazGAN
-│   ├── environments
-│   ├── pyproject.toml
-│   └── src
-│       └── *
-└── scripts
-    ├── data_acquisition
-    ├── data_processing
-    ├── training
-    ├── validation
-    └── mangroves
-```
-
-Data output structure:
-```
-data/
-├── bayofbengal
-│   ├── processing
-│   ├── training
-│   │   └── 64x64
-│   │   │   ├── input
-│   │   │   └── generated
-│   └── mangroves
-└── unitedkingdom
-    ├── processing
-    ├── training
-    └── analysis
+era5dir/
+└── {variable_long_name}/
+    └── nc/
+       └── {variable_long_name}_{year}.nc
  ```
 
-# ERA5 Climate Analysis Project Structure
-
-## Directory Structure
-
+### Repository map
 ```
-era5-project/
-├── Snakefile                # Main Snakefile that orchestrates the workflow
-├── config.yaml              # Default configuration
-├── config/                  # Machine-specific configurations
-│   ├── machine1.yaml
-│   ├── machine2.yaml
-│   ├── hpc.yaml
-│   └── slurm/               # SLURM profile for cluster execution
-│       └── config.json
+hazGAN2/
+├── .gitignore
+├── README.md
+├── docs/
+├── profiles/
+│   └── {device}/
+│       └── config.yaml
+├── config/
+│   ├── config.yaml
+│   └── projects/
+│       └── {projectname}.yaml
 ├── workflow/
-│   ├── rules/               # Modular rule files
-│   │   ├── preprocessing.smk
-│   │   ├── analysis.smk
-│   │   └── visualization.smk
-│   └── scripts/             # Python scripts called by rules
-│       ├── process_era5.py
-│       ├── combine_years.py
-│       ├── extract_variable.py
-│       ├── create_climatology.py
-│       ├── trend_analysis.py
-│       ├── extreme_events.py
-│       ├── seasonal_patterns.py
-│       ├── spatial_correlation.py
-│       ├── teleconnection_analysis.py
-│       ├── plot_trend_map.py
-│       ├── plot_extreme_events.py
-│       ├── plot_seasonal_cycle.py
-│       ├── plot_timeseries.py
-│       ├── plot_correlation_heatmap.py
-│       ├── create_dashboard.py
-│       └── config_utils.py  # Helper for config inheritance
-├── logs/                    # Log files
-├── sbatch_dump/             # SLURM output files
-└── profiles/                # Additional execution profiles
-    └── standard/            # Standard configuration
-        └── config.yaml
+│   ├── Snakefile
+│   ├── environments/
+│   │   ├── {renvs}.yaml
+│   │   └── {pythonenvs}.yaml
+│   ├── rules/
+│   │   └── {rulename}.smk
+│   ├── scripts/
+│   │   ├── {scriptname}.py
+│   │   └── {scriptname}.R
+│   ├── py_utils/
+│   │   └── {module}.py
+│   └── r_utils/
+│       └── {module}.R
+├── packages/
+│   ├── hazGAN/
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   │       └── *
+│   └── styleGAN2-DA/
+│       ├── pyproject.toml
+│       └── src/
+│           └── *
+├── results/
+│   ├── .gitignore
+│   └── {projectname}/
+│       ├── processing/
+│       ├── training/
+│       │   ├── input/
+│       │   └── generated/
+│       └── analysis/
+├── resources/
+│   ├── .gitignore
+│   ├── grids/
+│   │   └── era5.nc
+│   └── params/
+│       └── {projectname}.nc
+│── sbatch_dump/
+│   └── .gitignore
+└── logs/
+    └── .gitignore
+
 ```
 
 ## Snakemake Best Practices

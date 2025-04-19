@@ -15,6 +15,7 @@ long_names = {
     "tp": "total_precipitation",
     "ssrd": "surface_solar_radiation_downwards", 
     "t2m": "2m_temperature",
+    'utci': "universal_thermal_climate_index",
 }
 
 def unpack(params:xr.Dataset):
