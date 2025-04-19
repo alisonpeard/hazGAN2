@@ -1,11 +1,19 @@
-# hazGAN2 Readme
+# HazGAN2 readme
+This repository contains a `snakemake` workflow to generate multivariate climate data event sets using extreme value theory and generative adversarial networks. The workflow has been made as modular as possible, to facilitate modifications for new applications.
+
+The theory of the workflow is described in [this paper](link.to.paper.com).
 ### Improvements to make / to do
 - [ ] Separate conda environments for each rule set
-- [ ] Test 2020 subset locally
 - [ ] Training on styleGAN2-DA (make very modular)
 - [ ] Post-processing samples `process_samples.py`
-- [ ] Visualisation
-- [ ] Extra analysis code
+- [ ] Visualisation rules
+- [ ] Extra analysis code/rules
+- [ ] Run `get_data` rules locally for 2020 subset
+    - [x] `bayofbengal`
+    - [ ] `renewablesuk`
+- [ ] Run `process_data` rules locally for 2020 subset
+    - [ ] `bayofbengal`
+    - [ ] `renewablesuk`
 
 ### Getting started
 
@@ -34,6 +42,16 @@ or if using SLURM:
 ```bash
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
+
+## Modifications and extensions
+
+Touchpoints for modifications:
+- `config/config.yaml`: change `project` value
+- `config/projects/`: add YAML `{myproject}.yaml` with same structure as existing projects
+- `resources/params/`: use `resources/grids/era5.nc` to make `{myproject}.nc` with any spatial parameters for variable construction from raw ERA5 variables (see other param files for examples)
+- `workflow/py_utils/era5_utils.py`: add new variable constructions functions defined in `config/projects/{myproject}.yaml`
+- `workflow/r_utils/`: add distribution definition files if needed, e.g., `gaussian.R` with functions `cdf()` and `threshold_selector()` following syntax of `genpareto.R` and `weibull.R`
+
 ### Data input structure
 ```
 era5dir/
