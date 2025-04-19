@@ -23,14 +23,16 @@ if __name__ == '__main__':
     logging.info("Starting data acquisition script.")
 
     # snakemake params
+    INDIR      = snakemake.input.indir
+    INPUT      = snakemake.input.params
+
     YEAR       = int(snakemake.params.year)
-    INDIR      = snakemake.params.indir
     XMIN       = snakemake.params.xmin
     XMAX       = snakemake.params.xmax
     YMIN       = snakemake.params.ymin
     YMAX       = snakemake.params.ymax
     FIELDS     = snakemake.params.fields
-    INPUT      = snakemake.input.params
+
     OUTPUT     = snakemake.output.netcdf
 
     # load params and clip to XMIN, XMAX, YMIN, YMAX
