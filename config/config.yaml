@@ -1,20 +1,20 @@
 # Global config file
 project: "bayofbengal"
-resouces: "resources"
+resources: "resources"
 renv: "workflow/environments/r.yaml"
 
 # environment specs
-environments:
+setup:
   local:
-    era5dir: "/Users/alison/Documents/DPhil/data/era5"
-    datadir: "results"
-    environment: 'workflow/environments/local.yaml'
+    input: "/Users/alison/Documents/DPhil/data/era5"
+    output: "results"
+    pyenv: '../environments/apple-silicon.yaml'
     metadata:
       description: "Analysis on Apple Silicon M2"
   cluster:
-    era5dir: '/soge-home/data/analysis/era5/0.28125x0.28125/hourly/'
-    datadir: 'results'
-    environment: 'workflow/environments/linux.yaml'
+    input: '/soge-home/data/analysis/era5/0.28125x0.28125/hourly/'
+    output: 'results'
+    pyenv: 'workflow/environments/linux.yaml'
     metadata:
       institution: "Oxford School of Geography and the Environment"
       description: "Analysis on departmental cluster"

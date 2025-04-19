@@ -1,5 +1,39 @@
- # hazGAN2 Readme
+# hazGAN2 Readme
+### Improvements to make / to do
+- [ ] Separate conda environments for each rule set
+- [ ] Test 2020 subset locally
+- [ ] Training on styleGAN2-DA (make very modular)
+- [ ] Post-processing samples `process_samples.py`
+- [ ] Visualisation
+- [ ] Extra analysis code
 
+### Getting started
+
+Though not always recommended, it is better to submit jobs and set up on a CPU node rather than the head node because head nodes are slow for configuring conda environments etc.
+```bash
+srun -p Short --pty /bin/bash
+```
+
+To set up snakemake on your machine, use the following steps, replacing `conda` with `micromamba` or `mamba` if you prefer:
+```bash
+conda create -c conda-forge -c bioconda -n snakemake snakemake
+conda activate snakemake
+conda config --set channel_priority strict # snakemake complains otherwise
+conda install -c conda-forge conda=24.7.1
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
+```
+
+To run a rule, navigate to the repository root, activate snakemake and run the rule. E.g., to 
+run all the get_data rules:
+```bash
+cd hazGAN2
+micromamba activate snakemake
+snakemake --profile profiles/local/ get_data --use-conda --cores 2
+```
+or if using SLURM:
+```bash
+snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
+```
 ### Data input structure
 ```
 era5dir/
@@ -49,8 +83,7 @@ hazGAN2/
 │   └── {projectname}/
 │       ├── processing/
 │       ├── training/
-│       │   ├── input/
-│       │   └── generated/
+│       ├── generated/
 │       └── analysis/
 ├── resources/
 │   ├── .gitignore
@@ -62,175 +95,4 @@ hazGAN2/
 │   └── .gitignore
 └── logs/
     └── .gitignore
-
-```
-
-## Snakemake Best Practices
-
-### 1. Use a Modular Structure
-
-- Split your workflow into logical modules (preprocessing, analysis, visualization)
-- Use `include:` directives to bring in rule files
-- Keep the main Snakefile simple and focused on workflow organization
-
-### 2. Define Clear Target Rules
-
-Instead of a single `all` rule, define multiple target rules that represent specific pipeline stages:
-
-- `rule preprocess:` - Data preparation only
-- `rule analyze:` - Run analyses on preprocessed data
-- `rule visualize:` - Generate visualizations
-- `rule full_pipeline:` - Complete end-to-end workflow
-
-### 3. Use Wildcards Effectively
-
-- Wildcards allow parameter-based execution (e.g., `{year}`, `{variable}`)
-- Define `wildcard_constraints:` to restrict wildcard values
-- Use `expand()` to generate combinations of wildcard values
-
-### 4. Document Your Rules
-
-- Add docstrings to every rule explaining its purpose
-- Include parameters, input/output descriptions
-- Add comments for complex logic
-
-### 5. Manage Resources Appropriately
-
-- Specify resource requirements for each rule
-- Adjust based on task complexity (more memory for larger datasets)
-- Use different resource specifications for different execution environments
-
-### 6. Implement Error Handling
-
-- Use the `onsuccess:` and `onerror:` directives for notifications
-- Comprehensive logging in each rule
-- Consider retry mechanisms for unreliable operations
-
-### 7. Version Control
-
-- Keep your Snakemake workflow in version control (git)
-- Include `.gitignore` for generated files
-- Document changes in a changelog
-
-### 8. Testing
-
-- Create a small test dataset
-- Define test rules that run quickly
-- Verify outputs against expected results
-
-## Running Specific Pipeline Parts
-
-### Run specific years
-
-```bash
-snakemake --config year_start=1980 year_end=1990
-```
-
-### Run specific analyses
-
-```bash
-snakemake trend_analysis extreme_events
-```
-
-### Generate specific visualizations
-
-```bash
-snakemake --forcerun trend_maps seasonal_cycle
-```
-
-### Rerun specific steps for specific years
-
-```bash
-snakemake --touch preprocess
-snakemake process_era5_year --config years=[1980,1981,1982]
-```
-
-### Run with increased parallelism
-
-```bash
-snakemake --profile config/slurm --jobs 100 full_pipeline
-```
-
-## Advanced Features
-
-### Checkpoints
-
-For dynamic dependencies (when outputs are determined during execution):
-
-```python
-checkpoint process_dataset:
-    # checkpoint definition
-    
-rule analyze_results:
-    input:
-        lambda wildcards: get_checkpoint_outputs(wildcards)
-```
-
-### DAG Visualization
-
-Visualize your workflow as a directed acyclic graph:
-
-```bash
-snakemake --dag | dot -Tsvg > workflow.svg
-```
-
-### Report Generation
-
-Generate a comprehensive HTML report:
-
-```bash
-snakemake --report report.html
-```
-
-### Remote File Support
-
-Access files from remote storage (S3, Google Cloud, etc.):
-
-```python
-from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
-S3 = S3RemoteProvider()
-
-rule download_data:
-    input:
-        S3.remote("bucket/path/to/data.nc")
-    output:
-        "local/path/data.nc"
-```
-
-## Integration with Other Tools
-
-- **Conda**: Use conda environments for each rule
-- **Singularity/Docker**: Package dependencies in containers
-- **GitHub Actions**: CI/CD for workflow testing
-- **DVC**: Data version control alongside workflow
-
-
-
-## Recommended directory structure from docs
-```
-├── .gitignore
-├── README.md
-├── LICENSE.md
-├── workflow
-│   ├── rules
-|   │   ├── module1.smk
-|   │   └── module2.smk
-│   ├── envs
-|   │   ├── tool1.yaml
-|   │   └── tool2.yaml
-│   ├── scripts
-|   │   ├── script1.py
-|   │   └── script2.R
-│   ├── notebooks
-|   │   ├── notebook1.py.ipynb
-|   │   └── notebook2.r.ipynb
-│   ├── report
-|   │   ├── plot1.rst
-|   │   └── plot2.rst
-|   └── Snakefile
-├── config
-│   ├── config.yaml
-│   └── some-sheet.tsv
-├── results
-└── resources
 ```

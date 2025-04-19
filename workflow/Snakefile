@@ -4,9 +4,10 @@ import yaml
 # load device configuration
 configfile: "config/config.yaml"
 PROJECT = config["project"]
-ENV     = config.get("environment", "local") 
-INDIR   = config['environments'][ENV]['era5dir']
-WD      = config['environments'][ENV]['datadir']
+DEVICE  = config["device"]
+print(f"Running on {DEVICE}")
+INDIR   = config['setup'][DEVICE]['input']
+WD      = config['setup'][DEVICE]['output']
 RESOURCES_DIR  = config["resources"]
 
 # set up paths on device
@@ -18,7 +19,7 @@ for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 # choose device-specific conda environments
-PYENV = config['environments'][ENV]['environment']
+PYENV = config['setup'][DEVICE]['pyenv']
 RENV  = config['renv']
 
 # load project-specific configuration
@@ -36,5 +37,4 @@ YEARS      = list(range(YEAR0, YEARN))
 
 # load rules
 include: "rules/get_data.smk"
-include: "rules/process_data.smk"
-
+# include: "rules/process_data.smk"

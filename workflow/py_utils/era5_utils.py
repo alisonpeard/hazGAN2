@@ -22,13 +22,13 @@ def unpack(params:xr.Dataset):
   """Unpack variables as named dict"""
   return {var: params[var] for var in params.data_vars}
 
-def identity(x):
+def identity(x, *args, **kwargs):
     return x
 
-def wind_speed(u, v):
+def wind_speed(u, v, *args, **kwargs):
     return np.sqrt(u**2 + v**2)
 
-def wind_direction(u, v):
+def wind_direction(u, v, *args, **kwargs):
     return (np.arctan2(u, v) * 180 / np.pi + 360) % 360
 
 # wind power functions
