@@ -4,7 +4,7 @@
 # micromamba env create -f R.yaml
 name: R
 channels:
-  - conda-forge
+  - conda-forge/osx-64
   - nodefaults
 dependencies:
   - r-base
