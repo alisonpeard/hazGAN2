@@ -1,1 +1,1 @@
-config: ["environment=local"]
+config: ["device=local"]
