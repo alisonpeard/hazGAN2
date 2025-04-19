@@ -34,11 +34,9 @@ SFUNC        <- snakemake@params[["sfunc"]]
 FIELD_NAMES  <- names(FIELDS)
 
 # ====== 1.LOAD AND DESEASONALIZE DATA =========================================
-log_info("Loading data and removing seasonality...")
+log_info("Loading data")
 start <- Sys.time()
 src <- tidync(INPUT)
-
-print(FIELDS)
 
 daily  <- src |> hyper_tibble(force = TRUE)
 coords <- src |> activate("grid") |> hyper_tibble(force = TRUE)
@@ -47,20 +45,24 @@ daily  <- left_join(daily, coords, by = c("lon", "lat"))
 rm(coords)
 
 # negate any variables where minimum is of interest
-daily <- daily[, c(c("grid", "time"), FIELD_NAMES)]
+log_info("Negating any variables where minimum is of interest")
+daily <- daily[, c("grid", "time", FIELD_NAMES)]
 for (k in seq_along(FIELDS)) {
   if (FIELDS[[k]]$obj == "min") {
     daily[[FIELD_NAMES[k]]] <- (-1) * daily[[FIELD_NAMES[k]]]
   }
 }
 
-daily$time <- as.Date(STARTDATE) + days(daily$time)
+# additional processing
 daily$grid <- as.integer(daily$grid)
+daily$time <- as.Date(daily$time)
 
 # remove seasonality (sfuncs)
+log_info("Removing seasonality")
 for (k in seq_along(FIELD_NAMES)) {
   field <- FIELD_NAMES[k]
-  daily[[field]] <- deseasonalize(daily, field, method = SFUNC)
+  deseasonalized <- deseasonalize(daily, field, method = SFUNC)
+  daily[, field] <- deseasonalized
 }
 
 # ====== 2.EXTRACT EVENTS ======================================================
@@ -69,8 +71,7 @@ metadata <- identify_events(daily, RFUNC)
 
 # ====== 3.SAVE RESULTS ========================================================
 log_info(paste0("Finished event extraction. Saving ",
-                MEDIANS_OUT, ", ", METADATA_OUT, ", and ", DAILY_OUT, " ..."))
-write.csv(medians, MEDIANS_OUT, row.names = FALSE)
+                METADATA_OUT, ", and ", DAILY_OUT, " ..."))
 write_parquet(metadata, METADATA_OUT)
 write_parquet(daily, DAILY_OUT)
 
