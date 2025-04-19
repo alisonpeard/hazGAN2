@@ -1,4 +1,4 @@
-config: ["environment=cluster"]
+config: ["device=cluster"]
 
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
 jobs: 1 # modify later
