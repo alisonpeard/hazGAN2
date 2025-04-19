@@ -4,13 +4,13 @@ library(lubridate)
 library(methods) # for S4 methods / snakemake
 # source("workflow/r_utils/utils.R")
 
-deseasonalize <- function(df, vars, method = "additive") {
+deseasonalize <- function(df, var, method = "additive") {
   # add more methods below, var is a list of variables
   method <- match.fun(method)
   if (is.null(method)) {
     stop(paste0("Unrecognized deseasonalization method: ", method))
   }
-  return(vars)
+  return(method(df, var))
 }
 
 additive <- function(df, vars) {
