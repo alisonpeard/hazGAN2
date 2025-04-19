@@ -57,7 +57,6 @@ rule make_training_data:
 rule fit_marginals:
     """Fit semi-parametric marginals to the data along the time dimension."""
     input:
-        medians=os.path.join(PROCESSING_DIR, "medians.csv"),
         metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     output:
@@ -74,6 +73,7 @@ rule fit_marginals:
 rule extract_storms:
     """Remove seasonality and extract storm events from the data.
 
+    TODO: may need to re-add medians
     Params:
         sfunc: str
             Any function that takes args df and vars (list).
@@ -85,7 +85,6 @@ rule extract_storms:
     input:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
-        medians=os.path.join(PROCESSING_DIR, "medians.csv"),
         metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     params:
