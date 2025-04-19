@@ -1,5 +1,5 @@
 """
-Get data from SoGE cluster. Run from repository root.
+Get ERA5 data from SoGE cluster. Run from repository root.
 
 ```bash
 # environment set up
@@ -38,8 +38,7 @@ rule get_data:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
     conda:
-        # "/lustre/soge1/users/spet5107/micromamba/envs/hazGAN-torch"
-        os.path.join("..", "..", CONDA) 
+        os.path.join("..", "..", PYENV) 
     log:
         "logs/get_{year}.log"
     script:

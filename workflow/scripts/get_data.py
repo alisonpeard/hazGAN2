@@ -10,7 +10,7 @@ from glob import glob
 from pprint import pp as prettyprint
 import xarray as xr
 import logging
-import era5_utils as era5
+import py_utils.era5_utils as era5
 
 logging.basicConfig(
     filename=snakemake.log[0],
@@ -65,7 +65,8 @@ if __name__ == '__main__':
         agg = info.get("agg", "mean")
         #! This is where output variables are created
         #! Add parameter loading here
-        data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params) # this might not work
+        #! Untested
+        data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params)
         logging.info(f"Applied {func}(...) to {field}.")
         resampled[field] = getattr(data[field].resample(time='1D'), agg)()
         logging.info(f"Resampled {field} using {agg}.")
