@@ -25,12 +25,12 @@ checkpoint make_jpegs:
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        outdir=os.path.join(TRAINING_DIR, "jpegs")
+        outdir=os.path.join(TRAINING_DIR, "jpegs"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
         threshold=config['event_threshold'],
         eps = 1e-6,
-        domain = gumbel,
+        domain = "gumbel",
         resx = RESOLUTION['lon'],
         resy = RESOLUTION['lat'],
     conda:
@@ -124,7 +124,7 @@ rule concatenate_data:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/concat_%A_%a.out --error=sbatch_dump/concat_%A_%a.err"
     conda:
-        os.path.join("..", "..", CONDA)
+        PYENV
     log:
         os.path.join("logs", "concatenate.log")
     script:
@@ -146,7 +146,7 @@ rule resample_year:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
     conda:
-        os.path.join("..", "..", PYENV)
+        PYENV
     log:
         os.path.join("logs", "resample_{year}.log")
     script:

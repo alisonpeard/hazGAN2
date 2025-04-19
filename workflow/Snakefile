@@ -37,4 +37,4 @@ YEARS      = list(range(YEAR0, YEARN))
 
 # load rules
 include: "rules/get_data.smk"
-# include: "rules/process_data.smk"
+include: "rules/process_data.smk"
