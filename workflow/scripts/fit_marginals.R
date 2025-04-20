@@ -12,7 +12,7 @@ log_threshold(INFO)
 # load snakemake rule parameters
 METADATA <- snakemake@input[["metadata"]]
 DAILY    <- snakemake@input[["daily"]]
-OUTPUT   <- snakemake@output[["storms"]]
+OUTPUT   <- snakemake@output[["events"]]
 FIELDS   <- snakemake@params[["fields"]]
 Q        <- snakemake@params[["q"]]
 
@@ -26,15 +26,18 @@ fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
 nfields <- length(fields)
 
-storms_field1 <- marginal_transformer(
-  daily, metadata, fields[1], Q, distn = distns[1]
-)
-storms_field2 <- marginal_transformer(
+# events_field1 <- marginal_transformer(
+#   daily, metadata, fields[1], Q, distn = distns[1]
+# )
+# print(paste0("Finished fitting: ", fields[1]))
+events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q, distn = distns[2]
 )
-storms_field3 <- marginal_transformer(
+print(paste0("Finished fitting: ", fields[2]))
+events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q, distn = distns[3]
 )
+print(paste0("Finished fitting: ", fields[3]))
 
 # combine fields
 renamer <- function(df, var) {
@@ -48,19 +51,19 @@ renamer <- function(df, var) {
 }
 
 log_info("Done. Putting it all together...")
-storms_field1 <- renamer(storms_field1, fields[1])
-storms_field2 <- renamer(storms_field2, fields[2])
-storms_field3 <- renamer(storms_field3, fields[3])
+events_field1 <- renamer(events_field1, fields[1])
+events_field2 <- renamer(events_field2, fields[2])
+events_field3 <- renamer(events_field3, fields[3])
 
-storms <- storms_field1 |>
-  inner_join(storms_field2, by = c("grid", "event", "event.rp")) |>
-  inner_join(storms_field3, by = c("grid", "event", "event.rp"))
+events <- events_field1 |>
+  inner_join(events_field2, by = c("grid", "event", "event.rp")) |>
+  inner_join(events_field3, by = c("grid", "event", "event.rp"))
 
-storms$thresh.q <- Q # keep track of threshold used
+events$thresh.q <- Q # keep track of threshold used
 
 # save results
 log_info("Saving results...")
-write_parquet(storms, OUTPUT)
+write_parquet(events, OUTPUT)
 
-nevents <- nrow(storms)
+nevents <- nrow(events)
 log_info(paste0("Finished! ", nevents, " events processed."))

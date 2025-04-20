@@ -40,7 +40,7 @@ scdf <- function(train, params, cdf){
 }
 
 load_distn <- function(distn) {
-  # find appropriate funcion definition file
+  # find appropriate function definition file
   module <- paste0("workflow/r_utils/", distn, ".R")
 
   # check it exists
@@ -80,22 +80,26 @@ marginal_transformer <- function(df, metadata, var, q,
   rm(df)
 
   # multiprocessing initiation
-  plan(multisession, workers = min(availableCores() - 4, nchunks))
+  ncores <- max(1, min(availableCores(), nchunks))
+  print(paste0("Using ", ncores, " cores"))
+  plan(multisession, workers = 2) #! TODO: use ncores
+#   plan(sequential) #! for testing
+  print("Multiprocessing initiated")
 
   # semiparametric fits happen here
   process_gridcell <- function(grid_i, df) {
     gridcell <- df[df$grid == grid_i, ]
     gridcell <- left_join(gridcell,
-                          metadata[, c("time", "storm", "storm.rp")],
+                          metadata[, c("time", "event", "event.rp")],
                           by = c("time" = "time"))
 
     maxima <- gridcell |>
-      group_by(storm) |>
+      group_by(event) |>
       slice(which.max(get(var))) |>
       summarise(
         variable = max(get(var)),
         time = time,
-        storm.rp = storm.rp,
+        event.rp = event.rp,
         grid = grid
       )
 
@@ -153,13 +157,13 @@ marginal_transformer <- function(df, metadata, var, q,
         grid_i, ". Value: ", round(p_box, 4)
       ))
     }
-
     maxima$box.test <- p_box
     return(maxima)
   }
 
   # wrapper for process_gridcell()
   process_gridchunk <- function(i) {
+    print("process_gridchunk")
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
@@ -169,6 +173,7 @@ marginal_transformer <- function(df, metadata, var, q,
   }
 
   # apply multiprocessing
+  print("About to apply transformed")
   transformed <- future_map_dfr(
     .x = seq_along(tmps),
     .f = process_gridchunk,
@@ -178,7 +183,7 @@ marginal_transformer <- function(df, metadata, var, q,
     )
   )
 
-  unlink(tmps[[i]])
+  unlink(tmps)
 
   fields <- c("event", "variable", "time", "event.rp",
               "grid", "thresh", "scale", "shape", "p",

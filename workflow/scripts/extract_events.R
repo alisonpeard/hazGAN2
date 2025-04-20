@@ -1,10 +1,10 @@
-# Identify independent storm events using runs declustering.
+# Identify independent events using runs declustering.
 library(logger)
 library(arrow)
 library(lubridate)
 library(dplyr)
 require(ggplot2)
-library(CFtime)
+# library(CFtime)
 library(tidync)
 
 source("workflow/r_utils/dfuncs.R")
@@ -12,7 +12,6 @@ source("workflow/r_utils/sfuncs.R")
 
 # configure logging
 log_appender(appender_file(snakemake@log[[1]]))
-# log_layout(layout_glue("{time} - {levelname} - {msg}"))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 

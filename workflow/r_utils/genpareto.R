@@ -1,31 +1,44 @@
 "
 Distribution definition script.
 
+TODO: 
+```
+MLE failed for grid cell  2100 . Resorting to empirical fits 
+Error message: Invalid parameter length! 
+Call: eva::pgpd(x, loc = 0, shape = shape, scale = scale) 
+MLE failed for grid cell  2101 . Resorting to empirical fits 
+Error message: Invalid parameter length! 
+Call: eva::pgpd(x, loc = 0, shape = shape, scale = scale) 
+MLE failed for grid cell  2102 . Resorting to empirical fits 
+Error message: Invalid parameter length! 
+```
+
 Must include functions:
 - cdf(q:vector, params:list) -> vector
 - threshold_selector(var:vector) -> list(params:list, p.value:float, pk:float)
 "
 library(eva)
 library(goftest)
+library(evd)
 
 cdf <- function(q, params) {
   shape <- params$shape
   scale <- params$scale
-  return(pgpd(q, scale = scale, shape = shape, loc = 0))
+  return(eva::pgpd(q, scale = scale, shape = shape, loc = 0))
 }
 
 threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
-  print("GPD threshold selector")
+  gc(full = TRUE)
   thresholds <- quantile(var, probs = seq(0.7, 0.98, length.out = nthresholds))
   fits <- gpdSeqTestsWithFallback(var, thresholds, method = "ad", nsim = nsim)
   valid_pk <- fits$ForwardStop
-  
+
   k    <- min(which(valid_pk > alpha)); # lowest index being "accepted"
   if (!is.finite(k)) {
-    stop("All thresholds rejected under H0:X~GPD with α=0.05")
+    stop("All thresholds rejected under H0: X ~ GPD with α = 0.05")
     k <- 1
   }
-  
+  gc(full = TRUE)
   return(list(
     params   = list(
       thresh = fits$threshold[k],
@@ -38,29 +51,33 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
 }
 
 gpdBackup <- function(var, threshold) {
-  library(POT)
   ad_test <- function(x, shape, scale, eps=0.05){
-    cdf <- function(x) pgpd(x, loc = 0, shape = shape, scale = scale)
+    cdf <- function(x) eva::pgpd(x, loc = 0, shape = shape, scale = scale)
     result <- goftest::ad.test(x, cdf)
     return(list(p.value = result$p.value))
   }
-  
+
   # extract exceedances
   exceedances <- var[var > threshold] - threshold
   exceedances <- sort(exceedances)
-  num.above <- length(exceedances)
-  
-  fit <- fitgpd(var, threshold = threshold, est = "pwmu")
+  numabove <- length(exceedances)
+
+  # TODO: alternative to POT::fitgpd --> evd::fpot(x, threshold)
+  fit <- evd::fpot(var, threshold, std.err = FALSE)
+  # fit <- fitgpd(var, threshold = threshold, est = "pwmu")
   scale <- fit$fitted.values[1]
   shape <- fit$fitted.values[2]
-  
+
   # goodness-of-fit test
   gof  <- ad_test(exceedances, threshold, scale, shape)
   
   # results
-  return(list(thresh=threshold, shape=shape, scale=scale,
-              p.value=gof$p.value,
-              num.above = num.above))
+  return(list(
+              thresh = threshold,
+              shape = shape,
+              scale = scale,
+              p.value = gof$p.value,
+              num.above = numabove))
 }
 
 gpdBackupSeqTests <- function(var, thresholds) {
@@ -89,10 +106,13 @@ gpdBackupSeqTests <- function(var, thresholds) {
 }
 
 gpdSeqTestsWithFallback <- function(var, thresholds, method, nsim) {
+  gc(full = TRUE)
   fits <- tryCatch({
-    fits <- gpdSeqTests(var, thresholds = thresholds, method = method, nsim = nsim)
+    fits <- eva::gpdSeqTests(var, thresholds = thresholds, method = method, nsim = nsim)
   },
   error = function(e) {
     fits <- gpdBackupSeqTests(var, thresholds)
   })
+  gc(full = TRUE)
+  return(fits)
 }

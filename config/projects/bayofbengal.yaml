@@ -21,6 +21,11 @@ event_threshold:
   value: 15
   func: max
 
+# marginal threshold
+marginal_threshold:
+  low: 0.6
+  final: 0.95
+
 # output fields
 fields:
   ws:

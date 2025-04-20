@@ -20,6 +20,7 @@ for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR]:
 # choose device-specific conda environments
 PYENV = config['setup'][DEVICE]['pyenv']
 RENV  = config['setup'][DEVICE]['renv']
+RSUBDIR = config['setup'][DEVICE]['rsubdir']
 
 # load project-specific configuration
 configfile: f"config/projects/{PROJECT}.yaml"
@@ -33,6 +34,7 @@ LATITUDE   = config["latitude"]
 RFUNC      = config["rfunc"]
 SFUNC      = config["sfunc"]
 YEARS      = list(range(YEAR0, YEARN))
+MTHRESH    = config["marginal_threshold"]
 
 # load rules
 include: "rules/get_data.smk"
