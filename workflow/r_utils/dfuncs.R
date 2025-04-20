@@ -76,49 +76,49 @@ identify_events <- function(daily, rfunc) {
 
   # final declustering
   declustering <- decluster(series[, args], thresh, r = r)
-  storms <- attr(declustering, "clusters")
+  events <- attr(declustering, "clusters")
   times <- series$time[series[, args] > thresh]
   variable <- series[, args][series[, args] > thresh]
-  metadata <- data.frame(time = times, storm = storms, variable = variable)
+  metadata <- data.frame(time = times, event = events, variable = variable)
 
-  # storm stats
+  # event stats
   # Add these diagnostic lines to better understand your data structure
-  storms <- metadata |>
-    group_by(storm) |>
+  events <- metadata |>
+    group_by(event) |>
     mutate(
-      storm.size = n(),
+      event.size = n(),
       max_val = max(variable)
     ) |>
     filter(variable == max_val) |>
-    group_by(storm) |>
+    group_by(event) |>
     summarise(
       variable = first(variable),
       time = first(time),  # This should work with standard Date class
-      storm.size = first(storm.size)
+      event.size = first(event.size)
     )
 
   # Ljung-box again
-  p <- Box.test(c(storms$variable), type = "Ljung")$p.value
+  p <- Box.test(c(events$variable), type = "Ljung")$p.value
   cat(paste0("Final Ljung-Box p-value: ", round(p, 4), '\n'))
 
-  # storm frequency
-  m <- nrow(storms)
+  # event frequency
+  m <- nrow(events)
   nyears <- length(unique(year(daily$time)))
   lambda <- m / nyears
   metadata$lambda <- lambda
-  cat(paste0("Number of storms: ", m, '\n'))
+  cat(paste0("Number of events: ", m, '\n'))
 
   # assign return periods
   survival_prob <- 1 - (
-    rank(storms$variable, ties.method = "average") / (m + 1)
+    rank(events$variable, ties.method = "average") / (m + 1)
   )
   rp <- 1 / (lambda * survival_prob)
-  storms$storm.rp <- rp
+  events$event.rp <- rp
 
   # remaining metadata
   metadata <- left_join(metadata,
-                        storms[c("storm", "storm.rp", "storm.size")],
-                        by = c("storm"))
+                        events[c("event", "event.rp", "event.size")],
+                        by = c("event"))
   metadata <- metadata |> rename_with(~ args, variable)
 
   return(metadata)

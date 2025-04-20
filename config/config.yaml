@@ -9,6 +9,7 @@ setup:
     output: "results"
     pyenv: '../environments/apple-silicon.yaml'
     renv: "../environments/r-silicon.yaml"
+    rsubdir: "osx-64"
     metadata:
       description: "Analysis on Apple Silicon M2"
   cluster:
@@ -16,6 +17,7 @@ setup:
     output: 'results'
     pyenv: '../environments/linux.yaml'
     renv: "../environments/r-linux.yaml"
+    rsubdir: "linux-64"
     metadata:
       institution: "Oxford School of Geography and the Environment"
       description: "Analysis on departmental cluster"
