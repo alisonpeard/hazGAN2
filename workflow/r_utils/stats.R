@@ -2,14 +2,21 @@ library(dplyr)
 library(future)
 library(furrr)
 library(lubridate)
+library(logger)
+
+# # configure logging
+# log_appender(appender_file(snakemake@log[[1]]))
+# log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
+# log_threshold(INFO)
 
 `%ni%` <- Negate(`%in%`)
 
 ecdf <- function(x) {
+  # modified to Weibull plotting positions
   x <- sort(x)
   n <- length(x)
   if (n < 1) {
-    stop("'x' must have 1 or more non-missing values")
+    stop("'x' must have ≥1 non-missing values")
   }
   vals <- unique(x)
   rval <- approxfun(vals, cumsum(tabulate(match(x, vals))) / (n + 1),
@@ -23,7 +30,7 @@ ecdf <- function(x) {
 }
 
 scdf <- function(train, params, cdf){
-  # Note, trialing using excesses and setting loc=0
+  # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
   loc <- params$thresh
   calculator <- function(x){
@@ -60,39 +67,42 @@ load_distn <- function(distn) {
 marginal_transformer <- function(df, metadata, var, q,
                                  distn = "genpareto",
                                  chunksize = 128) {
+  # load functions for supplied distribution
   distn <- load_distn(distn)
 
-  gridcells <- unique(df$grid)
+  # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
 
   # chunk data for memory efficiency
-  gridchunks <- split(gridcells,
-                      ceiling(seq_along(gridcells) / chunksize))
+  gridcells <- unique(df$grid)
+  gridchunks <- split(
+    gridcells, ceiling(seq_along(gridcells) / chunksize)
+    )
   gridchunks <- unname(gridchunks)
   nchunks <- length(gridchunks)
 
   # save each chunk to RDS for worker access
-  tmps <- vector("list", length=nchunks) 
+  tmps <- vector("list", length = nchunks)
   for (i in seq_along(gridchunks)) {
     tmps[[i]] <- tempfile(fileext = ".rds")
     saveRDS(df[df$grid %in% gridchunks[[i]], ], tmps[[i]])
   }
   rm(df)
 
-  # multiprocessing initiation
+  # setup multiprocessing, test with `plan(sequential)`
   ncores <- max(1, min(availableCores(), nchunks))
-  print(paste0("Using ", ncores, " cores"))
-  plan(multisession, workers = 2) #! TODO: use ncores
-#   plan(sequential) #! for testing
-  print("Multiprocessing initiated")
+  log_info(paste0("Using ", ncores, " cores"))
+  plan(multisession, workers = ncores)
 
-  # semiparametric fits happen here
-  process_gridcell <- function(grid_i, df) {
+  # fit marginals using POT methods
+  fit_gridcell <- function(grid_i, df) {
+    # extract marginal
     gridcell <- df[df$grid == grid_i, ]
-    gridcell <- left_join(gridcell,
-                          metadata[, c("time", "event", "event.rp")],
-                          by = c("time" = "time"))
+    gridcell <- left_join(
+        gridcell, metadata[, c("time", "event", "event.rp")], by = c("time" = "time")
+        )
 
+    # extract maximum for each event
     maxima <- gridcell |>
       group_by(event) |>
       slice(which.max(get(var))) |>
@@ -103,35 +113,40 @@ marginal_transformer <- function(df, metadata, var, q,
         grid = grid
       )
 
-    # fit on train set only...
+    # omit test years from fitting functions
     if (exists("TEST.YEARS")) {
       train <- maxima[year(maxima$time) %ni% TEST.YEARS,]
     } else {
       train <- maxima
     }
-    train <- maxima
-    thresh <- quantile(train$variable, q)
 
+    # main fitting functions happen here
     maxima <- tryCatch({
+      # choose a threshold and fit parameters
       fit    <- distn$threshold_selector(train$variable)
       params <- fit$params
+      thresh <- params$thresh
       pval   <- fit$p.value
       pk     <- fit$pk
 
-      maxima <- maxima |> mutate(!!!params)
-      maxima$p      <- pval
-      maxima$pk     <- pk
+      # add parameters and p-values to dataframe
+      maxima    <- maxima |> mutate(!!!params)
+      maxima$p  <- pval
+      maxima$pk <- pk
 
-      maxima$scdf <- scdf(train$variable, params,
-                          cdf = distn$cdf)(maxima$variable)
+      # transform variable to uniform
+      maxima$scdf <- scdf(
+        train$variable, params, cdf = distn$cdf
+        )(maxima$variable)
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
       cat("MLE failed for grid cell ", grid_i, ". ")
-      cat("Resorting to empirical fits", "\n")
+      cat("Falling back to empirical fits", "\n")
       cat("Error message:", conditionMessage(e), "\n")
       cat("Call:", deparse(conditionCall(e)), "\n")
 
+      # fallback to empirical fits if doesn't work
       maxima$thresh <- NA
       maxima$scale  <- NA
       maxima$shape  <- NA
@@ -142,41 +157,47 @@ marginal_transformer <- function(df, metadata, var, q,
       maxima
     })
 
-    # validation
-    excesses <- maxima$variable[maxima$variable > thresh]
+    # validate exceedences are independent
+    thresh   <- maxima$thresh[1]
+    excesses <- maxima$variable[maxima$variable > maxima$thresh]
     nexcesses <- length(excesses)
-    if (nexcesses < 10) {
+    if (nexcesses < 30) {
       warning(paste0(
-        "Only ", nexcesses, " in ", grid_i, ". "
+        "Only ", nexcesses, " in ", grid_i, ". ",
+        "No point doing Ljung-Box test."
       ))
-    }
-    p_box <- Box.test(excesses)[["p.value"]] # H0: independent
-    if (p_box < 0.1) {
+      p_box <- NA
+    } else {
+      # Box test H0: independent exceedences
+      p_box <- Box.test(excesses)[["p.value"]]
+      print(paste0("p_box: ", p_box))
+      if (p_box < 0.1) {
       warning(paste0(
         "p-value ≤ 10% for H0:independent exceedences in ",
         grid_i, ". Value: ", round(p_box, 4)
-      ))
+        ))
+      }
     }
+
     maxima$box.test <- p_box
     return(maxima)
   }
 
-  # wrapper for process_gridcell()
-  process_gridchunk <- function(i) {
-    print("process_gridchunk")
+  # wrapper for fit_gridcell()
+  fit_gridchunk <- function(i) {
+    log_info(paste0("Fitting gridchunk ", i))
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
-      process_gridcell(grid_i, df)
+      fit_gridcell(grid_i, df)
     })
     bind_rows(maxima)
   }
 
-  # apply multiprocessing
-  print("About to apply transformed")
+  # fit gridcells with multiprocessing
   transformed <- future_map_dfr(
     .x = seq_along(tmps),
-    .f = process_gridchunk,
+    .f = fit_gridchunk,
     .options = furrr_options(
       seed = TRUE,
       scheduling = 1
@@ -185,6 +206,7 @@ marginal_transformer <- function(df, metadata, var, q,
 
   unlink(tmps)
 
+  # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
               "grid", "thresh", "scale", "shape", "p",
               "pk", "ecdf", "scdf", "box.test")
