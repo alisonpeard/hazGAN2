@@ -1,4 +1,3 @@
-rm(list = ls())
 library(arrow)
 library(logger)
 library(dplyr)
@@ -7,7 +6,7 @@ source("workflow/r_utils/stats.R")
 
 # configure logging
 log_appender(appender_file(snakemake@log[[1]]))
-log_layout(layout_glue("{time} - {level} - {msg}"))
+log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 
 # load snakemake rule parameters
@@ -39,6 +38,8 @@ storms_field3 <- marginal_transformer(
 
 # combine fields
 renamer <- function(df, var) {
+  print("renamer:")
+  print(head(df))
   df <- df |>
     rename_with(~ paste0(., ".", var),
                 -c("grid", "event", "event.rp", "variable"))

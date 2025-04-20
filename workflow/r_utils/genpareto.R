@@ -6,12 +6,16 @@ Must include functions:
 - threshold_selector(var:vector) -> list(params:list, p.value:float, pk:float)
 "
 library(eva)
+library(goftest)
 
 cdf <- function(q, params) {
+  shape <- params$shape
+  scale <- params$scale
   return(pgpd(q, scale = scale, shape = shape, loc = 0))
 }
 
 threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
+  print("GPD threshold selector")
   thresholds <- quantile(var, probs = seq(0.7, 0.98, length.out = nthresholds))
   fits <- gpdSeqTestsWithFallback(var, thresholds, method = "ad", nsim = nsim)
   valid_pk <- fits$ForwardStop
@@ -37,7 +41,7 @@ gpdBackup <- function(var, threshold) {
   library(POT)
   ad_test <- function(x, shape, scale, eps=0.05){
     cdf <- function(x) pgpd(x, loc = 0, shape = shape, scale = scale)
-    result <- ad.test(x, cdf)
+    result <- goftest::ad.test(x, cdf)
     return(list(p.value = result$p.value))
   }
   
