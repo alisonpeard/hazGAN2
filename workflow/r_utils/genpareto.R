@@ -2,16 +2,6 @@
 Distribution definition script.
 
 TODO: 
-```
-MLE failed for grid cell  2100 . Resorting to empirical fits 
-Error message: Invalid parameter length! 
-Call: eva::pgpd(x, loc = 0, shape = shape, scale = scale) 
-MLE failed for grid cell  2101 . Resorting to empirical fits 
-Error message: Invalid parameter length! 
-Call: eva::pgpd(x, loc = 0, shape = shape, scale = scale) 
-MLE failed for grid cell  2102 . Resorting to empirical fits 
-Error message: Invalid parameter length! 
-```
 
 Must include functions:
 - cdf(q:vector, params:list) -> vector
@@ -24,6 +14,7 @@ library(evd)
 cdf <- function(q, params) {
   shape <- params$shape
   scale <- params$scale
+  print(paste0("cdf: shape, scale: ", shape, ",",  scale))
   return(eva::pgpd(q, scale = scale, shape = shape, loc = 0))
 }
 
@@ -51,7 +42,8 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
 }
 
 gpdBackup <- function(var, threshold) {
-  ad_test <- function(x, shape, scale, eps=0.05){
+  ad_test <- function(x, shape, scale, eps = 0.05){
+    print(paste0("gpdBackup/ad_test: shape, scale: ", shape, ", ", scale))
     cdf <- function(x) eva::pgpd(x, loc = 0, shape = shape, scale = scale)
     result <- goftest::ad.test(x, cdf)
     return(list(p.value = result$p.value))
@@ -63,21 +55,26 @@ gpdBackup <- function(var, threshold) {
   numabove <- length(exceedances)
 
   # TODO: alternative to POT::fitgpd --> evd::fpot(x, threshold)
+  # fit$param for fpot, fit$fitted.values for fitgpd
   fit <- evd::fpot(var, threshold, std.err = FALSE)
   # fit <- fitgpd(var, threshold = threshold, est = "pwmu")
-  scale <- fit$fitted.values[1]
-  shape <- fit$fitted.values[2]
+  print(paste0("fitted values: ", fit$fitted.values))
+  print(paste0("fitted(fit): ", fitted(fit)))
+  print(paste0("param: ", fit$param))
+  print(paste0("estimate: ", fit$estimate))
+  scale <- fit$param[1]
+  shape <- fit$param[2]
 
   # goodness-of-fit test
   gof  <- ad_test(exceedances, threshold, scale, shape)
   
   # results
   return(list(
-              thresh = threshold,
-              shape = shape,
-              scale = scale,
-              p.value = gof$p.value,
-              num.above = numabove))
+    thresh = threshold,
+    shape = shape,
+    scale = scale,
+    p.value = gof$p.value,
+    num.above = numabove))
 }
 
 gpdBackupSeqTests <- function(var, thresholds) {
@@ -86,7 +83,7 @@ gpdBackupSeqTests <- function(var, thresholds) {
   scales <- vector(length=nthresh)
   p.values <- vector(length=nthresh)
   num.above <- vector(length=nthresh)
-  
+
   for (k in seq_along(thresholds)) {
     thresh        <- thresholds[k]
     fit           <- gpdBackup(var, thresh)
@@ -98,7 +95,7 @@ gpdBackupSeqTests <- function(var, thresholds) {
   
   # ForwardStop <-  cumsum(-log(1 - p.values)) / (seq_along(p.values))
   ForwardStop <- rev(eva:::pSeqStop(rev(p.values))$ForwardStop)
-  
+
   out <- list(threshold = thresholds, num.above = num.above, p.value = p.values, 
               ForwardStop = ForwardStop, est.scale = scales,
               est.shape = shapes)
