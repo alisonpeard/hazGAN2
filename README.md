@@ -8,6 +8,8 @@ The theory of the workflow is described in [this paper](link.to.paper.com).
 - [ ] Post-processing samples `process_samples.py`
 - [ ] Visualisation rules
 - [ ] Extra analysis code/rules
+- [ ] Either add test set back in or full remove
+- [ ] Unit tests
 - [ ] Run `get_data` rules locally for 2020 subset
     - [x] `bayofbengal`
     - [ ] `renewablesuk`
@@ -40,11 +42,25 @@ snakemake --profile profiles/local/ get_data --use-conda --cores 2
 ```
 or if using SLURM:
 ```bash
-snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
+snakemake --profile profiles/cluster/ --executor slurm get_all_data --use-conda
 ```
 Sample rules:
+```bash
+snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
+snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
 ```
-snakemake --profile profiles/local/ process_data --use-conda --cores 2
+and to output the DAG for a specific rule:
+```bash
+# without files
+snakemake process_all_data --dag | dot -Tpdf > docs/process_all_data.pdf
+snakemake process_all_data --dag | dot -Tsvg > docs/process_all_data.svg
+
+# with files
+snakemake process_all_data --filegraph | dot -Tpdf > docs/process_all_data.pdf
+snakemake process_all_data --filegraph | dot -Tsvg > docs/process_all_data.svg
+
+# report
+snakemake process_all_data --report docs/process_all_data.html
 ```
 ## Modifications and extensions
 

@@ -3,6 +3,8 @@ library(future)
 library(furrr)
 library(lubridate)
 
+`%ni%` <- Negate(`%in%`)
+
 ecdf <- function(x) {
   x <- sort(x)
   n <- length(x)
@@ -39,22 +41,16 @@ scdf <- function(train, params, cdf){
 
 load_distn <- function(distn) {
   # find appropriate funcion definition file
-  module <- paste0(distn, ".R")
-  
+  module <- paste0("workflow/r_utils/", distn, ".R")
+
   # check it exists
   if (!file.exists(module)) {
     stop(paste("Module for distribution not found:", module))
   }
-  
+
   env <- new.env()
   source(module, local = env)
-  
-  required_functions <- c("cdf", "select_threshold")
-  for (func_name in required_functions) {
-    if (!exists(func_name, inherits = FALSE)) {
-      stop(paste("Required function", func_name, "not found in", distribution_module))
-    }
-  }
+
   return(list(
     cdf = env$cdf,
     threshold_selector = env$threshold_selector
@@ -65,16 +61,16 @@ marginal_transformer <- function(df, metadata, var, q,
                                  distn = "genpareto",
                                  chunksize = 128) {
   distn <- load_distn(distn)
-  
+
   gridcells <- unique(df$grid)
   df <- df[df$time %in% metadata$time, ]
-  
+
   # chunk data for memory efficiency
   gridchunks <- split(gridcells,
                       ceiling(seq_along(gridcells) / chunksize))
   gridchunks <- unname(gridchunks)
   nchunks <- length(gridchunks)
-  
+
   # save each chunk to RDS for worker access
   tmps <- vector("list", length=nchunks) 
   for (i in seq_along(gridchunks)) {
@@ -82,44 +78,48 @@ marginal_transformer <- function(df, metadata, var, q,
     saveRDS(df[df$grid %in% gridchunks[[i]], ], tmps[[i]])
   }
   rm(df)
-  
+
   # multiprocessing initiation
   plan(multisession, workers = min(availableCores() - 4, nchunks))
-  
+
   # semiparametric fits happen here
   process_gridcell <- function(grid_i, df) {
     gridcell <- df[df$grid == grid_i, ]
     gridcell <- left_join(gridcell,
                           metadata[, c("time", "storm", "storm.rp")],
                           by = c("time" = "time"))
-    
-    maxima <- gridcell >|
-      group_by(storm) >|
-      slice(which.max(get(var))) >|
+
+    maxima <- gridcell |>
+      group_by(storm) |>
+      slice(which.max(get(var))) |>
       summarise(
         variable = max(get(var)),
         time = time,
         storm.rp = storm.rp,
         grid = grid
       )
-    
+
     # fit on train set only...
-    train <- maxima[year(maxima$time) %ni% TEST.YEARS,]
+    if (exists("TEST.YEARS")) {
+      train <- maxima[year(maxima$time) %ni% TEST.YEARS,]
+    } else {
+      train <- maxima
+    }
+    train <- maxima
     thresh <- quantile(train$variable, q)
-    
+
     maxima <- tryCatch({
       fit    <- distn$threshold_selector(train$variable)
-      params <- fit$params    # this won't work, params is a list
+      params <- fit$params
       pval   <- fit$p.value
       pk     <- fit$pk
-      maxima$params <- params # this won't work
+
+      maxima <- maxima |> mutate(!!!params)
       maxima$p      <- pval
       maxima$pk     <- pk
-      
-      # parametric cdf (tail only)
+
       maxima$scdf <- scdf(train$variable, params,
                           cdf = distn$cdf)(maxima$variable)
-      # empirical cdf
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
@@ -127,7 +127,7 @@ marginal_transformer <- function(df, metadata, var, q,
       cat("Resorting to empirical fits", "\n")
       cat("Error message:", conditionMessage(e), "\n")
       cat("Call:", deparse(conditionCall(e)), "\n")
-      
+
       maxima$thresh <- NA
       maxima$scale  <- NA
       maxima$shape  <- NA
@@ -137,20 +137,27 @@ marginal_transformer <- function(df, metadata, var, q,
       maxima$scdf <- maxima$ecdf
       maxima
     })
-    
+
     # validation
     excesses <- maxima$variable[maxima$variable > thresh]
-    p.box <- Box.test(excesses)[["p.value"]] # H0: independent
-    if (p.box < 0.1) {
+    nexcesses <- length(excesses)
+    if (nexcesses < 10) {
       warning(paste0(
-        "p-value ≤ 10% for H0:independent exceedences in ",
-        grid_i, ". Value: ", round(p.box, 4)
+        "Only ", nexcesses, " in ", grid_i, ". "
       ))
     }
-    maxima$box.test <- p.box
+    p_box <- Box.test(excesses)[["p.value"]] # H0: independent
+    if (p_box < 0.1) {
+      warning(paste0(
+        "p-value ≤ 10% for H0:independent exceedences in ",
+        grid_i, ". Value: ", round(p_box, 4)
+      ))
+    }
+
+    maxima$box.test <- p_box
     return(maxima)
   }
-  
+
   # wrapper for process_gridcell()
   process_gridchunk <- function(i) {
     df <- readRDS(tmps[[i]])
@@ -160,7 +167,7 @@ marginal_transformer <- function(df, metadata, var, q,
     })
     bind_rows(maxima)
   }
-  
+
   # apply multiprocessing
   transformed <- future_map_dfr(
     .x = seq_along(tmps),
@@ -170,13 +177,13 @@ marginal_transformer <- function(df, metadata, var, q,
       scheduling = 1
     )
   )
-  
+
   unlink(tmps[[i]])
-  
-  fields <- c("storm", "variable", "time", "storm.rp",
+
+  fields <- c("event", "variable", "time", "event.rp",
               "grid", "thresh", "scale", "shape", "p",
-              "pk", "ecdf", "scdf", 'box.test')
-  
+              "pk", "ecdf", "scdf", "box.test")
+
   transformed <- transformed[, fields]
   return(transformed)
 }

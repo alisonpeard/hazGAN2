@@ -13,7 +13,7 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
 """
-rule get_data:
+rule get_all_data:
     """Rule to process all years for the project."""
     input:
         expand(

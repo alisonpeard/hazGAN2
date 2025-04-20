@@ -4,13 +4,12 @@ import yaml
 # load device configuration
 configfile: "config/config.yaml"
 PROJECT = config["project"]
-DEVICE  = config["device"]
-print(f"Running on {DEVICE}")
+DEVICE  = config.get("device", "local")
 INDIR   = config['setup'][DEVICE]['input']
 WD      = config['setup'][DEVICE]['output']
 RESOURCES_DIR  = config["resources"]
 
-# set up paths on device
+# set up directories on device
 PROJDIR        = os.path.join(WD, PROJECT)
 PROCESSING_DIR = os.path.join(PROJDIR, "processing")
 TRAINING_DIR   = os.path.join(PROJDIR, "training")
@@ -38,11 +37,3 @@ YEARS      = list(range(YEAR0, YEARN))
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
-
-# rule testR:
-#     output:
-#         "test_output.txt"
-#     log:
-#         "test.log"
-#     script:
-#         "scripts/test.R"

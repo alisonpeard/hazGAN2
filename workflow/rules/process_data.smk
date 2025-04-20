@@ -14,10 +14,10 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
 ```
 """
-rule process_data:
+rule process_all_data:
     """Complete full data processing sequence."""
     input:
-        os.path.join(PROCESSING_DIR, "storms.parquet")
+        os.path.join(PROCESSING_DIR, "daily.parquet")
 
 
 checkpoint make_jpegs:
@@ -55,7 +55,11 @@ rule make_training_data:
         os.path.join("..", "scripts", "make_training.py")
 
 rule fit_marginals:
-    """Fit semi-parametric marginals to the data along the time dimension."""
+    """Fit semi-parametric marginals to the data along the time dimension.
+    
+    Usage:
+    >> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+    """
     input:
         metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
@@ -63,17 +67,20 @@ rule fit_marginals:
         storms=os.path.join(PROCESSING_DIR, "storms.parquet"),
     params:
         fields=FIELDS,
-        q=0.95
+        q=0.6 #0.95
     conda:
         RENV
+    log:
+        os.path.join("logs", "fit_marginals.log")
     script:
         os.path.join("..", "scripts", "fit_marginals.R")
 
 
-rule extract_storms:
+rule extract_events:
     """Remove seasonality and extract storm events from the data.
 
     TODO: may need to re-add medians
+    
     Params:
         sfunc: str
             Any function that takes args df and vars (list).
@@ -85,7 +92,7 @@ rule extract_storms:
     input:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
-        metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
+        metadata=os.path.join(PROCESSING_DIR, "daily_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     params:
         resx=RESOLUTION['lon'],
@@ -103,9 +110,10 @@ rule extract_storms:
     conda:
         RENV
     log:
-        os.path.join("logs", "extract_storms.log")
+        os.path.join("logs", "extract_events.log")
     script:
-        os.path.join("..", "scripts", "extract_storms.R")
+        os.path.join("..", "scripts", "extract_events.R")
+
 
 rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""
