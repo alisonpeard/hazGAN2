@@ -61,13 +61,14 @@ rule fit_marginals:
     >> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
     """
     input:
-        metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
-        daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
+        # os.path.join(".snakemake", "conda", ".rpot_installed"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
-        storms=os.path.join(PROCESSING_DIR, "storms.parquet"),
+        storms=os.path.join(PROCESSING_DIR, "events.parquet")
     params:
         fields=FIELDS,
-        q=0.6 #0.95
+        q=MTHRESH["low"]
     conda:
         RENV
     log:
@@ -79,7 +80,7 @@ rule fit_marginals:
 rule extract_events:
     """Remove seasonality and extract storm events from the data.
 
-    TODO: may need to re-add medians
+    TODO: may need to re-add medians later
     
     Params:
         sfunc: str
@@ -90,9 +91,10 @@ rule extract_events:
             or defined in utils.R.
     """
     input:
+        # os.path.join(".snakemake", "conda", ".rpot_installed"),
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
-        metadata=os.path.join(PROCESSING_DIR, "daily_metadata.csv"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     params:
         resx=RESOLUTION['lon'],
@@ -114,6 +116,23 @@ rule extract_events:
     script:
         os.path.join("..", "scripts", "extract_events.R")
 
+
+rule install_rpot:
+    """Needs to be installed from CRAN because of incompatibility with CFtime.
+
+    TODO: find more robust long-term solution.
+    
+    POT needs R <= 3.6, CFtime needs R >= 4.0.
+    """
+    output:
+        os.path.join(".snakemake", "conda", ".rpot_installed")
+    conda:
+        RENV
+    shell:
+        """
+        R -e 'install.packages("POT", repos="https://cloud.r-project.org")'
+        touch {output}
+        """
 
 rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""

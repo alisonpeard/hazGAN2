@@ -1,30 +1,25 @@
 # HazGAN2 readme
-This repository contains a `snakemake` workflow to generate multivariate climate data event sets using extreme value theory and generative adversarial networks. The workflow has been made as modular as possible, to facilitate modifications for new applications.
+This repository contains a `snakemake` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
-The theory of the workflow is described in [this paper](link.to.paper.com).
-### Improvements to make / to do
-- [ ] Separate conda environments for each rule set
-- [ ] Training on styleGAN2-DA (make very modular)
-- [ ] Post-processing samples `process_samples.py`
-- [ ] Visualisation rules
-- [ ] Extra analysis code/rules
-- [ ] Either add test set back in or full remove
-- [ ] Unit tests
-- [ ] Run `get_data` rules locally for 2020 subset
-    - [x] `bayofbengal`
-    - [ ] `renewablesuk`
-- [ ] Run `process_data` rules locally for 2020 subset
-    - [ ] `bayofbengal`
-    - [ ] `renewablesuk`
+The workflow has been made as modular as possible to facilitate modifications for new applications.
 
-### Getting started
+The theory of the workflow is described in [this paper](link.to.paper.com) and the rest of this readme describes how to get started with the workflow.
 
-Though not always recommended, it is better to submit jobs and set up on a CPU node rather than the head node because head nodes are slow for configuring conda environments etc.
+## Getting started
+
 ```bash
+# clone the repository
+git clone git@github.com:alisonpeard/hazGAN2.git
+cd hazGAN2
+```
+
+It is better to run snakemake from a CPU node rather than the head node, head nodes are extremely slow for creating conda environments.
+```bash
+# login to a CPU node
 srun -p Short --pty /bin/bash
 ```
 
-To set up snakemake on your machine, use the following steps, replacing `conda` with `micromamba` or `mamba` if you prefer:
+To set up snakemake on your machine, enter the following in the terminal, replacing `conda` with `micromamba` or `mamba` if you prefer:
 ```bash
 conda create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
@@ -33,22 +28,29 @@ conda install -c conda-forge conda=24.7.1
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
 ```
 
+### Running rules
 To run a rule, navigate to the repository root, activate snakemake and run the rule. E.g., to 
-run all the get_data rules:
+run all the rules in `get_data.smk` locally:
 ```bash
 cd hazGAN2
 micromamba activate snakemake
-snakemake --profile profiles/local/ get_data --use-conda --cores 2
+snakemake --profile profiles/local/ get_all_data --use-conda --cores 2
 ```
 or if using SLURM:
 ```bash
 snakemake --profile profiles/cluster/ --executor slurm get_all_data --use-conda
 ```
-Sample rules:
+#### Sample rules:
 ```bash
 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
 snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
 ```
+> 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
+```bash
+CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+```
+
+### Making reports and DAGs
 and to output the DAG for a specific rule:
 ```bash
 # without files
@@ -63,23 +65,56 @@ snakemake process_all_data --filegraph | dot -Tsvg > docs/process_all_data.svg
 snakemake process_all_data --report docs/process_all_data.html
 ```
 ## Modifications and extensions
+#### Basic
+To create a new project you need to make the following changes:
+1. `config/config.yaml`: change `project` value
+2. `config/projects/`: add a YAML file named `{myproject}.yaml` with the same structure as existing project YAMLs
+3. `resources/params/`: use `resources/grids/era5.nc` to make `{myproject}.nc` in `resources/params/` with any spatial parameters for variable construction from raw ERA5 variables (see other param files for examples).
 
-Touchpoints for modifications:
-- `config/config.yaml`: change `project` value
-- `config/projects/`: add YAML `{myproject}.yaml` with same structure as existing projects
-- `resources/params/`: use `resources/grids/era5.nc` to make `{myproject}.nc` with any spatial parameters for variable construction from raw ERA5 variables (see other param files for examples)
-- `workflow/py_utils/era5_utils.py`: add new variable constructions functions defined in `config/projects/{myproject}.yaml`
-- `workflow/r_utils/`: add distribution definition files if needed, e.g., `gaussian.R` with functions `cdf()` and `threshold_selector()` following syntax of `genpareto.R` and `weibull.R`
+#### Advanced
+The following files may also need to be modified, depending on the project requirements:
+- Add new variable construction functions to
+    - `workflow/scripts/era5_utils.py`
+    - `config/projects/{myproject}.yaml`
+- Add new temporal aggregation functions $h_{k|t}(x)$ to
+    - `workflow/scripts/era5_utils.py`
+    - `config/projects/{myproject}.yaml:hfunc`
+- Add new deasonalization $s_{|t}(x)$ methods to
+    - `worflow/r_utils/sfuncs.R`
+    - `config/projects/{myproject}.yaml:sfunc`
+- Add new risk functionals $r_{|ijk}(x)$ to
+    - `workflow/r_utils/r)funcs.R`
+    - `config/projects/{myproject}.yaml:rfunc`
+- Add new distribution definitions to 
+    - `workflow/r_utils/{distribution}.R`:
+        - `cdf()`
+        - `threshold_selector()`
 
+
+## Further information
 ### Data input structure
+If you don't have access to the SoGE filestore, you should set up the input data structure as follows:
 ```
-era5dir/
+input/
 └── {variable_long_name}/
     └── nc/
        └── {variable_long_name}_{year}.nc
  ```
+ and the output (`results`) folder has the following structure:
+ ```bash
+ :
+ ├── results/
+ │   ├── .gitignore
+ │   └── {projectname}/
+ │       ├── processing/
+ │       ├── training/
+ │       ├── generated/
+ │       └── analysis/
+ :
+```
 
 ### Repository map
+The full repository is structured as follows:
 ```
 hazGAN2/
 ├── .gitignore
@@ -133,3 +168,19 @@ hazGAN2/
 └── logs/
     └── .gitignore
 ```
+
+### Tasks
+- [ ] Separate conda environments for each rule set
+- [ ] Training on styleGAN2-DA (make very modular)
+- [ ] Post-processing samples `process_samples.py`
+- [ ] Visualisation rules
+- [ ] Extra analysis code/rules
+- [ ] Either add test set back in or full remove
+- [ ] Unit tests
+- [ ] Create fallback `params` file
+- [ ] Run `get_data` rules locally for 2020 subset
+    - [x] `bayofbengal`
+    - [ ] `renewablesuk`
+- [ ] Run `process_data` rules locally for 2020 subset
+    - [ ] `bayofbengal`
+    - [ ] `renewablesuk`

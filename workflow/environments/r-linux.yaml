@@ -4,8 +4,9 @@
 # micromamba env create -f R.yaml
 name: R
 channels:
-  - conda-forge/linux-64
-  - nodefaults
+  - r
+  # - conda-forge/linux-64
+  # - nodefaults
 dependencies:
   - r-base
   - r-essentials
@@ -25,5 +26,6 @@ dependencies:
   - r-CFtime
   - r-tidync
   - r-logger
+  - r-pot
   # - r-parallel: not available in conda-forge but in future/furrr
   # - r-stats: included in r-base
