@@ -4,11 +4,6 @@ library(furrr)
 library(lubridate)
 library(logger)
 
-# # configure logging
-# log_appender(appender_file(snakemake@log[[1]]))
-# log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-# log_threshold(INFO)
-
 `%ni%` <- Negate(`%in%`)
 
 ecdf <- function(x) {
@@ -77,7 +72,7 @@ marginal_transformer <- function(df, metadata, var, q,
   gridcells <- unique(df$grid)
   gridchunks <- split(
     gridcells, ceiling(seq_along(gridcells) / chunksize)
-    )
+  )
   gridchunks <- unname(gridchunks)
   nchunks <- length(gridchunks)
 
@@ -99,10 +94,10 @@ marginal_transformer <- function(df, metadata, var, q,
     # extract marginal
     gridcell <- df[df$grid == grid_i, ]
     gridcell <- left_join(
-        gridcell,
-        metadata[, c("time", "event", "event.rp")],
-        by = c("time" = "time")
-        )
+      gridcell,
+      metadata[, c("time", "event", "event.rp")],
+      by = c("time" = "time")
+    )
 
     # extract maximum for each event
     maxima <- gridcell |>
@@ -127,7 +122,6 @@ marginal_transformer <- function(df, metadata, var, q,
       # choose a threshold and fit parameters
       fit    <- distn$threshold_selector(train$variable)
       params <- fit$params
-      thresh <- params$thresh
       pval   <- fit$p.value
       pk     <- fit$pk
 
@@ -139,19 +133,16 @@ marginal_transformer <- function(df, metadata, var, q,
       # transform variable to uniform
       maxima$scdf <- scdf(
         train$variable, params, cdf = distn$cdf
-        )(maxima$variable)
+      )(maxima$variable)
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
-      # log error
-    #   msg <- sprintf(
-    #     "MLE failed for grid cell %s. Falling back to empirical fits. Error: %s",
-    #     grid_i,
-    #     conditionMessage(e)
-    #     # "Call:", deparse(conditionCall(e)), "\n"
-    #   )
-      log_error(paste0("MLE failed for grid cell ", grid_i))
-      log_error(conditionMessage(e))
+      # log error
+      msg <- paste0(
+        Sys.time(), " - ERROR - MLE failed for grid cell ", grid_i, "\n",
+        "Error message: ", conditionMessage(e), "\n"
+      )
+      log_error(msg)
 
       # fallback to empirical fits
       maxima$thresh <- NA
@@ -165,13 +156,14 @@ marginal_transformer <- function(df, metadata, var, q,
     })
 
     # validate exceedences are independent
-    thresh   <- maxima$thresh[1]
     excesses <- maxima$variable[maxima$variable > maxima$thresh]
     nexcesses <- length(excesses)
     if (nexcesses < 30) {
       log_warn(paste0(
-        "Only ", nexcesses, " in ", grid_i, ". ",
-        "No point doing Ljung-Box test."
+        "Only ", nexcesses,
+        " exceedences in gridcell ",
+        grid_i, ". ",
+        "Skipping Ljung-Box test."
       ))
       p_box <- NA
     } else {
@@ -179,9 +171,9 @@ marginal_transformer <- function(df, metadata, var, q,
       p_box <- Box.test(excesses)[["p.value"]]
       log_info(paste0("p_box: ", p_box))
       if (p_box < 0.1) {
-      log_warn(paste0(
-        "p-value ≤ 10% for H0:independent exceedences in ",
-        grid_i, ". Value: ", round(p_box, 4)
+        log_warn(paste0(
+          "p-value ≤ 10% for H0: independent exceedences in ",
+          grid_i, ". Value: ", round(p_box, 4)
         ))
       }
     }
@@ -192,7 +184,14 @@ marginal_transformer <- function(df, metadata, var, q,
 
   # wrapper for fit_gridcell()
   fit_gridchunk <- function(i) {
+    # Reconfigure logging in workers
+    library(logger)
+    log_appender(appender_file(log_file))
+    log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
+    log_threshold(INFO)
+
     log_info(paste0("Fitting gridchunk ", i))
+
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
@@ -200,6 +199,9 @@ marginal_transformer <- function(df, metadata, var, q,
     })
     bind_rows(maxima)
   }
+
+  # Get the current logger configuration
+  log_file <- eval(logger::log_appender()$file)
 
   # fit gridcells with multiprocessing
   transformed <- future_map_dfr(

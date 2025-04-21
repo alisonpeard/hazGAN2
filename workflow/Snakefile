@@ -14,7 +14,8 @@ PROJDIR        = os.path.join(WD, PROJECT)
 PROCESSING_DIR = os.path.join(PROJDIR, "processing")
 TRAINING_DIR   = os.path.join(PROJDIR, "training")
 GENERATED_DIR  = os.path.join(PROJDIR, "generated")
-for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR]:
+FIGURE_DIR     = os.path.join(PROJDIR, "figures")
+for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 # choose device-specific conda environments
@@ -39,3 +40,4 @@ MTHRESH    = config["marginal_threshold"]
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
+include: "rules/visuals.smk"
