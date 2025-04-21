@@ -3,6 +3,8 @@ Process the marginals with fitted tails to make training dataset for the GAN.
 
 NOTE: generic names (shape, scale, loc) will be used regardless of distribution.
 These should be set to NaN accordingly.
+
+TODO: This script can be made way more concise.
 """
 # %%
 import os
@@ -15,21 +17,23 @@ import logging
 
 from calendar import month_name as month
 
-logging.basicConfig(
-    filename=snakemake.log[0],
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-
-# for snakemake in future
-DATA     = snakemake.input.data_all
-EVENTS   = snakemake.input.events
-METADATA = snakemake.input.metadata
-# MEDIANS  = snakemake.input.medians # TODO
-OUTPUT   = snakemake.output.data
-FIELDS = [key for key in snakemake.params.fields.keys()]
 
 if __name__ == "__main__":
+    # configure logging
+    logging.basicConfig(
+        filename=snakemake.log[0],
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+    
+    # load parameters
+    DATA     = snakemake.input.data_all
+    EVENTS   = snakemake.input.events
+    METADATA = snakemake.input.metadata
+    # MEDIANS  = snakemake.input.medians # TODO
+    OUTPUT   = snakemake.output.data
+    FIELDS = [key for key in snakemake.params.fields.keys()]
+
     # load coordinates
     data = xr.open_dataset(DATA)
     coords = data['grid'].to_dataframe().reset_index()
@@ -109,20 +113,6 @@ if __name__ == "__main__":
 
     # TODO: add checks here of lifetime max / total
     logging.warning("Lifetime max / total not checked")
-
-    # parameters for parametric tail fits
-    # # NOTE: generic names will be used regardles of distribution
-    # # params = [f"params_{field}" for field in FIELDS]
-    # param_cols = [f"{param}_{field}" for field in FIELDS for param in ["thresh", "scale", "shape"]]
-    # gdf_params = gdf[param_cols + ['lon', 'lat']].copy()
-    # gdf_params = gdf_params.groupby(['lon', 'lat']).mean().reset_index()
-    # logging.info("Parameter dataframe:\n{}".format(gdf_params.head()))
-    # # params = (gdf[[*params, "lon", "lat"]].groupby(["lat", "lon"]).mean().reset_index())
-    # thresh = np.array(gdf_params[[f"thresh_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    # scale = np.array(gdf_params[[f"scale_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    # shape = np.array(gdf_params[[f"shape_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    # params = np.stack([thresh, scale, shape], axis=-2)
-    #  parameters for GPD
     
     gpd_params = ([f"thresh_{var}" for var in FIELDS] + [f"scale_{var}" for var in FIELDS] + [f"shape_{var}" for var in FIELDS])
     gdf_params = (gdf[[*gpd_params, "lon", "lat"]].groupby(["lat", "lon"]).mean().reset_index())

@@ -40,7 +40,7 @@ checkpoint make_jpegs:
 
 
 rule make_training_data:
-    """Make training data for GAN."""
+    """Convert dataframe to training netCDF."""
     input:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
@@ -57,6 +57,7 @@ rule make_training_data:
     script:
         os.path.join("..", "scripts", "make_training.py")
 
+
 rule fit_marginals:
     """Fit semi-parametric marginals to the data along the time dimension.
     
@@ -64,7 +65,6 @@ rule fit_marginals:
     >> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
     """
     input:
-        # os.path.join(".snakemake", "conda", ".rpot_installed"),
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
