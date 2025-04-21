@@ -17,7 +17,7 @@ snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
-        os.path.join(PROCESSING_DIR, "daily.parquet")
+        os.path.join(TRAINING_DIR, "data.nc")
 
 
 checkpoint make_jpegs:
@@ -38,19 +38,22 @@ checkpoint make_jpegs:
     script:
         os.path.join("..", "scripts", "make_jpegs.py")
 
+
 rule make_training_data:
     """Make training data for GAN."""
     input:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
-        storms=os.path.join(PROCESSING_DIR, "storms.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
-        medians=os.path.join(PROCESSING_DIR, "medians.csv")
+        events=os.path.join(PROCESSING_DIR, "events.parquet"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        # medians=os.path.join(PROCESSING_DIR, "medians.csv")
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
         fields=FIELDS
     conda:
         PYENV
+    log:
+        os.path.join("logs", "make_training.log")
     script:
         os.path.join("..", "scripts", "make_training.py")
 
@@ -65,7 +68,7 @@ rule fit_marginals:
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
-        storms=os.path.join(PROCESSING_DIR, "events.parquet")
+        events=os.path.join(PROCESSING_DIR, "events.parquet")
     params:
         fields=FIELDS,
         q=MTHRESH["low"]

@@ -47,7 +47,7 @@ snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
 ```
 > 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
 ```bash
-CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
 ```
 
 ### Making reports and DAGs
@@ -89,6 +89,8 @@ The following files may also need to be modified, depending on the project requi
     - `workflow/r_utils/{distribution}.R`:
         - `cdf()`
         - `threshold_selector()`
+    
+        Note that the parameters will always be named (`thresh`, `scale`, `shape`), regardless of the distribution. In cases where this doesn't match, assign each parameters to the most appropriate names and set the other to `NA`, e.g., for a normal distribution `thresh` is the mean, `scale` is the standard deviation, and `shape` is not used.
 
 
 ## Further information

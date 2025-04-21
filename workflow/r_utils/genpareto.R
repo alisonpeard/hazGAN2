@@ -14,7 +14,6 @@ library(evd)
 cdf <- function(q, params) {
   shape <- params$shape
   scale <- params$scale
-  print(paste0("cdf: shape, scale: ", shape, ",",  scale))
   return(eva::pgpd(q, scale = scale, shape = shape, loc = 0))
 }
 
@@ -43,7 +42,6 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
 
 gpdBackup <- function(var, threshold) {
   ad_test <- function(x, shape, scale, eps = 0.05){
-    print(paste0("gpdBackup/ad_test: shape, scale: ", shape, ", ", scale))
     cdf <- function(x) eva::pgpd(x, loc = 0, shape = shape, scale = scale)
     result <- goftest::ad.test(x, cdf)
     return(list(p.value = result$p.value))
@@ -58,10 +56,6 @@ gpdBackup <- function(var, threshold) {
   # fit$param for fpot, fit$fitted.values for fitgpd
   fit <- evd::fpot(var, threshold, std.err = FALSE)
   # fit <- fitgpd(var, threshold = threshold, est = "pwmu")
-  print(paste0("fitted values: ", fit$fitted.values))
-  print(paste0("fitted(fit): ", fitted(fit)))
-  print(paste0("param: ", fit$param))
-  print(paste0("estimate: ", fit$estimate))
   scale <- fit$param[1]
   shape <- fit$param[2]
 
