@@ -26,23 +26,21 @@ fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
 nfields <- length(fields)
 
-# events_field1 <- marginal_transformer(
-#   daily, metadata, fields[1], Q, distn = distns[1]
-# )
-# print(paste0("Finished fitting: ", fields[1]))
+events_field1 <- marginal_transformer(
+  daily, metadata, fields[1], Q, distn = distns[1]
+)
+log_info(paste0("Finished fitting: ", fields[1]))
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q, distn = distns[2]
 )
-print(paste0("Finished fitting: ", fields[2]))
+log_info(paste0("Finished fitting: ", fields[2]))
 events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q, distn = distns[3]
 )
-print(paste0("Finished fitting: ", fields[3]))
+log_info(paste0("Finished fitting: ", fields[3]))
 
 # combine fields
 renamer <- function(df, var) {
-  print("renamer:")
-  print(head(df))
   df <- df |>
     rename_with(~ paste0(., ".", var),
                 -c("grid", "event", "event.rp", "variable"))

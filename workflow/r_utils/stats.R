@@ -99,7 +99,9 @@ marginal_transformer <- function(df, metadata, var, q,
     # extract marginal
     gridcell <- df[df$grid == grid_i, ]
     gridcell <- left_join(
-        gridcell, metadata[, c("time", "event", "event.rp")], by = c("time" = "time")
+        gridcell,
+        metadata[, c("time", "event", "event.rp")],
+        by = c("time" = "time")
         )
 
     # extract maximum for each event
@@ -141,12 +143,17 @@ marginal_transformer <- function(df, metadata, var, q,
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
-      cat("MLE failed for grid cell ", grid_i, ". ")
-      cat("Falling back to empirical fits", "\n")
-      cat("Error message:", conditionMessage(e), "\n")
-      cat("Call:", deparse(conditionCall(e)), "\n")
+      # log error
+    #   msg <- sprintf(
+    #     "MLE failed for grid cell %s. Falling back to empirical fits. Error: %s",
+    #     grid_i,
+    #     conditionMessage(e)
+    #     # "Call:", deparse(conditionCall(e)), "\n"
+    #   )
+      log_error(paste0("MLE failed for grid cell ", grid_i))
+      log_error(conditionMessage(e))
 
-      # fallback to empirical fits if doesn't work
+      # fallback to empirical fits
       maxima$thresh <- NA
       maxima$scale  <- NA
       maxima$shape  <- NA
@@ -162,7 +169,7 @@ marginal_transformer <- function(df, metadata, var, q,
     excesses <- maxima$variable[maxima$variable > maxima$thresh]
     nexcesses <- length(excesses)
     if (nexcesses < 30) {
-      warning(paste0(
+      log_warn(paste0(
         "Only ", nexcesses, " in ", grid_i, ". ",
         "No point doing Ljung-Box test."
       ))
@@ -170,9 +177,9 @@ marginal_transformer <- function(df, metadata, var, q,
     } else {
       # Box test H0: independent exceedences
       p_box <- Box.test(excesses)[["p.value"]]
-      print(paste0("p_box: ", p_box))
+      log_info(paste0("p_box: ", p_box))
       if (p_box < 0.1) {
-      warning(paste0(
+      log_warn(paste0(
         "p-value ≤ 10% for H0:independent exceedences in ",
         grid_i, ". Value: ", round(p_box, 4)
         ))
