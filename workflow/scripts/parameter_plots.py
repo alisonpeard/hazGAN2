@@ -16,8 +16,6 @@ if __name__ == "__main__":
     PCRIT   = snakemake.params.pcrit
     CMAP    = snakemake.params.cmap
 
-    # ds = xr.open_dataset(DATA)
-
     # load coordinates
     coords = xr.open_dataset(DATA_ALL)
     coords = coords['grid'].to_dataframe().reset_index()
