@@ -1,7 +1,7 @@
 
 rule plot_fitted_parameters:
     """
-    Plot fitted parameters for each variable.
+    Plot fitted parameters for each variable. Figure 1 in paper.
     """
     input:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
