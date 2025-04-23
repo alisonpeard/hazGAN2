@@ -21,9 +21,7 @@ long_names = {
     "utci": "universal_thermal_climate_index",
     "lai": "leaf_area_index_vegetation",
     "i10fg": "instantaneous_10m_wind_gust",
-    "fg10": "10m_wind_gust_since_previous_post_processing",
     "swvl1": "volumetric_soil_water_layer_1",
-    "ro": "runoff", # accumulated
     "sro": "surface_runoff" # accumulated
 }
 
