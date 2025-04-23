@@ -19,32 +19,30 @@ resolution:
 fields:
   vx:
     args:
-      - u10
-      - v10
-    func: wind_power
-    hfunc: sum
-    obj: min
-    distn: genpareto
+      - i10fg
+    func: identity
+    hfunc: max
+    obj: max
+    distn: weibull
   dx:
     args:
       - u10
       - v10
-    func: solar_power
-    hfunc: sum
-    obj: min
-    distn: genpareto
+      - i10fg
+    func: dir_at_max_wind
+    hfunc: absmax # TODO: would be better as a function of the wind speed
+    obj: max
+    distn: truncated_gaussian
   r30:
     args:
       - tp
-    func: sum30
+    func: sum_n_hours # n=720 for 30 days
     hfunc: sum
     obj: max
     distn: genpareto # exponential (not implemented yet)
 
 rfunc:
   args:
-    - v
-    - g
-  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+  func: load_external_cyclones
 
 sfunc: additive 

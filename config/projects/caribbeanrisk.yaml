@@ -24,7 +24,7 @@ fields:
     hfunc: sum
     obj: max
     distn: genpareto
-  sro:
+  sro: # TODO: check if this variable is good enough or if I should calculate it from tp
     args:
       - sro
     func: identity
@@ -42,8 +42,7 @@ fields:
 
 rfunc:
   args:
-    - v
-    - g
-  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+    - tp
+  func: sum # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
 
 sfunc: additive 
