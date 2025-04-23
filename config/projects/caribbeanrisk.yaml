@@ -1,19 +1,25 @@
 # year range
-year0: 1940
-yearn: 2025
+year0: 2020
+yearn: 2021
 
 # geographical boundaries
 longitude:
-  min: -62.0
-  max: -60.5
+  min: 80 # -62.0
+  max: 95 # -60.5
 latitude:
-  min: 11.9
-  max: 15.7
+  min: 10 # 11.9
+  max: 25 # 15.7
 
 # resolution---check if nonstandard allowed in StyleGAN2
 resolution:
   lon: 64 # 53
   lat: 64 # 45
+
+
+# marginal threshold
+marginal_threshold:
+  low: 0.6
+  final: 0.95
  
 # output fields
 fields:
@@ -44,5 +50,11 @@ rfunc:
   args:
     - tp
   func: sum # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+# event threshold
+event_threshold:
+  field: tp
+  value: 1
+  func: max
 
 sfunc: additive 
