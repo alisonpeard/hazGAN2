@@ -1,5 +1,5 @@
 # HazGAN2 readme
-This repository contains a `snakemake` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
+This repository contains a `snakemake>=8.0` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
 
@@ -25,29 +25,56 @@ conda create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
 conda config --set channel_priority strict # snakemake complains otherwise
 conda install -c conda-forge conda=24.7.1
-python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM 
+python -m pip install snakemake-executor-plugin-cluster-generic # if your SLURM doesn't support accounting (e.g., sacct) # https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
 ```
 
 ### Running rules
-To run a rule, navigate to the repository root, activate snakemake and run the rule. E.g., to 
+
+To run a rule on your local machine, navigate to the repository root, activate snakemake and run the rule. E.g., to 
 run all the rules in `get_data.smk` locally:
 ```bash
 cd hazGAN2
 micromamba activate snakemake
-snakemake --profile profiles/local/ get_all_data --use-conda --cores 2
+snakemake --profile profiles/local/ get_all_data
 ```
-or if using SLURM:
+You may need to modify `config/config.yaml` and to point to the correct input data location and Python environment definition files (in `workflow/environments`).
+
+> 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment for the first time, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
 ```bash
-snakemake --profile profiles/cluster/ --executor slurm get_all_data --use-conda
+CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
+```
+
+### Running rules on the cluster
+
+The `config.yaml` in `profiles/local/` contains snakemake command line arguments that are usually run when using the local machine. There are also profiles for running on the cluster in `profiles/cluster/`, and running on the cluster with SLURM in `profiles/slurm`. To run the rule on the cluster use the following command:
+
+```bash
+snakemake --profile profiles/cluster/ get_all_data
+```
+or to send it to SLURM
+```bash
+snakemake --profile profiles/slurm/ get_all_data
+```
+You can modify any of the profiles or make a new one to suit your needs.
+
+> 💭 The SoGE cluster has pre-defined SLURM defaults per user and doesn't allow users to set their account. The `snakemake-executor-plugin-slurm` will always attempt to set an account. To override this behavior, the `--slurm-no-account` flag should be used.
+
+Also, you may need a snakemake process to run for a while while you have a job running, you can sbatch the manager script to run in the background:
+```bash
+micromamba activate snakemake
+cd mistral/alison/hazGAN2
+sbatch --job-name=snakemake_manager --output=sbatch_dump/snakemake_manager_%j.out --error=sbatch_dump/snakemake_manager_%j.err --wrap="snakemake --profile profiles/slurm/ process_all_data
 ```
 #### Sample rules:
 ```bash
 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
 snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
 ```
-> 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
+
+It's better not to use a head node on the cluster as they are really slow, snakemake will give this warning—-ignore it:
 ```bash
-CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
+You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node.
 ```
 
 ### Making reports and DAGs

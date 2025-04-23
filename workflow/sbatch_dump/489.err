@@ -1,0 +1,11 @@
+slurmstepd-ouce-cn43: error: _get_joules_task: can't get info from slurmd
+
+EnvironmentNameNotFound: Could not find conda environment: micromamba
+You can list all discoverable environments with `conda info --envs`.
+
+
+critical libmamba Shell not initialized
+slurmstepd-ouce-cn43: error: _get_joules_task: can't get info from slurmd
+Using profile profiles/slurm/ for setting default command line arguments.
+Error: profile given but no config.yaml found. Profile has to be given as either absolute path, relative path or name of a directory available in either /etc/xdg/snakemake or /soge-home/users/spet5107/.config/snakemake.
+slurmstepd-ouce-cn43: error: _get_joules_task: can't get info from slurmd
