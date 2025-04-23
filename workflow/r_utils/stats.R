@@ -23,7 +23,7 @@ ecdf <- function(x) {
   attr(rval, "call") <- sys.call()
   rval
 }
-
+ 
 scdf <- function(train, params, cdf){
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
@@ -61,7 +61,8 @@ load_distn <- function(distn) {
 
 marginal_transformer <- function(df, metadata, var, q,
                                  distn = "genpareto",
-                                 chunksize = 128) {
+                                 chunksize = 128,
+                                 log_file = tempfile(fileext = ".log")) {
   # load functions for supplied distribution
   distn <- load_distn(distn)
 
@@ -139,7 +140,7 @@ marginal_transformer <- function(df, metadata, var, q,
     }, error = function(e) {
       # log error
       msg <- paste0(
-        Sys.time(), " - ERROR - MLE failed for grid cell ", grid_i, "\n",
+        "MLE failed for grid cell ", grid_i, "\n",
         "Error message: ", conditionMessage(e), "\n"
       )
       log_error(msg)
@@ -165,7 +166,7 @@ marginal_transformer <- function(df, metadata, var, q,
         grid_i, ". ",
         "Skipping Ljung-Box test."
       ))
-      p_box <- NA
+      p_box <- 0
     } else {
       # Box test H0: independent exceedences
       p_box <- Box.test(excesses)[["p.value"]]
@@ -186,7 +187,9 @@ marginal_transformer <- function(df, metadata, var, q,
   fit_gridchunk <- function(i) {
     # Reconfigure logging in workers
     library(logger)
-    log_appender(appender_file(log_file))
+
+    log_file <- as.character(log_file)
+    log_appender(appender_file(log_file, append = TRUE))
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
     log_threshold(INFO)
 
@@ -199,9 +202,6 @@ marginal_transformer <- function(df, metadata, var, q,
     })
     bind_rows(maxima)
   }
-
-  # Get the current logger configuration
-  log_file <- eval(logger::log_appender()$file)
 
   # fit gridcells with multiprocessing
   transformed <- future_map_dfr(
