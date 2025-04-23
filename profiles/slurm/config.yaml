@@ -1,13 +1,15 @@
 config: ["device=cluster"]
 use-conda: true
 rerun-incomplete: true
-jobs: 1
+jobs: 1 # number of rules to run in parallel
 executor: cluster-generic
 cluster-generic-submit-cmd:
   mkdir -p logs/{rule} &&
   sbatch
     --partition=Long
-    --mem=1800
+    --mem=16G
+    --time=08:00:00
+    --cpus-per-task=4
     --output=sbatch_dump/%j.out
     --error=sbatch_dump/%j.err
 
@@ -23,8 +25,3 @@ cluster-generic-submit-cmd:
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html#specifying-account-and-partition
 # https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
-
-# must figure out
-# jobnames
-# cancelling
-# status queries
