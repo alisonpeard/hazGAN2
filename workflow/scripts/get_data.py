@@ -51,12 +51,12 @@ if __name__ == '__main__':
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         data = xr.open_mfdataset(files, engine='netcdf4',
                                  chunks={
-                                     "time": "500MB",
+                                     "valid_time": "500MB",
                                      'longitude': '500MB',
                                      'latitude': '500MB'
                                      })
         data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
-        # data = data.rename({"valid_time": "time"})
+        data = data.rename({"valid_time": "time"})
     logging.info("Data loaded.")
 
     # log data summary
