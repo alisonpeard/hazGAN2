@@ -75,7 +75,8 @@ rule fit_marginals:
     conda:
         RENV
     log:
-        os.path.join("logs", "fit_marginals.log")
+        # os.path.join("logs", "fit_marginals.log")
+        "logs/fit_marginals.log"
     script:
         os.path.join("..", "scripts", "fit_marginals.R")
 

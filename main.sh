@@ -1,15 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=manager
-#SBATCH --nodes=4
+#SBATCH --job-name=main
+#SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --output=sbatch_dump/bigsnake_%A.out
-#SBATCH --error=sbatch_dump/bigsnake_%A.err
+#SBATCH --output=sbatch_dump/main_%A.out
+#SBATCH --error=sbatch_dump/main_%A.err
 #SBATCH --partition=Medium
 
-# source activate micromamba
-# micromamba activate snakemake
+# might need to run these before:
+# snakemake --profile profiles/slurm/ process_all_data --unlock
+# bash cleanrepo.sh
 
 snakemake --profile profiles/slurm/ process_all_data
-
-# activate snakemake
-# sbatch manager.sh

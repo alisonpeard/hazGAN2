@@ -5,7 +5,9 @@ library(dplyr)
 source("workflow/r_utils/stats.R")
 
 # configure logging
-log_appender(appender_file(snakemake@log[[1]]))
+log_file <- snakemake@log[[1]]
+print(paste0("Log file: ", log_file))
+log_appender(appender_file(log_file))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 
@@ -27,15 +29,18 @@ distns  <- sapply(FIELDS, function(x) x$distn)
 nfields <- length(fields)
 
 events_field1 <- marginal_transformer(
-  daily, metadata, fields[1], Q, distn = distns[1]
+  daily, metadata, fields[1], Q, distn = distns[1],
+  log_file = log_file
 )
 log_info(paste0("Finished fitting: ", fields[1]))
 events_field2 <- marginal_transformer(
-  daily, metadata, fields[2], Q, distn = distns[2]
+  daily, metadata, fields[2], Q, distn = distns[2],
+  log_file = log_file
 )
 log_info(paste0("Finished fitting: ", fields[2]))
 events_field3 <- marginal_transformer(
-  daily, metadata, fields[3], Q, distn = distns[3]
+  daily, metadata, fields[3], Q, distn = distns[3],
+  log_file = log_file
 )
 log_info(paste0("Finished fitting: ", fields[3]))
 
