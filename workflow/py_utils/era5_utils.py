@@ -4,10 +4,13 @@ Functions to create variables of interest from ERA5 data.
 Add custom functions as needed, inputs must be xarray DataArrays of
 ERA5 variables, outputs must be xarray DataArrays the same shape.
 
+Reference here: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview
+
 """
 import numpy as np
 import xarray as xr
 
+# add new relevant variables here
 long_names = {
     "u10": "10m_u_component_of_wind",
     "v10": "10m_v_component_of_wind",
@@ -15,7 +18,12 @@ long_names = {
     "tp": "total_precipitation",
     "ssrd": "surface_solar_radiation_downwards", 
     "t2m": "2m_temperature",
-    'utci': "universal_thermal_climate_index",
+    "utci": "universal_thermal_climate_index",
+    "lai": "leaf_area_index_vegetation",
+    "fg10": "10m_wind_gust_since_previous_post_processing",
+    "swvl1": "volumetric_soil_water_layer_1",
+    "ro": "runoff", # accumulated
+    "sro": "surface_runoff" # accumulated
 }
 
 def unpack(params:xr.Dataset):

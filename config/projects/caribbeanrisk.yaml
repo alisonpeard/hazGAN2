@@ -1,0 +1,49 @@
+# year range
+year0: 1940
+yearn: 2025
+
+# geographical boundaries
+longitude:
+  min: -62.0
+  max: -60.5
+latitude:
+  min: 11.9
+  max: 15.7
+
+# resolution---check if nonstandard allowed in StyleGAN2
+resolution:
+  lon: 64 # 53
+  lat: 64 # 45
+ 
+# output fields
+fields:
+  tp:
+    args:
+      - tp
+    func: identity
+    hfunc: sum
+    obj: max
+    distn: genpareto
+  sro:
+    args:
+      - sro
+    func: identity
+    hfunc: sum
+    obj: max
+    distn: genpareto
+  ws:
+    args:
+      - u10
+      - v10
+    func: wind_speed
+    hfunc: max
+    obj: max
+    distn: weibull # exponential (not implemented yet)
+
+rfunc:
+  args:
+    - v
+    - g
+  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+sfunc: additive 

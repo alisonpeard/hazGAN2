@@ -1,12 +1,9 @@
-# https://www.anaconda.com/docs/tools/working-with-conda/packages/using-r-language
-# https://www.anaconda.com/docs/tools/working-with-conda/reference/r-language-pkg-docs
-# https://repo.anaconda.com/pkgs/r/
-# micromamba env create -f R.yaml
+# when installing on Apple Silicon run snakemake
+# with CONDA_SUBDIR=osx-65 snakemake ...
 name: R
 channels:
-  - r
-  # - conda-forge/linux-64
-  # - nodefaults
+  - conda-forge
+  - nodefaults
 dependencies:
   - r-base
   - r-essentials
@@ -23,9 +20,9 @@ dependencies:
   - r-goftest
   - r-arrow
   - r-ggplot2
-  - r-CFtime
   - r-tidync
   - r-logger
-  - r-pot
-  # - r-parallel: not available in conda-forge but in future/furrr
-  # - r-stats: included in r-base
+  - r-evd # POT::fitgpd -> evd::fpot, POT::pgpd -> evd::pgpd
+  # the following packages are incompatible:
+  - r-CFtime # r-base >= 4.0
+  # - r::r-pot # r-base <= 3.6

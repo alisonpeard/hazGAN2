@@ -1,6 +1,6 @@
-# year range
-year0: 2020 # 1940
-yearn: 2021 #2023
+# year range (1940 to 2023)
+year0: 2015
+yearn: 2021
 
 # geographical boundaries
 longitude:
