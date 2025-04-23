@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                      'latitude': '500MB'
                                      })
         data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
-        data = data.rename({"valid_time": "time"})
+        # data = data.rename({"valid_time": "time"})
     logging.info("Data loaded.")
 
     # log data summary
