@@ -23,7 +23,7 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
   fits <- gpdSeqTestsWithFallback(var, thresholds, method = "ad", nsim = nsim)
   valid_pk <- fits$ForwardStop
 
-  k    <- min(which(valid_pk > alpha)); # lowest index being "accepted"
+  k    <- min(which(valid_pk > alpha)) # lowest index being "accepted"
   if (!is.finite(k)) {
     stop("All thresholds rejected under H0: X ~ GPD with α = 0.05")
     k <- 1
@@ -36,7 +36,7 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
       shape  = fits$est.shape[k]
     ),
     p.value  = fits$p.values[k],
-    pk       = fits$ForwardStop[k],
+    pk       = fits$ForwardStop[k]
   ))
 }
 
@@ -71,10 +71,10 @@ gpdBackup <- function(var, threshold) {
 
 gpdBackupSeqTests <- function(var, thresholds) {
   nthresh <- length(thresholds)
-  shapes <- vector(length=nthresh)
-  scales <- vector(length=nthresh)
-  p.values <- vector(length=nthresh)
-  num.above <- vector(length=nthresh)
+  shapes <- vector(length = nthresh)
+  scales <- vector(length = nthresh)
+  p.values <- vector(length = nthresh)
+  num.above <- vector(length = nthresh)
 
   for (k in seq_along(thresholds)) {
     thresh        <- thresholds[k]
