@@ -1,5 +1,5 @@
 """
-Rules to turn daily gridded ERA5 data for RoI into multivariate
+Rules to transform daily gridded ERA5 data for RoI into multivariate
 event footprints for training GAN.
 
 ```bash
@@ -25,7 +25,7 @@ checkpoint make_jpegs:
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        outdir=os.path.join(TRAINING_DIR, "jpegs"),
+        outdir=directory(os.path.join(TRAINING_DIR, "jpegs")),
         zipfile=os.path.join(TRAINING_DIR, "jpegs.zip"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:

@@ -75,8 +75,8 @@ if __name__ == "__main__":
         array = (array * (n - 1) + 1) / (n + 1)
         # NOTE: original = ((scaled * (n+1) - 1) / (n-1)) * (max - min) + min
 
-        logging.info("Range:", array.min(), array.max())
-        logging.info("Shape:", array_min.shape, array_max.shape)
+        logging.info("Range: {}--{}".format(array.min(), array.max()))
+        logging.info("Shape: {},{}".format(array_min.shape, array_max.shape))
         np.savez(STATS, min=array_min, max=array_max, n=n)
 
     # convert images to RGB and save

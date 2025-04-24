@@ -23,7 +23,7 @@ ecdf <- function(x) {
   attr(rval, "call") <- sys.call()
   rval
 }
- 
+
 scdf <- function(train, params, cdf){
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
@@ -140,13 +140,7 @@ marginal_transformer <- function(df, metadata, var, q,
     }, error = function(e) {
       # log error
       calls <- sys.calls()
-    #   n_calls <- length(calls)
-    #   start_at <- max(1, n_calls - 10)
-    #   calls <- calls[start_at:n_calls]
       calls_str <- paste(sapply(calls, deparse), collapse = "\n")
-      # Replace any curly braces that might confuse glue
-    #   calls_str <- gsub("{", "[", calls_str, fixed = TRUE)
-    #   calls_str <- gsub("}", "]", calls_str, fixed = TRUE)
       msg <- paste0(
         "MLE failed for grid cell ", grid_i, "\n",
         "Error message: ", conditionMessage(e), "\n",
