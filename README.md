@@ -3,7 +3,12 @@ This repository contains a `snakemake>=8.0` workflow to generate multivariate cl
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
 
-The theory of the workflow is described in [this paper](link.to.paper.com) and the rest of this readme describes how to get started with the workflow.
+The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
+
+## Current status [keep updated]
+Date: 24-04-2025
+
+
 
 ## Getting started
 
@@ -13,7 +18,7 @@ git clone git@github.com:alisonpeard/hazGAN2.git
 cd hazGAN2
 ```
 
-It is better to run snakemake from a CPU node rather than the head node, head nodes are extremely slow for creating conda environments.
+
 ```bash
 # login to a CPU node
 srun -p Short --pty /bin/bash
@@ -27,6 +32,14 @@ conda config --set channel_priority strict # snakemake complains otherwise
 conda install -c conda-forge conda=24.7.1
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM 
 python -m pip install snakemake-executor-plugin-cluster-generic # if your SLURM doesn't support accounting (e.g., sacct) # https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
+```
+
+### Running rules for the first time
+
+When running for the first time, it is better to run snakemake from a CPU node rather than the head node, head nodes are extremely slow for creating conda environments. After that, you can run snakemake from the head node (required for SLURM). To do this, use the following command to login to a CPU node:
+
+```bash
+snakemake --profile profiles/cluster/ my_rule --conda-create-envs-only
 ```
 
 ### Running rules

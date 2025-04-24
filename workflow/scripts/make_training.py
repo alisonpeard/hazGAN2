@@ -21,7 +21,7 @@ from calendar import month_name as month
 if __name__ == "__main__":
     # configure logging
     logging.basicConfig(
-        filename=snakemake.log[0],
+        filename=snakemake.log.file,
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )

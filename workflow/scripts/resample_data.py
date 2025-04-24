@@ -9,7 +9,7 @@ import logging
 
 
 logging.basicConfig(
-    filename=snakemake.log[0],
+    filename=snakemake.log.file,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )

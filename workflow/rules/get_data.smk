@@ -41,6 +41,6 @@ rule get_year:
     conda:
         PYENV
     log:
-        "logs/get_{year}.log"
+        file="logs/get_{year}.log"
     script:
         "../scripts/get_data.py"
