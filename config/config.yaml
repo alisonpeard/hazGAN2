@@ -9,6 +9,7 @@ setup:
     output: "results"
     pyenv: '../environments/apple-silicon.yaml'
     renv: "../environments/r-silicon.yaml"
+    gpuenv: ""
     rsubdir: "osx-64"
     timecol: "valid_time"
     metadata:
@@ -18,6 +19,7 @@ setup:
     output: 'results'
     pyenv: '../environments/linux.yaml'
     renv: "../environments/r-linux.yaml"
+    gpuenv: '../environments/stylegan-linux.yaml'
     rsubdir: "linux-64"
     timecol: 'time'
     metadata:
@@ -28,6 +30,7 @@ setup:
     output: 'results'
     pyenv: '../environments/linux.yaml'
     renv: "../environments/r-linux.yaml"
+    gpuenv: '../environments/stylegan-linux.yaml'
     rsubdir: "linux-64"
     timecol: "time"
     metadata:

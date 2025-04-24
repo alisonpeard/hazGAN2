@@ -41,7 +41,7 @@ threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
 }
 
 gpdBackup <- function(var, threshold) {
-  ad_test <- function(x, shape, scale, eps = 0.05){
+  ad_test <- function(x, shape, scale, eps = 0.05) {
     cdf <- function(x) eva::pgpd(x, loc = 0, shape = shape, scale = scale)
     result <- goftest::ad.test(x, cdf)
     return(list(p.value = result$p.value))
@@ -53,22 +53,20 @@ gpdBackup <- function(var, threshold) {
   numabove <- length(exceedances)
 
   # TODO: alternative to POT::fitgpd --> evd::fpot(x, threshold)
-  # fit$param for fpot, fit$fitted.values for fitgpd
   fit <- evd::fpot(var, threshold, std.err = FALSE)
-  # fit <- fitgpd(var, threshold = threshold, est = "pwmu")
   scale <- fit$param[1]
   shape <- fit$param[2]
 
   # goodness-of-fit test
-  gof  <- ad_test(exceedances, threshold, scale, shape)
-  
+  gof  <- ad_test(exceedances, shape, scale)
+
   # results
   return(list(
-    thresh = threshold,
-    shape = shape,
-    scale = scale,
-    p.value = gof$p.value,
-    num.above = numabove))
+              thresh = threshold,
+              shape = shape,
+              scale = scale,
+              p.value = gof$p.value,
+              num.above = numabove))
 }
 
 gpdBackupSeqTests <- function(var, thresholds) {
@@ -86,11 +84,11 @@ gpdBackupSeqTests <- function(var, thresholds) {
     p.values[k]   <- fit$p.value
     num.above[k]  <- fit$num.above
   }
-  
-  # ForwardStop <-  cumsum(-log(1 - p.values)) / (seq_along(p.values))
+
   ForwardStop <- rev(eva:::pSeqStop(rev(p.values))$ForwardStop)
 
-  out <- list(threshold = thresholds, num.above = num.above, p.value = p.values, 
+  out <- list(threshold = thresholds, num.above = num.above,
+              p.value = p.values,
               ForwardStop = ForwardStop, est.scale = scales,
               est.shape = shapes)
   return(as.data.frame(out))
