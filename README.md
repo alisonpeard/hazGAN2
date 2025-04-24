@@ -14,9 +14,21 @@ Date: 24-04-2025
 - **Next:** `rule make_jpegs`
 - **To do:**
     - fix resources for `rule fit_marginals` (implemented but not tested)
-    - `rule_train_gan`
+    - `rule train_stylegan2` (implemented but not tested)
 
-## Things to do outside of this workflow
+## Notes on repositories
+
+This repository contains two submodules:
+- [hazGAN](github.com/alisonpeard/hazGAN)
+- [styleGAN2-DA](github.com/alisonpeard/styleGAN2-DA)
+To clone the repository with the submodules, use the following command:
+```bash
+git clone --recurse-submodules git@github.com:alisonpeard/hazGAN2.git
+```
+
+> 📋 Need to clean up the respective submodules.
+
+## Things to do outside of this workflow
 
 This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally. This includes:
 
