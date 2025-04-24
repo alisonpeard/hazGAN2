@@ -97,10 +97,13 @@ gpdBackupSeqTests <- function(var, thresholds) {
 gpdSeqTestsWithFallback <- function(var, thresholds, method, nsim) {
   gc(full = TRUE)
   fits <- tryCatch({
-    fits <- eva::gpdSeqTests(var, thresholds = thresholds, method = method, nsim = nsim)
+    fits <- eva::gpdSeqTests(var, thresholds = thresholds,
+                             method = method, nsim = nsim)
+    fits
   },
   error = function(e) {
     fits <- gpdBackupSeqTests(var, thresholds)
+    fits
   })
   gc(full = TRUE)
   return(fits)
