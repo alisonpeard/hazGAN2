@@ -1,3 +1,4 @@
+[![Snakemake](https://img.shields.io/badge/snakemake-≥8.0.0-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
 # HazGAN2 readme
 This repository contains a `snakemake>=8.0` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
