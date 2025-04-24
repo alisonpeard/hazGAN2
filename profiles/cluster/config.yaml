@@ -1,3 +1,5 @@
 config: ["device=cluster"]
 cores: 8
 use-conda: true
+conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
+conda-create-envs-only: true

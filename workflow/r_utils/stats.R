@@ -170,10 +170,20 @@ marginal_transformer <- function(df, metadata, var, q,
     } else {
       # Box test H0: independent exceedences
       p_box <- Box.test(excesses)[["p.value"]]
-      log_info(paste0("p_box: ", p_box))
-      if (p_box < 0.1) {
+
+      if (is.na(p_box)) {
+        log_warn(paste0(
+          "Ljung-Box test returned NA for gridcell ",
+          grid_i, ". Value: ", round(p_box, 4)
+        ))
+      } else if (p_box < 0.1) {
         log_warn(paste0(
           "p-value ≤ 10% for H0: independent exceedences in ",
+          grid_i, ". Value: ", round(p_box, 4)
+        ))
+      } else {
+        log_info(paste0(
+          "p-value > 10% for H0: independent exceedences in ",
           grid_i, ". Value: ", round(p_box, 4)
         ))
       }

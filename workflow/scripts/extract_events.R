@@ -11,7 +11,7 @@ source("workflow/r_utils/dfuncs.R")
 source("workflow/r_utils/sfuncs.R")
 
 # configure logging
-log_appender(appender_file(snakemake@log[[1]]))
+log_appender(appender_file(snakemake@log[["file"]]))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 

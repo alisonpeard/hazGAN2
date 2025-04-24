@@ -11,10 +11,11 @@ import logging
 import py_utils.era5_utils as era5
 
 logging.basicConfig(
-    filename=snakemake.log[0],
+    filename=snakemake.log.file, # try withou the [0] in case it's makin it a dir
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
+logging.info("Starting data acquisition script (before main).")
 
 if __name__ == '__main__':
     start = time.time()
