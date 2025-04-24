@@ -10,7 +10,18 @@ The theory of the workflow is described in [this paper](link/to/paper.com) and t
 ## Current status [keep updated]
 Date: 24-04-2025
 
+- **Complete:** `rule plot_fitted_parameters`
+- **Next:** `rule make_jpegs`
+- **To do:**
+    - fix resources for `rule fit_marginals` (implemented but not tested)
+    - `rule_train_gan`
 
+## Things to do outside of this workflow
+
+This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally. This includes:
+
+- Generate a `params.nc` file for the project
+- All extra analysis
 
 ## Getting started
 

@@ -15,8 +15,15 @@ resolution:
   lon: 64
   lat: 64
 
-# event threshold (for extreme extraction)
-event_threshold:
+sfunc: additive
+
+rfunc:
+  args:
+    - ws
+  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+# event threshold 
+event_subset:
   field: ws
   value: 15
   func: max
@@ -25,6 +32,9 @@ event_threshold:
 marginal_threshold:
   low: 0.6
   final: 0.95
+
+# training probability space
+domain: gumbel # gumbel, uniform
 
 # output fields
 fields:
@@ -50,10 +60,3 @@ fields:
     hfunc: sum
     obj: max
     distn: genpareto
-
-rfunc:
-  args:
-    - ws
-  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
-
-sfunc: additive 

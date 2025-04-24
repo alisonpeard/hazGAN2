@@ -8,7 +8,7 @@ micromamba create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
 conda install -c conda-forge conda=24.7.1
 python -m pip install snakemake-executor-plugin-slurm
-
+ 
 # run rule project root and login node
 micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
@@ -28,13 +28,16 @@ checkpoint make_jpegs:
         outdir=os.path.join(TRAINING_DIR, "jpegs"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
-        threshold=config['event_threshold'],
+        event_subset=config['event_subset'],
+        do_subset=False, # TODO: do this better
         eps = 1e-6,
-        domain = "gumbel",
+        domain = config["domain"],
         resx = RESOLUTION['lon'],
         resy = RESOLUTION['lat'],
     conda:
         PYENV
+    log:
+        file=os.path.join("logs", "make_jpegs.log")
     script:
         os.path.join("..", "scripts", "make_jpegs.py")
 
