@@ -33,6 +33,7 @@ rule get_year:
         xmax=config["longitude"]["max"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
+        timecol=TIMECOL,
         fields=FIELDS
     resources:
         cpus_per_task=4,
