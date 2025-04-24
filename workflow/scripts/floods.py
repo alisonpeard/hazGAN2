@@ -3,6 +3,7 @@ import os
 import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
+from cartopy import crs as ccrs
 
 
 ds = xr.open_dataset("/Users/alison/Documents/DPhil/github.nosync/hazGAN2/results/caribbeanrisk/training/data.nc")
@@ -26,14 +27,23 @@ import geopandas as gpd
 
 datadir = "/Users/alison/Documents/DPhil/data/hydrobasins/hybas_as_lev01-12_v1c"
 
-LEVEL = 8
+LEVEL = 6
+# 10 is too grainy-looking
+# 5 looks nice but pretty lowres
+# 8 has those gaps..
 EXTENT = box(80, 10, 95, 25)
 file = f"hybas_as_lev{str(LEVEL).zfill(2)}_v1c.shp"
 gdf = gpd.read_file(os.path.join(datadir, file))
 gdf = gdf.to_crs("EPSG:4326")
 basins = gdf.clip(EXTENT)
+
 # %%
-# import rioxarray
+dem = xr.open_dataset("/Users/alison/Documents/DPhil/data/etopo1/etopo1-bay-of-bengal.nc")
+
+
+# %%
+basins.plot(figsize=(10, 10), color="red", edgecolor="black")
+# %% import rioxarray
 
 ds.rio.set_spatial_dims(x_dim="lon", y_dim="lat", inplace=True)
 ds.rio.write_crs("epsg:4326", inplace=True)
@@ -51,7 +61,7 @@ basins.plot(ax=ax, color='none', edgecolor='black')
 # %%
 intersection = gpd.sjoin(basins, runoff, how="left", predicate="contains")
 intersection = intersection.drop(columns=['index_right', 'lon', 'lat'])
-intersection = intersection[["HYBAS_ID","NEXT_DOWN", "SUB_AREA", "SORT", "geometry", "sro"]].groupby(["HYBAS_ID","NEXT_DOWN", "SUB_AREA", "SORT", "geometry"]).sum()
+intersection = intersection[["HYBAS_ID","NEXT_DOWN", "SUB_AREA", "SORT", "geometry", "sro"]].groupby(["HYBAS_ID","NEXT_DOWN", "SUB_AREA", "SORT", "geometry"]).mean()
 intersection = intersection.reset_index()
 
 intersection = gpd.GeoDataFrame(intersection, geometry=intersection.geometry)
@@ -65,8 +75,8 @@ intersection.plot("volume", cmap="Blues", legend=True)
 
 # %%
 from matplotlib.colors import LogNorm
-VOI = "sro" # "volume" or "sro"
-fig, axs = plt.subplots(1, 2, figsize=(16, 8))
+VOI = "volume" # "volume" or "sro"
+fig, axs = plt.subplots(1, 3, figsize=(16, 8), subplot_kw={'projection': ccrs.PlateCarree()})
 
 # propagate sro upstream --> downstream by summation
 totals = intersection.copy().set_index("HYBAS_ID")
@@ -75,7 +85,7 @@ totals.plot(VOI, cmap="Blues", legend=True, ax=axs[0])
 flow_accumulator = totals.copy()
 
 i = 0
-while (len(flow_accumulator) > 0):
+while (len(flow_accumulator) > 1):
 # while i < 3:
     print(i, len(flow_accumulator))
     flow_accumulator = flow_accumulator[["NEXT_DOWN", VOI]].groupby("NEXT_DOWN").agg(inflow=(VOI, "sum")).reset_index()
@@ -92,7 +102,8 @@ while (len(flow_accumulator) > 0):
     flow_accumulator = flow_accumulator.merge(totals[["NEXT_DOWN", VOI]], how="left", left_index=True, right_index=True)
     i += 1
 
-totals.plot(VOI, cmap="Blues", norm=LogNorm(), legend=True, ax=axs[1])
+totals.plot(VOI, cmap="Blues", norm=LogNorm(), legend=True, ax=axs[1]) # 
+dem.elevation.plot(cmap='viridis', vmin=0, ax=axs[2], add_colorbar=False)
 # same plot but log colorscale
 totals.sort_values(by=VOI, ascending=False).head()
 # %%
