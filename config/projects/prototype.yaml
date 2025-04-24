@@ -1,6 +1,6 @@
 # year range (1940 to 2023)
-year0: 1940
-yearn: 2025
+year0: 2020
+yearn: 2021
 
 # geographical boundaries
 longitude:
@@ -12,8 +12,8 @@ latitude:
 
 # resolution
 resolution:
-  lon: 64
-  lat: 64
+  lon: 8 
+  lat: 8 
 
 sfunc: additive
 
@@ -25,11 +25,11 @@ rfunc:
 # event threshold 
 event_subset:
   field: ws
-  value: 15
+  value: 0
   func: max
 
 # marginal threshold (for POT)
-marginal_threshold: 0.95
+marginal_threshold: 0.6
 
 # training probability space
 domain: gumbel # gumbel, uniform
