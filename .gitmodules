@@ -1,0 +1,3 @@
+[submodule "packages/styleGAN2-DA"]
+	path = packages/styleGAN2-DA
+	url = github.com:alisonpeard/styleGAN-DA.git
