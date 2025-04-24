@@ -18,17 +18,15 @@ cdf <- function(q, params) {
 }
 
 threshold_selector <- function(var, nthresholds = 28, nsim = 5, alpha = 0.05) {
-  gc(full = TRUE)
   thresholds <- quantile(var, probs = seq(0.7, 0.98, length.out = nthresholds))
   fits <- gpdSeqTestsWithFallback(var, thresholds, method = "ad", nsim = nsim)
   valid_pk <- fits$ForwardStop
 
-  k    <- min(which(valid_pk > alpha)) # lowest index being "accepted"
+  k <- min(which(valid_pk > alpha)) # lowest index being "accepted"
   if (!is.finite(k)) {
     stop("All thresholds rejected under H0: X ~ GPD with α = 0.05")
     k <- 1
   }
-  gc(full = TRUE)
   return(list(
     params   = list(
       thresh = fits$threshold[k],
@@ -52,6 +50,10 @@ gpdBackup <- function(var, threshold) {
   exceedances <- sort(exceedances)
   numabove <- length(exceedances)
 
+  if (numabove < 10) {
+    return(NULL)
+  }
+
   # TODO: alternative to POT::fitgpd --> evd::fpot(x, threshold)
   fit <- evd::fpot(var, threshold, std.err = FALSE)
   scale <- fit$param[1]
@@ -70,19 +72,21 @@ gpdBackup <- function(var, threshold) {
 }
 
 gpdBackupSeqTests <- function(var, thresholds) {
-  nthresh <- length(thresholds)
-  shapes <- vector(length = nthresh)
-  scales <- vector(length = nthresh)
-  p.values <- vector(length = nthresh)
+  nthresh   <- length(thresholds)
+  shapes    <- vector(length = nthresh)
+  scales    <- vector(length = nthresh)
+  p.values  <- vector(length = nthresh)
   num.above <- vector(length = nthresh)
 
   for (k in seq_along(thresholds)) {
     thresh        <- thresholds[k]
     fit           <- gpdBackup(var, thresh)
-    shapes[k]     <- fit$shape
-    scales[k]     <- fit$scale
-    p.values[k]   <- fit$p.value
-    num.above[k]  <- fit$num.above
+    if (!is.null(fit)) {
+      shapes[k]     <- fit$shape
+      scales[k]     <- fit$scale
+      p.values[k]   <- fit$p.value
+      num.above[k]  <- fit$num.above
+    }
   }
 
   ForwardStop <- rev(eva:::pSeqStop(rev(p.values))$ForwardStop)
@@ -91,20 +95,20 @@ gpdBackupSeqTests <- function(var, thresholds) {
               p.value = p.values,
               ForwardStop = ForwardStop, est.scale = scales,
               est.shape = shapes)
+
   return(as.data.frame(out))
 }
 
 gpdSeqTestsWithFallback <- function(var, thresholds, method, nsim) {
-  gc(full = TRUE)
+  # try to run with eva first
   fits <- tryCatch({
     fits <- eva::gpdSeqTests(var, thresholds = thresholds,
                              method = method, nsim = nsim)
     fits
-  },
+  }, # use evd::fpot as backup
   error = function(e) {
     fits <- gpdBackupSeqTests(var, thresholds)
     fits
   })
-  gc(full = TRUE)
   return(fits)
 }

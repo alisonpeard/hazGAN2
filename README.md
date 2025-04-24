@@ -7,13 +7,21 @@ The workflow has been made as modular as possible to facilitate modifications fo
 
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
 
+## Key rules
+- `get_all_data`: downloads and processes the data from the SoGE filestore
+- `process_all_data`: processes the data for training with styleGAN2
+- `make_paper_figures`: makes the figures for the paper
+
 ## Current status [keep updated]
 Date: 24-04-2025
 
-- **Complete:** `rule plot_fitted_parameters`
-- **Next:** `rule make_jpegs`
+- **Complete:** `rule make_rgb_images`
+- **Next:** Run full bayofbengal workflow using screen
+    ```bash
+    screen -S bayofbengal
+    snakemake --profile profiles/slurm/ process_all_data
+    ```
 - **To do:**
-    - fix resources for `rule fit_marginals` (implemented but not tested)
     - `rule train_stylegan2` (implemented but not tested)
 
 ## Notes on repositories

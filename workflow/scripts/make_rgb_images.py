@@ -47,11 +47,8 @@ if __name__ == "__main__":
 
         logging.info(f"\nFound {ds.time.size} images with {THRESH['func']} {THRESH['field']} exceeding {THRESH['value']} m/s")
 
-    # make JPEGS of stacked percentiles
-    dir_all = os.path.join(OUTDIR, DOMAIN, "all")
-    dir_extreme = os.path.join(OUTDIR, DOMAIN, "extreme")
-    os.makedirs(dir_all, exist_ok=True)
-    os.makedirs(dir_extreme, exist_ok=True)
+    # make PNGs of stacked percentiles
+    os.makedirs(OUTDIR, exist_ok=True)
 
     nimgs = ds.time.size
     array = ds.uniform.values
@@ -83,26 +80,19 @@ if __name__ == "__main__":
     for i in range(nimgs):
         arr = array[i]
         arr = np.uint8(arr * 255)
-        
-        first_channel = arr[..., 0]
-        colored_array = apply_colormap(first_channel)  # Try different colormaps!
-        colored_img = Image.fromarray(colored_array)
-        output_path = os.path.join(dir_all, f"footprint_{i}.png")
-        colored_img.save(output_path)
-
         img = Image.fromarray(arr, 'RGB')
-        output_path = os.path.join(dir_extreme, f"footprint_{i}.png")
+        output_path = os.path.join(OUTDIR, f"footprint{i}.png")
         img.save(output_path)
 
     # verify saved image
     test_load = Image.open(output_path)
-    logging.info(f"Saved {nimgs} JPEG images to {OUTDIR}")
+    logging.info(f"Saved {nimgs} PNG images to {OUTDIR}")
 
     # save to zipfile
     with zipfile.ZipFile(ZIPFILE, 'w') as zipf:
         for root, dirs, files in os.walk(OUTDIR):
             for file in files:
-                if file.endswith('.jpeg'):
+                if file.endswith('.png'):
                     file_path = os.path.join(root, file)
                     zipf.write(file_path, os.path.relpath(file_path, OUTDIR))
     

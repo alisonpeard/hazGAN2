@@ -111,6 +111,17 @@ marginal_transformer <- function(df, metadata, var, q,
         grid = grid
       )
 
+    # Check for empty maxima early
+    if (nrow(maxima) == 0) {
+      log_warn(paste0("Empty maxima dataframe for grid cell ", grid_i))
+      # Create a 1-row dummy frame with all required columns
+      return(data.frame(
+        event = NA, variable = NA, time = NA, event.rp = NA,
+        grid = grid_i, thresh = NA, scale = NA, shape = NA,
+        p = 0, pk = 0, ecdf = NA, scdf = NA, box.test = 0
+      ))
+    }
+
     # omit test years from fitting functions
     if (exists("TEST.YEARS")) {
       train <- maxima[year(maxima$time) %ni% TEST.YEARS,]
@@ -151,7 +162,7 @@ marginal_transformer <- function(df, metadata, var, q,
       log_error(skip_formatter(msg))
 
       # fallback to empirical fits
-      maxima$thresh <- NA
+      maxima$thresh <- Inf
       maxima$scale  <- NA
       maxima$shape  <- NA
       maxima$p      <- 0
@@ -202,15 +213,13 @@ marginal_transformer <- function(df, metadata, var, q,
   fit_gridchunk <- function(i) {
     # Reconfigure logging in workers
     library(logger)
-
     log_file <- as.character(log_file)
     log_appender(appender_file(log_file, append = TRUE))
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-    # log_layout(layout_format_generator(format = "%Y-%m-%d %H:%M:%S - [%l] - %m"))
     log_threshold(INFO)
-
     log_info(paste0("Fitting gridchunk ", i))
 
+    # load data chunk from RDS
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
@@ -233,9 +242,10 @@ marginal_transformer <- function(df, metadata, var, q,
 
   # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
-              "grid", "thresh", "scale", "shape", "p",
+              "grid", "thresh", "scale", "shape", # NOTE: omitting "p" for now
               "pk", "ecdf", "scdf", "box.test")
 
+  print(transformed)
   transformed <- transformed[, fields]
   return(transformed)
 }

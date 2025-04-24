@@ -37,6 +37,9 @@ set-resources:
     train_stylegan:
         slurm_partition: "GPU"
         runtime: "4h"
+    generate_stylegan:
+        slurm_partition: "GPU"
+        runtime: "30m"
 
 # # parallelization with threads needs to be defined separately:
 # set-threads: # same as cpus_per_task

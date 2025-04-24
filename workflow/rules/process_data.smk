@@ -17,16 +17,16 @@ snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
-        os.path.join(TRAINING_DIR, "jpegs.zip")
+        os.path.join(TRAINING_DIR, "images.zip")
 
 
-checkpoint make_jpegs:
-    """Make jpegs of the training data."""
+checkpoint make_rgb_images:
+    """Make PNGs of the training data."""
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        outdir=directory(os.path.join(TRAINING_DIR, "jpegs")),
-        zipfile=os.path.join(TRAINING_DIR, "jpegs.zip"),
+        outdir=directory(os.path.join(TRAINING_DIR, "rgb")),
+        zipfile=os.path.join(TRAINING_DIR, "images.zip"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
         event_subset=config['event_subset'],
@@ -38,9 +38,9 @@ checkpoint make_jpegs:
     conda:
         PYENV
     log:
-        file=os.path.join("logs", "make_jpegs.log")
+        file=os.path.join("logs", "make_rgb.log")
     script:
-        os.path.join("..", "scripts", "make_jpegs.py")
+        os.path.join("..", "scripts", "make_rgb_images.py")
 
 
 rule make_training_data:
