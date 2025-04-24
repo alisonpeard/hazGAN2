@@ -30,6 +30,7 @@ if __name__ == '__main__':
     YMIN       = snakemake.params.ymin
     YMAX       = snakemake.params.ymax
     FIELDS     = snakemake.params.fields
+    TIMECOL    = snakemake.params.timecol
 
     OUTPUT     = snakemake.output.netcdf
 
@@ -51,12 +52,12 @@ if __name__ == '__main__':
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         data = xr.open_mfdataset(files, engine='netcdf4',
                                  chunks={
-                                     "valid_time": "500MB",
+                                     TIMECOL: "500MB",
                                      'longitude': '500MB',
                                      'latitude': '500MB'
                                      })
         data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
-        data = data.rename({"valid_time": "time"})
+        data = data.rename({TIMECOL: "time"})
     logging.info("Data loaded.")
 
     # log data summary
