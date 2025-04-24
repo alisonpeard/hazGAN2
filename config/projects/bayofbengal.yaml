@@ -15,13 +15,13 @@ resolution:
   lon: 64
   lat: 64
 
-# event threshold
+# event threshold (for extreme extraction)
 event_threshold:
   field: ws
   value: 15
   func: max
 
-# marginal threshold
+# marginal threshold (for POT)
 marginal_threshold:
   low: 0.6
   final: 0.95
