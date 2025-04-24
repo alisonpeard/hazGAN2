@@ -17,7 +17,7 @@ snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
-        os.path.join(TRAINING_DIR, "data.nc")
+        os.path.join(TRAINING_DIR, "jpegs.zip")
 
 
 checkpoint make_jpegs:
@@ -26,6 +26,7 @@ checkpoint make_jpegs:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
         outdir=os.path.join(TRAINING_DIR, "jpegs"),
+        zipfile=os.path.join(TRAINING_DIR, "jpegs.zip"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
         event_subset=config['event_subset'],

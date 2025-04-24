@@ -34,8 +34,9 @@ set-resources:
         cpus_per_task: 8
         mem_mb_per_cpu: 2G
         runtime: "4h"
-#    train_stylegan:
-#         slurm_partition: "GPU"
+    train_stylegan:
+        slurm_partition: "GPU"
+        runtime: "4h"
 
 # # parallelization with threads needs to be defined separately:
 # set-threads: # same as cpus_per_task
