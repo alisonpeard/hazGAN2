@@ -5,6 +5,7 @@ import xarray as xr
 from PIL import Image
 import matplotlib.pyplot as plt
 from PIL import Image
+import zipfile
 import numpy as np
 import logging
 
@@ -25,6 +26,7 @@ if __name__ == "__main__":
         )
     DATA     = snakemake.input["data"]
     OUTDIR   = snakemake.output["outdir"]
+    ZIPFILE  = snakemake.output["zipfile"]
     STATS    = snakemake.output["image_stats"]
     THRESH   = snakemake.params["event_subset"]
     DO_SUBSET = snakemake.params["do_subset"]
@@ -94,5 +96,16 @@ if __name__ == "__main__":
 
     # verify saved image
     test_load = Image.open(output_path)
-
     logging.info(f"Saved {nimgs} JPEG images to {OUTDIR}")
+
+    # save to zipfile
+    with zipfile.ZipFile(ZIPFILE, 'w') as zipf:
+        for root, dirs, files in os.walk(OUTDIR):
+            for file in files:
+                if file.endswith('.jpeg'):
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, os.path.relpath(file_path, OUTDIR))
+    
+    logging.info(f"Saved {ZIPFILE} with {len(files)} images")
+
+    
