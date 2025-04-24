@@ -5,7 +5,7 @@ library(dplyr)
 source("workflow/r_utils/stats.R")
 
 # configure logging
-log_file <- snakemake@log[[1]]
+log_file <- snakemake@log[["file"]]
 print(paste0("Log file: ", log_file))
 log_appender(appender_file(log_file))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))

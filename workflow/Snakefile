@@ -35,7 +35,7 @@ LATITUDE   = config["latitude"]
 RFUNC      = config["rfunc"]
 SFUNC      = config["sfunc"]
 YEARS      = list(range(YEAR0, YEARN))
-TIMECOL    = config['setup'][DEVICE]["time_col"]
+TIMECOL    = config['setup'][DEVICE]["timecol"]
 MTHRESH    = config["marginal_threshold"]
 
 # load rules

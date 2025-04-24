@@ -53,7 +53,7 @@ rule make_training_data:
     conda:
         PYENV
     log:
-        os.path.join("logs", "make_training.log")
+        file=os.path.join("logs", "make_training.log")
     script:
         os.path.join("..", "scripts", "make_training.py")
 
@@ -76,7 +76,7 @@ rule fit_marginals:
         RENV
     log:
         # os.path.join("logs", "fit_marginals.log")
-        "logs/fit_marginals.log"
+        file="logs/fit_marginals.log"
     script:
         os.path.join("..", "scripts", "fit_marginals.R")
 
@@ -116,27 +116,10 @@ rule extract_events:
     conda:
         RENV
     log:
-        os.path.join("logs", "extract_events.log")
+        file=os.path.join("logs", "extract_events.log")
     script:
         os.path.join("..", "scripts", "extract_events.R")
 
-
-rule install_rpot:
-    """Needs to be installed from CRAN because of incompatibility with CFtime.
-
-    TODO: find more robust long-term solution.
-    
-    POT needs R <= 3.6, CFtime needs R >= 4.0.
-    """
-    output:
-        os.path.join(".snakemake", "conda", ".rpot_installed")
-    conda:
-        RENV
-    shell:
-        """
-        R -e 'install.packages("POT", repos="https://cloud.r-project.org")'
-        touch {output}
-        """
 
 rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""
@@ -153,7 +136,7 @@ rule concatenate_data:
     conda:
         PYENV
     log:
-        os.path.join("logs", "concatenate.log")
+        file=os.path.join("logs", "concatenate.log")
     script:
         os.path.join("..", "scripts", "concatenate_data.py")
 
@@ -175,7 +158,7 @@ rule resample_year:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
     log:
-        os.path.join("logs", "resample_{year}.log")
+        file=os.path.join("logs", "resample_{year}.log")
     script:
         os.path.join("..", "scripts", "resample_data.py")
 
