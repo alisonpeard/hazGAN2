@@ -28,12 +28,12 @@ default-resources:
     runtime: 30m
 
 # # here only rules, which require different (more) resources:
-# set-resources:
-#     fit_marginals:
-#         runtime: "4h"
-#         cpus_per_task: 8
-#         mem_mb_per_cpu: 2000
-#         slurm_partition: "Medium"
+set-resources:
+    fit_marginals:
+        slurm_partition: "Medium"
+        cpus_per_task: 8
+        mem_mb_per_cpu: 2G
+        runtime: "4h"
 #    train_stylegan:
 #         slurm_partition: "GPU"
 

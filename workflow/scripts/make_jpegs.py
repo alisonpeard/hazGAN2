@@ -1,13 +1,11 @@
 # %%
 import os
-from environs import Env
 import numpy as np
 import xarray as xr
 from PIL import Image
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-import glob
 import logging
 
 
@@ -21,14 +19,15 @@ def apply_colormap(grayscale_array, colormap_name='Spectral_r'):
 if __name__ == "__main__":
     # TODO: 1. make extreme extraction optional
     logging.basicConfig(
-        filename=snakemake.log[0],
+        filename=snakemake.log.file,
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s"
         )
     DATA     = snakemake.input["data"]
     OUTDIR   = snakemake.output["outdir"]
     STATS    = snakemake.output["image_stats"]
-    THRESH   = snakemake.params["event_threshold"]
+    THRESH   = snakemake.params["event_subset"]
+    DO_SUBSET = snakemake.params["do_subset"]
     DOMAIN   = snakemake.params["domain"]
     EPS      = snakemake.params["eps"]
     RESX     = snakemake.params["resx"]
@@ -38,8 +37,7 @@ if __name__ == "__main__":
     ds = xr.open_dataset(DATA)
 
     # Make a more extreme dataset
-    # TODO: make this optional
-    if True:
+    if DO_SUBSET:
         ds['intensity'] = ds.sel(field=THRESH["field"]).anomaly.apply(THRESH["func"], dims=['lon', 'lat'])
         mask = (ds['intensity'] > THRESH["value"]).values
         idx  = np.where(mask)[0]
