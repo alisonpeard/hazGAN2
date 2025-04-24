@@ -1,5 +1,6 @@
 import os
 import yaml
+import glob
 
 # load device configuration
 configfile: "config/config.yaml"
@@ -15,8 +16,8 @@ PROCESSING_DIR = os.path.join(PROJDIR, "processing")
 TRAINING_DIR   = os.path.join(PROJDIR, "training")
 GENERATED_DIR  = os.path.join(PROJDIR, "generated")
 FIGURE_DIR     = os.path.join(PROJDIR, "figures")
-for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
-    os.makedirs(directory, exist_ok=True)
+for newdir in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
+    os.makedirs(newdir, exist_ok=True)
 
 # choose device-specific conda environments
 PYENV = config['setup'][DEVICE]['pyenv']
@@ -38,8 +39,10 @@ SFUNC      = config["sfunc"]
 YEARS      = list(range(YEAR0, YEARN))
 TIMECOL    = config['setup'][DEVICE]["timecol"]
 MTHRESH    = config["marginal_threshold"]
+KIMG       = config["kimg"]
 
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/visuals.smk"
+
