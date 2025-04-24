@@ -143,14 +143,18 @@ marginal_transformer <- function(df, metadata, var, q,
     #   n_calls <- length(calls)
     #   start_at <- max(1, n_calls - 10)
     #   calls <- calls[start_at:n_calls]
-      calls_str <- paste(sapply(calls, deparse), collapse="\n")
+      calls_str <- paste(sapply(calls, deparse), collapse = "\n")
+      # Replace any curly braces that might confuse glue
+    #   calls_str <- gsub("{", "[", calls_str, fixed = TRUE)
+    #   calls_str <- gsub("}", "]", calls_str, fixed = TRUE)
       msg <- paste0(
         "MLE failed for grid cell ", grid_i, "\n",
         "Error message: ", conditionMessage(e), "\n",
         "Call: ", deparse(conditionCall(e)), "\n",
         "Traceback:\n", calls_str, "\n"
       )
-      log_error(msg)
+
+      log_error(skip_formatter(msg))
 
       # fallback to empirical fits
       maxima$thresh <- NA
@@ -208,6 +212,7 @@ marginal_transformer <- function(df, metadata, var, q,
     log_file <- as.character(log_file)
     log_appender(appender_file(log_file, append = TRUE))
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
+    # log_layout(layout_format_generator(format = "%Y-%m-%d %H:%M:%S - [%l] - %m"))
     log_threshold(INFO)
 
     log_info(paste0("Fitting gridchunk ", i))
