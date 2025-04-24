@@ -66,7 +66,7 @@ rule fit_marginals:
     """Fit semi-parametric marginals to the data along the time dimension.
     
     Usage:
-    >> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+    >>> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
     """
     input:
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
@@ -75,11 +75,10 @@ rule fit_marginals:
         events=os.path.join(PROCESSING_DIR, "events.parquet")
     params:
         fields=FIELDS,
-        q=MTHRESH["low"]
+        q=MTHRESH
     conda:
         RENV
     log:
-        # os.path.join("logs", "fit_marginals.log")
         file="logs/fit_marginals.log"
     script:
         os.path.join("..", "scripts", "fit_marginals.R")
@@ -88,7 +87,8 @@ rule fit_marginals:
 rule extract_events:
     """Remove seasonality and extract storm events from the data.
 
-    TODO: may need to re-add medians later
+    TODO: may need to re-add medians later. Calculating medians on
+    the fly is less robust.
     
     Params:
         sfunc: str
