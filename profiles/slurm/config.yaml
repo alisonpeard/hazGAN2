@@ -2,7 +2,7 @@ config: ["device=cluster"]
 use-conda: true
 conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
 rerun-incomplete: true
-jobs: 10 # number of rules to run in parallel
+jobs: 20 # number of rules to run in parallel
 
 # if sacct disabled
 # executor: cluster-generic
@@ -23,23 +23,22 @@ slurm-delete-logfiles-older-than: 1
 slurm-no-account: true
 default-resources:
     slurm_partition: "Short"
-    cpus_per_task: 4
-    mem: 16G
+    mem: "16G"
     runtime: "4h"
 
 # # here only rules, which require different (more) resources:
 set-resources:
     fit_marginals:
         slurm_partition: "Medium"
-        cpus_per_task: 8
-        mem_mb_per_cpu: 2G
+        cpus_per_task: 20
+        mem_mb_per_cpu: 1G
         runtime: "4h"
     train_stylegan:
         slurm_partition: "GPU"
         runtime: "4h"
     generate_stylegan:
         slurm_partition: "GPU"
-        runtime: "30m"
+        runtime: "1h"
 
 # # parallelization with threads needs to be defined separately:
 # set-threads: # same as cpus_per_task

@@ -69,5 +69,5 @@ events$thresh.q <- Q # keep track of threshold used
 log_info("Saving results...")
 write_parquet(events, OUTPUT)
 
-nevents <- nrow(events)
+nevents <- length(unique(events$event))
 log_info(paste0("Finished! ", nevents, " events processed."))
