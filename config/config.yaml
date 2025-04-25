@@ -34,5 +34,5 @@ setup:
     rsubdir: "linux-64"
     timecol: "time"
     metadata:
-      institution: "Oxford School of Geography and the Environment"
+      cinstitution: "Oxford School of Gography and the Environment"
       description: "Analysis on departmental cluster"

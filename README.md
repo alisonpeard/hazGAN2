@@ -7,6 +7,18 @@ The workflow has been made as modular as possible to facilitate modifications fo
 
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
 
+## Quick start (on SoGE cluster)
+```bash
+conda create -c conda-forge -c bioconda -n snakemake snakemake
+conda activate snakemake
+conda config --set channel_priority strict # snakemake complains otherwise
+conda install -c conda-forge conda=24.7.1
+
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
+
+snakemake get_all_data --profile profiles/slurm/ --config project=renewablesuk device=cluster
+```
+
 ## Key rules
 - `get_all_data`: downloads and processes the data from the SoGE filestore
 - `process_all_data`: processes the data for training with styleGAN2
@@ -19,7 +31,15 @@ Date: 24-04-2025
 - **Next:** Run full bayofbengal workflow using screen
     ```bash
     screen -S bayofbengal
+    micromamba activate snakemake
     snakemake --profile profiles/slurm/ process_all_data
+
+    # minimize the screen
+    Ctrl + A, D
+
+    # check the screen
+    screen -r bayofbengal
+
     ```
 - **To do:**
     - `rule train_stylegan2` (implemented but not tested)
