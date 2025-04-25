@@ -25,7 +25,7 @@ default-resources:
     slurm_partition: "Short"
     cpus_per_task: 4
     mem: 16G
-    runtime: 30m
+    runtime: "4h"
 
 # # here only rules, which require different (more) resources:
 set-resources:

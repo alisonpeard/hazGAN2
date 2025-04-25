@@ -4,8 +4,9 @@ import glob
 
 # load device configuration
 configfile: "config/config.yaml"
-PROJECT = config["project"]
-DEVICE  = config.get("device", "local")
+PROJECT = config.get("project", "prototype")
+# DEVICE  = config.get("device", "local")
+DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
 WD      = config['setup'][DEVICE]['output']
 RESOURCES_DIR  = config["resources"]
