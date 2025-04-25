@@ -59,6 +59,38 @@ load_distn <- function(distn) {
   ))
 }
 
+format_stack_trace <- function(calls, max_depth = 10) {
+  # Get the last 'max_depth' calls
+  calls <- tail(calls, max_depth)
+  formatted <- character(length(calls))
+  for (i in seq_along(calls)) {
+    formatted[i] <- paste0(i, ": ", deparse1(calls[[i]]))
+  }
+  paste(formatted, collapse = "\n  ")
+}
+
+log_fitting_error <- function(grid_i, error, max_frames = 10) {
+  # Extract key information
+  msg <- conditionMessage(error)
+  call <- conditionCall(error)
+  
+  # Get only the last few frames of the call stack
+  stack <- tail(sys.calls(), max_frames)
+  stack_formatted <- sapply(stack, function(call) deparse1(call))
+  
+  # Format the error message
+  error_report <- sprintf(
+    "ERROR IN GRID CELL %d\n==============================\n%s\n\nCALL: %s\n\nSTACK TRACE (last %d frames):\n%s",
+    grid_i, 
+    msg,
+    if(is.null(call)) "NULL" else deparse1(call),
+    length(stack_formatted),
+    paste(seq_along(stack_formatted), stack_formatted, sep = ": ", collapse = "\n")
+  )
+  
+  log_error(skip_formatter(error_report))
+}
+
 marginal_transformer <- function(df, metadata, var, q,
                                  distn = "genpareto",
                                  chunksize = 128,
@@ -150,16 +182,16 @@ marginal_transformer <- function(df, metadata, var, q,
       maxima
     }, error = function(e) {
       # log error
-      calls <- sys.calls()
-      calls_str <- paste(sapply(calls, deparse), collapse = "\n")
-      msg <- paste0(
-        "MLE failed for grid cell ", grid_i, "\n",
-        "Error message: ", conditionMessage(e), "\n",
-        "Call: ", deparse(conditionCall(e)), "\n",
-        "Traceback:\n", calls_str, "\n"
-      )
-
-      log_error(skip_formatter(msg))
+    #   calls <- sys.calls()
+    #   calls_str <- paste(sapply(calls, deparse), collapse = "\n")
+    #   msg <- paste0(
+    #     "MLE failed for grid cell ", grid_i, "\n",
+    #     "Error message: ", conditionMessage(e), "\n",
+    #     "Call: ", deparse(conditionCall(e)), "\n",
+    #     "Traceback:\n", calls_str, "\n"
+    #   ) 
+    #   log_error(skip_formatter(msg))
+      log_fitting_error(grid_i, e)
 
       # fallback to empirical fits
       maxima$thresh <- Inf
