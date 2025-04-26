@@ -1,37 +1,44 @@
 import os
 import yaml
 
-# load configuration files
+# load device configuration
 configfile: "config/config.yaml"
-
 PROJECT = config["project"]
-configfile: f"config/projects/{PROJECT}.yaml"
+DEVICE  = config.get("device", "local")
+INDIR   = config['setup'][DEVICE]['input']
+WD      = config['setup'][DEVICE]['output']
+RESOURCES_DIR  = config["resources"]
 
-# set up paths
-ENV = config.get("environment", "local") 
-INDIR = config['environments'][ENV]['era5dir']
-WD = config['environments'][ENV]['datadir']
-PROJDIR = os.path.join(WD, config['project'])
+# set up directories on device
+PROJDIR        = os.path.join(WD, PROJECT)
 PROCESSING_DIR = os.path.join(PROJDIR, "processing")
-RESOURCES_DIR = config["resources"]
-
-for directory in [PROJDIR, PROCESSING_DIR]:
+TRAINING_DIR   = os.path.join(PROJDIR, "training")
+GENERATED_DIR  = os.path.join(PROJDIR, "generated")
+FIGURE_DIR     = os.path.join(PROJDIR, "figures")
+for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
     os.makedirs(directory, exist_ok=True)
 
-# set up conda environments
-CONDA = config['environments'][ENV]['environment']
-RENV  = config['renv']
+# choose device-specific conda environments
+PYENV = config['setup'][DEVICE]['pyenv']
+RENV  = config['setup'][DEVICE]['renv']
+RSUBDIR = config['setup'][DEVICE]['rsubdir']
 
-# set up project parameters
-YEARS = list(range(config["year0"], config["yearn"]))
-FIELDS = config["fields"]
+# load project-specific configuration
+configfile: f"config/projects/{PROJECT}.yaml"
+
+YEAR0      = config["year0"]
+YEARN      = config["yearn"]
+FIELDS     = config["fields"]
 RESOLUTION = config["resolution"]
-LONGITUDE = config["longitude"]
-LATITUDE  = config["latitude"]
-RFUNC     = config["rfunc"]
-SFUNC     = config["sfunc"]
+LONGITUDE  = config["longitude"]
+LATITUDE   = config["latitude"]
+RFUNC      = config["rfunc"]
+SFUNC      = config["sfunc"]
+YEARS      = list(range(YEAR0, YEARN))
+TIMECOL    = config['setup'][DEVICE]["timecol"]
+MTHRESH    = config["marginal_threshold"]
 
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
-
+include: "rules/visuals.smk"

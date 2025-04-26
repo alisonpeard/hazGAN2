@@ -1,5 +1,6 @@
 """
-Get data from SoGE cluster. Run from repository root.
+Rules to turn daily gridded ERA5 data for RoI into multivariate
+event footprints for training GAN.
 
 ```bash
 # environment set up
@@ -13,74 +14,78 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
 ```
 """
-rule process_data:
-    """Rule to process all years for the project."""
+rule process_all_data:
+    """Complete full data processing sequence."""
     input:
-        os.path.join(PROCESSING_DIR, "daily.parquet")
+        os.path.join(TRAINING_DIR, "data.nc")
 
-rule resample_year:
+
+checkpoint make_jpegs:
+    """Make jpegs of the training data."""
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")  
+        data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled_{year}.nc")
+        outdir=os.path.join(TRAINING_DIR, "jpegs"),
+        image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
-        year="{year}",
-        resx=RESOLUTION['lon'],
-        resy=RESOLUTION['lat'],
+        threshold=config['event_threshold'],
+        eps = 1e-6,
+        domain = "gumbel",
+        resx = RESOLUTION['lon'],
+        resy = RESOLUTION['lat'],
+    conda:
+        PYENV
+    script:
+        os.path.join("..", "scripts", "make_jpegs.py")
+
+
+rule make_training_data:
+    """Convert dataframe to training netCDF."""
+    input:
+        data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
+        events=os.path.join(PROCESSING_DIR, "events.parquet"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        # medians=os.path.join(PROCESSING_DIR, "medians.csv")
+    output:
+        data=os.path.join(TRAINING_DIR, "data.nc")
+    params:
         fields=FIELDS
-    resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
     conda:
-        os.path.join("..", "..", CONDA)
+        PYENV
     log:
-        os.path.join("logs", "resample_{year}.log")
+        file=os.path.join("logs", "make_training.log")
     script:
-        os.path.join("..", "scripts", "resample_data.py")
+        os.path.join("..", "scripts", "make_training.py")
 
 
-rule concatenate_data:
+rule fit_marginals:
+    """Fit semi-parametric marginals to the data along the time dimension.
+    
+    Usage:
+    >> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+    """
     input:
-        netcdfs=expand(
-            os.path.join(PROCESSING_DIR, "resampled_{year}.nc"),
-            year=YEARS
-        )
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
-    resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/concat_%A_%a.out --error=sbatch_dump/concat_%A_%a.err"
-    conda:
-        os.path.join("..", "..", CONDA)
-    log:
-        os.path.join("logs", "concatenate.log")
-    script:
-        os.path.join("..", "scripts", "concatenate_data.py")
-
-
-rule remove_windbombs:
-    """Not implementing this."""
-    input:
-        netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
-    output:
-        netcdf=os.path.join(PROCESSING_DIR, "data_nobombs.nc"),
-        windbomb=os.path.join(PROCESSING_DIR, "windbomb.npy")
+        events=os.path.join(PROCESSING_DIR, "events.parquet")
     params:
-        threshold=0.82
-    resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/windbombs_%A_%a.out --error=sbatch_dump/windbombs_%A_%a.err"
+        fields=FIELDS,
+        q=MTHRESH["low"]
     conda:
-        os.path.join("..", "..", CONDA)
+        RENV
     log:
-        os.path.join("logs", "windbombs.log")
+        # os.path.join("logs", "fit_marginals.log")
+        file="logs/fit_marginals.log"
     script:
-        os.path.join("..", "scripts", "remove_windbombs.py")
+        os.path.join("..", "scripts", "fit_marginals.R")
 
 
-rule extract_storms:
+rule extract_events:
     """Remove seasonality and extract storm events from the data.
 
+    TODO: may need to re-add medians later
+    
     Params:
         sfunc: str
             Any function that takes args df and vars (list).
@@ -90,11 +95,11 @@ rule extract_storms:
             or defined in utils.R.
     """
     input:
+        # os.path.join(".snakemake", "conda", ".rpot_installed"),
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
-        medians=os.path.join(PROCESSING_DIR, "medians.csv"),
-        metadata=os.path.join(PROCESSING_DIR, "storm_metadata.csv"),
-        parquet=os.path.join(PROCESSING_DIR, "daily.parquet"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
@@ -109,10 +114,69 @@ rule extract_storms:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/storms_%A_%a.out --error=sbatch_dump/storms_%A_%a.err"
     conda:
-        # os.path.join("..", "..", RENV)
         RENV
     log:
-        os.path.join("logs", "storms.log")
+        file=os.path.join("logs", "extract_events.log")
     script:
-        # os.path.join("..", "scripts", "extract_storms.R")
-        os.path.join("workflow", "scripts", "extract_storms.R")
+        os.path.join("..", "scripts", "extract_events.R")
+
+
+rule concatenate_data:
+    """Concatenate all the years into a single netcdf file."""
+    input:
+        netcdfs=expand(
+            os.path.join(PROCESSING_DIR, "resampled_{year}.nc"),
+            year=YEARS
+        )
+    output:
+        netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
+    resources:
+        cpus_per_task=4,
+        slurm_extra="--output=sbatch_dump/concat_%A_%a.out --error=sbatch_dump/concat_%A_%a.err"
+    conda:
+        PYENV
+    log:
+        file=os.path.join("logs", "concatenate.log")
+    script:
+        os.path.join("..", "scripts", "concatenate_data.py")
+
+
+rule resample_year:
+    """Resample the data to the desired resolution."""
+    input:
+        netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")  
+    output:
+        netcdf=os.path.join(PROCESSING_DIR, "resampled_{year}.nc")
+    params:
+        year="{year}",
+        resx=RESOLUTION['lon'],
+        resy=RESOLUTION['lat'],
+        fields=FIELDS
+    conda:
+        PYENV
+    resources:
+        cpus_per_task=4,
+        slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
+    log:
+        file=os.path.join("logs", "resample_{year}.log")
+    script:
+        os.path.join("..", "scripts", "resample_data.py")
+
+# rule remove_windbombs:
+#     """Not implemented."""
+#     input:
+#         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
+#     output:
+#         netcdf=os.path.join(PROCESSING_DIR, "data_nobombs.nc"),
+#         windbomb=os.path.join(PROCESSING_DIR, "windbomb.npy")
+#     params:
+#         threshold=0.82
+#     resources:
+#         cpus_per_task=4,
+#         slurm_extra="--output=sbatch_dump/windbombs_%A_%a.out --error=sbatch_dump/windbombs_%A_%a.err"
+#     conda:
+#         os.path.join("..", "..", CONDA)
+#     log:
+#         os.path.join("logs", "windbombs.log")
+#     script:
+#         os.path.join("..", "scripts", "remove_windbombs.py")
