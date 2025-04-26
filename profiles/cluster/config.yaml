@@ -1,9 +1,5 @@
-config: ["environment=cluster"]
-
-# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
-jobs: 1 # modify later
-default-resources:
-    slurm_account: "spet5107"
-    slurm_partition: "Short"
-    mem_mb_per_cpu: 1800 
-    runtime: "30m"
+config: ["device=cluster"]
+cores: 8
+use-conda: true
+conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
+conda-create-envs-only: true

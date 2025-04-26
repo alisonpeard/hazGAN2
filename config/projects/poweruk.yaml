@@ -1,0 +1,48 @@
+# year range
+year0: 1940
+yearn: 2025
+
+# geographical boundaries
+longitude:
+  min: -11.0
+  max: 2.0
+latitude:
+  min: 49.0
+  max: 60.0
+
+# resolution---check if nonstandard allowed in StyleGAN2
+resolution:
+  lon: 28 # 53
+  lat: 28 # 45
+ 
+# output fields
+fields:
+  vx:
+    args:
+      - i10fg
+    func: identity
+    hfunc: max
+    obj: max
+    distn: weibull
+  dx:
+    args:
+      - u10
+      - v10
+      - i10fg
+    func: dir_at_max_wind
+    hfunc: absmax # TODO: would be better as a function of the wind speed
+    obj: max
+    distn: truncated_gaussian
+  r30:
+    args:
+      - tp
+    func: sum_n_hours # n=720 for 30 days
+    hfunc: sum
+    obj: max
+    distn: genpareto # exponential (not implemented yet)
+
+rfunc:
+  args:
+  func: load_external_cyclones
+
+sfunc: additive 

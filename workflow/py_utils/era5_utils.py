@@ -1,26 +1,41 @@
+"""
+Functions to create variables of interest from ERA5 data.
+
+Add custom functions as needed, inputs must be xarray DataArrays of
+ERA5 variables, outputs must be xarray DataArrays the same shape.
+
+Reference here: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview
+
+"""
 import numpy as np
 import xarray as xr
 
+# add new relevant variables here
 long_names = {
     "u10": "10m_u_component_of_wind",
     "v10": "10m_v_component_of_wind",
     "msl": "mean_sea_level_pressure",
     "tp": "total_precipitation",
-    "ssrd": "surface_solar_radiation_downwards",
+    "ssrd": "surface_solar_radiation_downwards", 
     "t2m": "2m_temperature",
+    "utci": "universal_thermal_climate_index",
+    "lai": "leaf_area_index_vegetation",
+    "i10fg": "instantaneous_10m_wind_gust",
+    "swvl1": "volumetric_soil_water_layer_1",
+    "sro": "surface_runoff" # accumulated
 }
 
 def unpack(params:xr.Dataset):
   """Unpack variables as named dict"""
   return {var: params[var] for var in params.data_vars}
 
-def identity(x):
+def identity(x, *args, **kwargs):
     return x
 
-def wind_speed(u, v):
+def wind_speed(u, v, *args, **kwargs):
     return np.sqrt(u**2 + v**2)
 
-def wind_direction(u, v):
+def wind_direction(u, v, *args, **kwargs):
     return (np.arctan2(u, v) * 180 / np.pi + 360) % 360
 
 # wind power functions

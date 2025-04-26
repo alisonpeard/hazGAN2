@@ -1,5 +1,7 @@
 """Simple script to construct a global ERA5 grid for making parameters.
 
+Download ERA5 data from CCDS.
+
 Not included in snakemake workflow as doesn't need to be re-run. Grid file
 (~2 MB) is included in the resources folder.
 """
@@ -7,7 +9,7 @@ Not included in snakemake workflow as doesn't need to be re-run. Grid file
 import xarray as xr
 
 input_file = "/Users/alison/Downloads/db284e6db9f28be19af6109191395be2.nc"
-output_file = "../resources/grids/era5.nc"
+output_file = "../resources/params/bayofbengal.nc"
 
 if __name__ == "__main__":
     params = xr.open_dataset(input_file)
