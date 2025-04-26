@@ -1,0 +1,73 @@
+# year range
+year0: 2021 # 1940
+yearn: 2022
+
+# geographical boundaries 16° range for 64x64 
+longitude:
+  min: -10.0
+  max: 6.0
+latitude:
+  min: 46.0
+  max: 62.0
+
+# resolution---check if nonstandard allowed in StyleGAN2
+resolution:
+  lon: 64
+  lat: 64
+
+sfunc: additive
+
+rfunc:
+  args:
+    - v
+  func: sum # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+# event threshold 
+event_subset:
+  field: v
+  value: 0
+  func: sum
+
+# marginal threshold (for POT)
+marginal_threshold: 0.6
+
+# training probability space
+domain: gumbel # gumbel, uniform
+
+kimg: 250
+ 
+# output fields
+fields:
+  v:
+    args:
+      - u10
+      - v10
+    func: wind_power
+    hfunc: sum
+    obj: min
+    distn: genpareto
+  g:
+    args:
+      - t2m
+      - ssrd
+      - u10
+      - v10
+    func: solar_power
+    hfunc: sum
+    obj: min
+    distn: genpareto
+  t2m:
+    args:
+      - t2m
+    func: identity
+    hfunc: mean
+    obj: min
+    distn: genpareto # exponential (not implemented yet)
+
+rfunc:
+  args:
+    - v
+    - g
+  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+sfunc: additive 
