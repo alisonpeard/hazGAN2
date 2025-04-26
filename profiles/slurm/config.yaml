@@ -1,0 +1,49 @@
+config: ["device=cluster"]
+use-conda: true
+conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
+rerun-incomplete: true
+jobs: 20 # number of rules to run in parallel
+
+# if sacct disabled
+# executor: cluster-generic
+# cluster-generic-submit-cmd:
+#   mkdir -p logs/{rule} &&
+#   sbatch
+#     --partition=Long
+#     --mem=16G
+#     --time=08:00:00
+#     --cpus-per-task=4
+#     --output=sbatch_dump/%j.out
+#     --error=sbatch_dump/%j.err
+
+# if sacct enabled
+executor: slurm
+slurm-logdir: sbatch_dump
+slurm-delete-logfiles-older-than: 1
+slurm-no-account: true
+default-resources:
+    slurm_partition: "Short"
+    mem: "16G"
+    runtime: "4h"
+
+# # here only rules, which require different (more) resources:
+set-resources:
+    fit_marginals:
+        slurm_partition: "Medium"
+        cpus_per_task: 32
+        mem_mb_per_cpu: 1G
+        runtime: "4h"
+    train_stylegan:
+        slurm_partition: "GPU"
+        runtime: "4h"
+    generate_stylegan:
+        slurm_partition: "GPU"
+        runtime: "1h"
+
+# # parallelization with threads needs to be defined separately:
+# set-threads: # same as cpus_per_task
+#     rule_b: 64
+
+# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
+# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html#specifying-account-and-partition
+# https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
