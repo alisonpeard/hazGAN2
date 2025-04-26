@@ -1,258 +1,230 @@
- # hazGAN2
-Centralised repo for hazGAN methods and snakemake workflows, will publish later.
+[![Snakemake](https://img.shields.io/badge/snakemake-9.1.7-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+[![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+# HazGAN2 readme
+This repository contains a `snakemake>=8.0` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
-Repository structure:
+The workflow has been made as modular as possible to facilitate modifications for new applications.
+
+The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
+
+## Current status [keep updated]
+Date: 24-04-2025
+
+
+
+## Getting started
+
+```bash
+# clone the repository
+git clone git@github.com:alisonpeard/hazGAN2.git
+cd hazGAN2
+```
+
+
+```bash
+# login to a CPU node
+srun -p Short --pty /bin/bash
+```
+
+To set up snakemake on your machine, enter the following in the terminal, replacing `conda` with `micromamba` or `mamba` if you prefer:
+```bash
+conda create -c conda-forge -c bioconda -n snakemake snakemake
+conda activate snakemake
+conda config --set channel_priority strict # snakemake complains otherwise
+conda install -c conda-forge conda=24.7.1
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM 
+python -m pip install snakemake-executor-plugin-cluster-generic # if your SLURM doesn't support accounting (e.g., sacct) # https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
+```
+
+### Running rules for the first time
+
+When running for the first time, it is better to run snakemake from a CPU node rather than the head node, head nodes are extremely slow for creating conda environments. After that, you can run snakemake from the head node (required for SLURM). To do this, use the following command to login to a CPU node:
+
+```bash
+snakemake --profile profiles/cluster/ my_rule --conda-create-envs-only
+```
+
+### Running rules
+
+To run a rule on your local machine, navigate to the repository root, activate snakemake and run the rule. E.g., to 
+run all the rules in `get_data.smk` locally:
+```bash
+cd hazGAN2
+micromamba activate snakemake
+snakemake --profile profiles/local/ get_all_data
+```
+You may need to modify `config/config.yaml` and to point to the correct input data location and Python environment definition files (in `workflow/environments`).
+
+> 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment for the first time, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
+```bash
+CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
+```
+
+### Running rules on the cluster
+
+The `config.yaml` in `profiles/local/` contains snakemake command line arguments that are usually run when using the local machine. There are also profiles for running on the cluster in `profiles/cluster/`, and running on the cluster with SLURM in `profiles/slurm`. To run the rule on the cluster use the following command:
+
+```bash
+snakemake --profile profiles/cluster/ get_all_data
+```
+or to send it to SLURM
+```bash
+snakemake --profile profiles/slurm/ get_all_data
+```
+You can modify any of the profiles or make a new one to suit your needs.
+
+> 💭 The SoGE cluster has pre-defined SLURM defaults per user and doesn't allow users to set their account. The `snakemake-executor-plugin-slurm` will always attempt to set an account. To override this behavior, the `--slurm-no-account` flag should be used.
+
+Also, you may need a snakemake process to run for a while while you have a job running, you can sbatch the manager script to run in the background:
+```bash
+micromamba activate snakemake
+cd mistral/alison/hazGAN2
+sbatch --job-name=snakemake_manager --output=sbatch_dump/snakemake_manager_%j.out --error=sbatch_dump/snakemake_manager_%j.err --wrap="snakemake --profile profiles/slurm/ process_all_data
+```
+#### Sample rules:
+```bash
+snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
+snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+```
+
+It's better not to use a head node on the cluster as they are really slow, snakemake will give this warning—-ignore it:
+```bash
+You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node.
+```
+
+### Making reports and DAGs
+and to output the DAG for a specific rule:
+```bash
+# without files
+snakemake process_all_data --dag | dot -Tpdf > docs/process_all_data.pdf
+snakemake process_all_data --dag | dot -Tsvg > docs/process_all_data.svg
+
+# with files
+snakemake process_all_data --filegraph | dot -Tpdf > docs/process_all_data.pdf
+snakemake process_all_data --filegraph | dot -Tsvg > docs/process_all_data.svg
+
+# report
+snakemake process_all_data --report docs/process_all_data.html
+```
+## Modifications and extensions
+#### Basic
+To create a new project you need to make the following changes:
+1. `config/config.yaml`: change `project` value
+2. `config/projects/`: add a YAML file named `{myproject}.yaml` with the same structure as existing project YAMLs
+3. `resources/params/`: use `resources/grids/era5.nc` to make `{myproject}.nc` in `resources/params/` with any spatial parameters for variable construction from raw ERA5 variables (see other param files for examples).
+
+#### Advanced
+The following files may also need to be modified, depending on the project requirements:
+- Add new variable construction functions to
+    - `workflow/scripts/era5_utils.py`
+    - `config/projects/{myproject}.yaml`
+- Add new temporal aggregation functions $h_{k|t}(x)$ to
+    - `workflow/scripts/era5_utils.py`
+    - `config/projects/{myproject}.yaml:hfunc`
+- Add new deasonalization $s_{|t}(x)$ methods to
+    - `worflow/r_utils/sfuncs.R`
+    - `config/projects/{myproject}.yaml:sfunc`
+- Add new risk functionals $r_{|ijk}(x)$ to
+    - `workflow/r_utils/r)funcs.R`
+    - `config/projects/{myproject}.yaml:rfunc`
+- Add new distribution definitions to 
+    - `workflow/r_utils/{distribution}.R`:
+        - `cdf()`
+        - `threshold_selector()`
+    
+        Note that the parameters will always be named (`thresh`, `scale`, `shape`), regardless of the distribution. In cases where this doesn't match, assign each parameters to the most appropriate names and set the other to `NA`, e.g., for a normal distribution `thresh` is the mean, `scale` is the standard deviation, and `shape` is not used.
+
+
+## Further information
+### Data input structure
+If you don't have access to the SoGE filestore, you should set up the input data structure as follows:
+```
+input/
+└── {variable_long_name}/
+    └── nc/
+       └── {variable_long_name}_{year}.nc
+ ```
+ and the output (`results`) folder has the following structure:
+ ```bash
+ :
+ ├── results/
+ │   ├── .gitignore
+ │   └── {projectname}/
+ │       ├── processing/
+ │       ├── training/
+ │       ├── generated/
+ │       └── analysis/
+ :
+```
+
+### Repository map
+The full repository is structured as follows:
 ```
 hazGAN2/
-├── .env
-├── README.md
-├── config
-│   ├── csv files with metadata e.g., cost curves
-│   ├── folder with arc cluster config
-│   └── config.yaml: paths to datasets
-├── StyleGAN2-DA
-│   ├── environments
-│   ├── pyproject.toml
-│   └── src
-│       └── *
-├── hazGAN
-│   ├── environments
-│   ├── pyproject.toml
-│   └── src
-│       └── *
-└── scripts
-    ├── data_acquisition
-    ├── data_processing
-    ├── training
-    ├── validation
-    └── mangroves
-```
-
-Data output structure:
-```
-data/
-├── bayofbengal
-│   ├── processing
-│   ├── training
-│   │   └── 64x64
-│   │   │   ├── input
-│   │   │   └── generated
-│   └── mangroves
-└── unitedkingdom
-    ├── processing
-    ├── training
-    └── analysis
- ```
-
-# ERA5 Climate Analysis Project Structure
-
-## Directory Structure
-
-```
-era5-project/
-├── Snakefile                # Main Snakefile that orchestrates the workflow
-├── config.yaml              # Default configuration
-├── config/                  # Machine-specific configurations
-│   ├── machine1.yaml
-│   ├── machine2.yaml
-│   ├── hpc.yaml
-│   └── slurm/               # SLURM profile for cluster execution
-│       └── config.json
-├── workflow/
-│   ├── rules/               # Modular rule files
-│   │   ├── preprocessing.smk
-│   │   ├── analysis.smk
-│   │   └── visualization.smk
-│   └── scripts/             # Python scripts called by rules
-│       ├── process_era5.py
-│       ├── combine_years.py
-│       ├── extract_variable.py
-│       ├── create_climatology.py
-│       ├── trend_analysis.py
-│       ├── extreme_events.py
-│       ├── seasonal_patterns.py
-│       ├── spatial_correlation.py
-│       ├── teleconnection_analysis.py
-│       ├── plot_trend_map.py
-│       ├── plot_extreme_events.py
-│       ├── plot_seasonal_cycle.py
-│       ├── plot_timeseries.py
-│       ├── plot_correlation_heatmap.py
-│       ├── create_dashboard.py
-│       └── config_utils.py  # Helper for config inheritance
-├── logs/                    # Log files
-├── sbatch_dump/             # SLURM output files
-└── profiles/                # Additional execution profiles
-    └── standard/            # Standard configuration
-        └── config.yaml
-```
-
-## Snakemake Best Practices
-
-### 1. Use a Modular Structure
-
-- Split your workflow into logical modules (preprocessing, analysis, visualization)
-- Use `include:` directives to bring in rule files
-- Keep the main Snakefile simple and focused on workflow organization
-
-### 2. Define Clear Target Rules
-
-Instead of a single `all` rule, define multiple target rules that represent specific pipeline stages:
-
-- `rule preprocess:` - Data preparation only
-- `rule analyze:` - Run analyses on preprocessed data
-- `rule visualize:` - Generate visualizations
-- `rule full_pipeline:` - Complete end-to-end workflow
-
-### 3. Use Wildcards Effectively
-
-- Wildcards allow parameter-based execution (e.g., `{year}`, `{variable}`)
-- Define `wildcard_constraints:` to restrict wildcard values
-- Use `expand()` to generate combinations of wildcard values
-
-### 4. Document Your Rules
-
-- Add docstrings to every rule explaining its purpose
-- Include parameters, input/output descriptions
-- Add comments for complex logic
-
-### 5. Manage Resources Appropriately
-
-- Specify resource requirements for each rule
-- Adjust based on task complexity (more memory for larger datasets)
-- Use different resource specifications for different execution environments
-
-### 6. Implement Error Handling
-
-- Use the `onsuccess:` and `onerror:` directives for notifications
-- Comprehensive logging in each rule
-- Consider retry mechanisms for unreliable operations
-
-### 7. Version Control
-
-- Keep your Snakemake workflow in version control (git)
-- Include `.gitignore` for generated files
-- Document changes in a changelog
-
-### 8. Testing
-
-- Create a small test dataset
-- Define test rules that run quickly
-- Verify outputs against expected results
-
-## Running Specific Pipeline Parts
-
-### Run specific years
-
-```bash
-snakemake --config year_start=1980 year_end=1990
-```
-
-### Run specific analyses
-
-```bash
-snakemake trend_analysis extreme_events
-```
-
-### Generate specific visualizations
-
-```bash
-snakemake --forcerun trend_maps seasonal_cycle
-```
-
-### Rerun specific steps for specific years
-
-```bash
-snakemake --touch preprocess
-snakemake process_era5_year --config years=[1980,1981,1982]
-```
-
-### Run with increased parallelism
-
-```bash
-snakemake --profile config/slurm --jobs 100 full_pipeline
-```
-
-## Advanced Features
-
-### Checkpoints
-
-For dynamic dependencies (when outputs are determined during execution):
-
-```python
-checkpoint process_dataset:
-    # checkpoint definition
-    
-rule analyze_results:
-    input:
-        lambda wildcards: get_checkpoint_outputs(wildcards)
-```
-
-### DAG Visualization
-
-Visualize your workflow as a directed acyclic graph:
-
-```bash
-snakemake --dag | dot -Tsvg > workflow.svg
-```
-
-### Report Generation
-
-Generate a comprehensive HTML report:
-
-```bash
-snakemake --report report.html
-```
-
-### Remote File Support
-
-Access files from remote storage (S3, Google Cloud, etc.):
-
-```python
-from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
-S3 = S3RemoteProvider()
-
-rule download_data:
-    input:
-        S3.remote("bucket/path/to/data.nc")
-    output:
-        "local/path/data.nc"
-```
-
-## Integration with Other Tools
-
-- **Conda**: Use conda environments for each rule
-- **Singularity/Docker**: Package dependencies in containers
-- **GitHub Actions**: CI/CD for workflow testing
-- **DVC**: Data version control alongside workflow
-
-
-
-## Recommended directory structure from docs
-```
 ├── .gitignore
 ├── README.md
-├── LICENSE.md
-├── workflow
-│   ├── rules
-|   │   ├── module1.smk
-|   │   └── module2.smk
-│   ├── envs
-|   │   ├── tool1.yaml
-|   │   └── tool2.yaml
-│   ├── scripts
-|   │   ├── script1.py
-|   │   └── script2.R
-│   ├── notebooks
-|   │   ├── notebook1.py.ipynb
-|   │   └── notebook2.r.ipynb
-│   ├── report
-|   │   ├── plot1.rst
-|   │   └── plot2.rst
-|   └── Snakefile
-├── config
-│   ├── config.yaml
-│   └── some-sheet.tsv
-├── results
-└── resources
+├── docs/
+├── profiles/
+│   └── {device}/
+│       └── config.yaml
+├── config/
+│   ├── config.yaml
+│   └── projects/
+│       └── {projectname}.yaml
+├── workflow/
+│   ├── Snakefile
+│   ├── environments/
+│   │   ├── {renvs}.yaml
+│   │   └── {pythonenvs}.yaml
+│   ├── rules/
+│   │   └── {rulename}.smk
+│   ├── scripts/
+│   │   ├── {scriptname}.py
+│   │   └── {scriptname}.R
+│   ├── py_utils/
+│   │   └── {module}.py
+│   └── r_utils/
+│       └── {module}.R
+├── packages/
+│   ├── hazGAN/
+│   │   ├── pyproject.toml
+│   │   └── src/
+│   │       └── *
+│   └── styleGAN2-DA/
+│       ├── pyproject.toml
+│       └── src/
+│           └── *
+├── results/
+│   ├── .gitignore
+│   └── {projectname}/
+│       ├── processing/
+│       ├── training/
+│       ├── generated/
+│       └── analysis/
+├── resources/
+│   ├── .gitignore
+│   ├── grids/
+│   │   └── era5.nc
+│   └── params/
+│       └── {projectname}.nc
+│── sbatch_dump/
+│   └── .gitignore
+└── logs/
+    └── .gitignore
 ```
+
+### Tasks
+- [ ] Separate conda environments for each rule set
+- [ ] Training on styleGAN2-DA (make very modular)
+- [ ] Post-processing samples `process_samples.py`
+- [ ] Visualisation rules
+- [ ] Extra analysis code/rules
+- [ ] Either add test set back in or full remove
+- [ ] Unit tests
+- [ ] Create fallback `params` file
+- [ ] Run `get_data` rules locally for 2020 subset
+    - [x] `bayofbengal`
+    - [ ] `renewablesuk`
+- [ ] Run `process_data` rules locally for 2020 subset
+    - [ ] `bayofbengal`
+    - [ ] `renewablesuk`

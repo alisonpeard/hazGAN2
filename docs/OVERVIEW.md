@@ -1,6 +1,6 @@
 ## Environment set up
 
-Though not always recommended, it is better to do submit jobs and set up on a CPU node rather than the head node because head nodes are slow:
+Though not always recommended, it is better to submit jobs and set up on a CPU node rather than the head node because head nodes are slow for configuring conda environments etc.:
 ```bash
 srun -p Short --pty /bin/bash
 ```

@@ -1,5 +1,5 @@
 """
-Get data from SoGE cluster. Run from repository root.
+Get ERA5 data from SoGE cluster. Run from repository root.
 
 ```bash
 # environment set up
@@ -13,7 +13,7 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
 """
-rule get_data:
+rule get_all_data:
     """Rule to process all years for the project."""
     input:
         expand(
@@ -21,26 +21,26 @@ rule get_data:
             year=YEARS
         )
 
-rule get_data:
+rule get_year:
     input:
-        params=os.path.join(RESOURCES_DIR, "params", "{PROJECT}.nc")
+        indir=INDIR,
+        params=os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
     output:
         netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")
     params:
-        year="{year}", 
-        indir=INDIR,
+        year="{year}",
         xmin=config["longitude"]["min"],
         xmax=config["longitude"]["max"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
+        timecol=TIMECOL,
         fields=FIELDS
     resources:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
     conda:
-        # "/lustre/soge1/users/spet5107/micromamba/envs/hazGAN-torch"
-        os.path.join("..", "..", CONDA) 
+        PYENV
     log:
-        "logs/get_{year}.log"
+        file="logs/get_{year}.log"
     script:
         "../scripts/get_data.py"
