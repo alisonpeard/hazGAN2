@@ -249,8 +249,13 @@ hazGAN2/
 │   ├── .gitignore
 │   └── {projectname}/
 │       ├── processing/
+│       │   └── yearly/
 │       ├── training/
+│       │   └── rgb/
 │       ├── generated/
+│       │   └── stylegan-output/
+│       │       └── {networkname}/
+│       │               └── generated-{domain}/
 │       └── analysis/
 ├── resources/
 │   ├── .gitignore
@@ -263,7 +268,9 @@ hazGAN2/
 └── logs/
     └── .gitignore
 ```
+### DVC setup
 
+In the parent repo type `dvc init` and `dvc add results`, DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push. There is also an `ssh` version of this for departmental filestores.
 ### Tasks
 - [ ] Separate conda environments for each rule set
 - [ ] Training on styleGAN2-DA (make very modular)
