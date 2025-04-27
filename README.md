@@ -293,11 +293,20 @@ The original data for [the paper](link/to/paper) is versioned [here](https://git
 ```bash
 git clone git@github.com:alisonpeard/hazGAN-data.git
 dvc pull
-
-# you will be prompted to enter your Google Drive credentials
 ```
 
-To set up your own DVC file tracking, in the parent repo type `dvc init` and `dvc add results`, to start tracking everything in the results folder with DVC. DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push. There is also an `ssh` version of this for departmental filestores. 
+You will need to sign into your Google account and grant access to the DVC app. If you are SSH-ing into a remote server, you need to
+1. Connect with local port forwarding
+```bash
+ssh -L 8080:localhost:8080 <username>@<remote_server>
+```
+2. After running `dvc pull`, copy and paste the URL from the terminal into your local browser. This will open a Google login page. After logging in, you will be redirected to a page with a code. Copy this code and paste it into the terminal on the remote server.
+3. After pasting the code, you will be asked to grant access to the DVC app. Click "Allow" and you should see a message saying "You can now close this window". You can now close the browser window and return to the terminal.
+4. You should now see a message saying "Authentication successful".
+
+To set up your own DVC file tracking, in the parent repo type `dvc init` and `dvc add results`, to start tracking everything in the results folder with DVC. DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push.
+
+> 💭 There is also an `ssh` version of this for remote filestores. 
 
 
 ### Tasks
