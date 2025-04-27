@@ -268,9 +268,38 @@ hazGAN2/
 └── logs/
     └── .gitignore
 ```
-### DVC setup
+### DVC data versioning
 
-In the parent repo type `dvc init` and `dvc add results`, DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push. There is also an `ssh` version of this for departmental filestores.
+To set up DVC, install it into its own conda environment:
+```bash
+# Create new environment
+conda create -n dvc python=3.10
+conda activate dvc
+
+# Install OpenSSL through conda (instead of relying on system OpenSSL)
+conda install -c conda-forge openssl
+
+pip install "dvc[gdrive]"
+```
+
+If the above doesn't work, try installing DVC through conda-forge instead:
+```bash
+conda install -c conda-forge dvc
+pip install "dvc[gdrive]"  # To add Google Drive support
+```
+
+The original data for [the paper](link/to/paper) is versioned [here](https://github.com/alisonpeard/hazGAN-data) and can be cloned independentendly using
+
+```bash
+git clone git@github.com:alisonpeard/hazGAN-data.git
+dvc pull
+
+# you will be prompted to enter your Google Drive credentials
+```
+
+To set up your own DVC file tracking, in the parent repo type `dvc init` and `dvc add results`, to start tracking everything in the results folder with DVC. DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push. There is also an `ssh` version of this for departmental filestores. 
+
+
 ### Tasks
 - [ ] Separate conda environments for each rule set
 - [ ] Training on styleGAN2-DA (make very modular)
