@@ -50,14 +50,14 @@ field_summary <- function(i) {
 log_debug(field_summary(1))
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q, distn = distns[1],
-  log_file = log_file, log_level = "WARN"
+  log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[1]))
 
 log_debug(field_summary(2))
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q, distn = distns[2],
-  log_file = log_file, log_level = "WARN"
+  log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[2]))
 
