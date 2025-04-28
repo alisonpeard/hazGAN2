@@ -1,6 +1,6 @@
 config: ["device=cluster"]
 use-conda: true
-conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
+# conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
 
@@ -39,10 +39,6 @@ set-resources:
     generate_stylegan:
         slurm_partition: "GPU"
         runtime: "1h"
-
-# # parallelization with threads needs to be defined separately:
-# set-threads: # same as cpus_per_task
-#     rule_b: 64
 
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
 # https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html#specifying-account-and-partition
