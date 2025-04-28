@@ -24,9 +24,9 @@ rule get_all_data:
 rule get_year:
     input:
         indir=INDIR,
-        params=os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
+        params=os.path.join(RESOURCES_DIR, "params", "{PROJECT}.nc")
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")
+        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     params:
         year="{year}",
         xmin=config["longitude"]["min"],

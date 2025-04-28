@@ -149,9 +149,9 @@ rule concatenate_data:
 rule resample_year:
     """Resample the data to the desired resolution."""
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "daily_{year}.nc")  
+        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")  
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled_{year}.nc")
+        netcdf=os.path.join(PROCESSING_DIR, "resampled", "{year}.nc")
     params:
         year="{year}",
         resx=RESOLUTION['lon'],
