@@ -17,14 +17,14 @@ rule get_all_data:
     """Rule to process all years for the project."""
     input:
         expand(
-            os.path.join(PROCESSING_DIR, "daily_{year}.nc"),
+            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
             year=YEARS
         )
 
 rule get_year:
     input:
-        indir=INDIR,
-        params=os.path.join(RESOURCES_DIR, "params", "{PROJECT}.nc")
+        indir=directory(INDIR),
+        params=os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
     output:
         netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     params:
@@ -41,6 +41,6 @@ rule get_year:
     conda:
         PYENV
     log:
-        file="logs/get_{year}.log"
+        file="logs/get/{year}.log"
     script:
         "../scripts/get_data.py"

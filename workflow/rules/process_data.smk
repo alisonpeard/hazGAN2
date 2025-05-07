@@ -130,7 +130,7 @@ rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""
     input:
         netcdfs=expand(
-            os.path.join(PROCESSING_DIR, "resampled_{year}.nc"),
+            os.path.join(PROCESSING_DIR, "resampled", "{year}.nc"),
             year=YEARS
         )
     output:
@@ -149,7 +149,10 @@ rule concatenate_data:
 rule resample_year:
     """Resample the data to the desired resolution."""
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")  
+        netcdf=expand(
+            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
+            year=YEARS
+        )
     output:
         netcdf=os.path.join(PROCESSING_DIR, "resampled", "{year}.nc")
     params:
@@ -163,7 +166,7 @@ rule resample_year:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
     log:
-        file=os.path.join("logs", "resample_{year}.log")
+        file=os.path.join("logs", "resample", "{year}.log")
     script:
         os.path.join("..", "scripts", "resample_data.py")
 
