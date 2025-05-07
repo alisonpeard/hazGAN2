@@ -36,7 +36,7 @@ checkpoint make_rgb_images:
         resx = RESOLUTION['lon'],
         resy = RESOLUTION['lat'],
     conda:
-        PYENV
+        GEOENV
     log:
         file=os.path.join("logs", "make_rgb.log")
     script:
@@ -55,7 +55,7 @@ rule make_training_data:
     params:
         fields=FIELDS
     conda:
-        PYENV
+        GEOENV
     log:
         file=os.path.join("logs", "make_training.log")
     script:
@@ -139,7 +139,7 @@ rule concatenate_data:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/concat_%A_%a.out --error=sbatch_dump/concat_%A_%a.err"
     conda:
-        PYENV
+        GEOENV
     log:
         file=os.path.join("logs", "concatenate.log")
     script:
@@ -149,10 +149,7 @@ rule concatenate_data:
 rule resample_year:
     """Resample the data to the desired resolution."""
     input:
-        netcdf=expand(
-            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
-            year=YEARS
-        )
+        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     output:
         netcdf=os.path.join(PROCESSING_DIR, "resampled", "{year}.nc")
     params:
@@ -161,7 +158,7 @@ rule resample_year:
         resy=RESOLUTION['lat'],
         fields=FIELDS
     conda:
-        PYENV
+        GEOENV
     resources:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
