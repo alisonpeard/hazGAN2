@@ -70,27 +70,31 @@ if __name__ == '__main__':
     # resample data to daily
     logging.info("Resampling data to daily aggregates.")
     resampled = {}
-    for field, info in FIELDS.items():
+    for field, config in FIELDS.items():
         logging.info(f"Processing {field}.")
-        infields = info.get("args", [])
-        func = info.get("func", "identity")
-        agg = info.get("agg", "mean")
+        infields = config.get("args", [])
+        func     = config.get("func", "identity")
+        hfunc    = config.get("hfunc", "mean")
         #! This is where output variables are created
         #! Add parameter loading here
         #! Untested
         logging.info(f"Applying {field} = {func}{*infields,}.")
         data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params)
-        logging.info(f"Finished, resampling {field}.")
-        resampled[field] = getattr(data[field].resample(time='1D'), agg)()
-        logging.info(f"Resampled using {agg}){field}).")
+        logging.info(f"Finished, resampling as {hfunc}({field}).")
+        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
+        logging.info(f"Resampled using {hfunc}){field}).")
+    
     data_resampled = xr.Dataset(resampled)
 
     # save data
-    chunk_size = {'time': '50MB'}
+    chunk_size  = {'time': '50MB'}
+    compression = {'zlib': True, 'complevel': 5}
+    encoding = {var: compression for var in data_resampled.data_vars}
+
     data_resampled = data_resampled.chunk(chunk_size)
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
     logging.info(f"Saving data to {OUTPUT}")
-    data_resampled.to_netcdf(OUTPUT, engine='netcdf4')
+    data_resampled.to_netcdf(OUTPUT, engine='netcdf4', encoding=encoding)
     logging.info(f"Saved. File size: {os.path.getsize(OUTPUT) * 1e-6:.2f} MB")
 
     # print data summary to logs
