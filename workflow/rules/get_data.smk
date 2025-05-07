@@ -23,7 +23,7 @@ rule get_all_data:
 
 rule get_year:
     input:
-        indir=directory(INDIR),
+        indir=INDIR,
         params=os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
     output:
         netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
@@ -39,7 +39,7 @@ rule get_year:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
     conda:
-        PYENV
+        GEOENV
     log:
         file="logs/get/{year}.log"
     script:

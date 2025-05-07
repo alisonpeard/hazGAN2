@@ -75,22 +75,23 @@ if __name__ == '__main__':
         infields = config.get("args", [])
         func     = config.get("func", "identity")
         hfunc    = config.get("hfunc", "mean")
-        #! This is where output variables are created
-        #! Add parameter loading here
-        #! Untested
+
         logging.info(f"Applying {field} = {func}{*infields,}.")
         data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params)
+
         logging.info(f"Finished, resampling as {hfunc}({field}).")
         resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
-        logging.info(f"Resampled using {hfunc}){field}).")
+        
+        logging.info(f"Finished {field}.")
     
     data_resampled = xr.Dataset(resampled)
 
-    # save data
+    # data export settings
     chunk_size  = {'time': '50MB'}
     compression = {'zlib': True, 'complevel': 5}
     encoding = {var: compression for var in data_resampled.data_vars}
 
+    # save data to netcdf
     data_resampled = data_resampled.chunk(chunk_size)
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
     logging.info(f"Saving data to {OUTPUT}")
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     data.close()
     data_resampled.close()
 
-    # Verify time encoding
+    # verify time encoding
     data = xr.open_dataset(OUTPUT, decode_times=False, engine='netcdf4')
     times = data.isel(time=slice(0, 4)).time.data
     logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
