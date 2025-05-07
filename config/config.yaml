@@ -1,5 +1,5 @@
 # Global config file
-project: "bayofbengal"
+project: prototype
 resources: "resources"
 
 # environment specs
@@ -7,7 +7,7 @@ setup:
   local:
     input: "/Users/alison/Documents/DPhil/data/era5"
     output: "results"
-    pyenv: '../environments/apple-silicon.yaml'
+    geoenv: '../environments/apple-silicon/geo.yaml'
     renv: "../environments/r-silicon.yaml"
     gpuenv: ""
     rsubdir: "osx-64"
