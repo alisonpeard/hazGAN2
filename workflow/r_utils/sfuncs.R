@@ -26,6 +26,36 @@ additive <- function(df, vars) {
   return(df[vars])
 }
 
+autumn <- function(df, vars) {
+  # extract autumn months only
+  autumn_months <- c("Sep", "Oct", "Nov")
+  df <- filter_months(df, autumn_months)
+  return(df)
+}
+
+
+winter <- function(df, vars) {
+  # extract winter months only
+  winter_months <- c("Dec", "Jan", "Feb")
+  df <- filter_months(df, winter_months)
+  return(df)
+}
+
+spring <- function(df, vars) {
+  # extract spring months only
+  spring_months <- c("Mar", "Apr", "May")
+  df <- filter_months(df, spring_months)
+  return(df)
+}
+
+summer <- function(df, vars) {
+  # extract summer months only
+  summer_months <- c("Jun", "Jul", "Aug")
+  df <- filter_months(df, summer_months)
+  return(df)
+}
+
+
 monthly_medians <- function(df, var) {
   df <- df[, c(var, "time", "grid")]
   df$month <- months(df$time)
@@ -33,4 +63,11 @@ monthly_medians <- function(df, var) {
                               df[, c(var, "grid", "month")],
                               median)
   return(monthly_median)
+}
+
+filter_months <- function(df, months_to_keep = c("Oct")) {
+  # filter months to keep
+  df$month <- months(df$time)
+  df <- df[df$month %in% months_to_keep, ]
+  return(df)
 }
