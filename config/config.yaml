@@ -1,6 +1,8 @@
 # Global config file
 project: prototype
 resources: "resources"
+conda-cleanup-envs: true
+conda-cleanup-pkgs: cache
 
 # environment specs
 setup:
