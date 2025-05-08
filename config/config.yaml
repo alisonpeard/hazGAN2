@@ -10,7 +10,7 @@ setup:
     input: "/Users/alison/Documents/DPhil/data/era5"
     output: "results"
     geoenv: '../environments/apple-silicon/geo.yaml'
-    renv: "../environments/r.yaml"
+    renv: "../environments/apple-silicon/r.yaml"
     gpuenv: ""
     rsubdir: "osx-64"
     timecol: "valid_time"
