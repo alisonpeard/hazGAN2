@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # load params and clip to XMIN, XMAX, YMIN, YMAX
     logging.info(f"Loading parameters from {INPUT}.")
     params = xr.open_dataset(INPUT)
-    params = params.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
+    params = params.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMIN, YMAX))
 
     # load data for year
     files = []
