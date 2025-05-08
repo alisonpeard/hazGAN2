@@ -1,7 +1,9 @@
 # add custom named sfuncs here
-library(dplyr)
-library(lubridate)
-library(methods) # for S4 methods / snakemake
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(lubridate)
+  library(methods) # for S4 methods / snakemake
+})
 # source("workflow/r_utils/utils.R")
 
 deseasonalize <- function(df, var, method = "additive") {

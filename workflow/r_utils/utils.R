@@ -1,11 +1,12 @@
 # remember to select source on save
-library(zoo)
-library(dplyr)
-library(lubridate)
-library(data.table)
-library(progress)  # Add this
-library(goftest)
-
+suppressPackageStartupMessages({
+  library(zoo)
+  library(dplyr)
+  library(lubridate)
+  library(data.table)
+  library(progress)  # Add this
+  library(goftest)
+})
 
 `%ni%` <- Negate(`%in%`)
 

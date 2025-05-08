@@ -7,17 +7,21 @@ conda-cleanup-pkgs: cache
 # environment specs
 setup:
   local:
-    input: "/Users/alison/Documents/DPhil/data/era5"
+    input:
+      era5: "/Users/alison/Documents/DPhil/data/era5"
+      imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
     output: "results"
     geoenv: '../environments/apple-silicon/geo.yaml'
     renv: "../environments/apple-silicon/r.yaml"
     gpuenv: ""
     rsubdir: "osx-64"
-    timecol: "valid_time"
+    timecol: "time" #! "valid_time" for ERA5
     metadata:
       description: "Analysis on Apple Silicon M2"
   cluster:
-    input: '/soge-home/data/analysis/era5/0.28125x0.28125/hourly/'
+    input:
+      era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
+      imdaa: "/soge-home/data/analysis/imdaa/"
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
@@ -28,7 +32,9 @@ setup:
       institution: "Oxford School of Geography and the Environment"
       description: "Analysis on departmental cluster"
   slurm:
-    input: '/soge-home/data/analysis/era5/0.28125x0.28125/hourly/'
+    input:
+      era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
+      imdaa: "/soge-home/data/analysis/imdaa/"
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"

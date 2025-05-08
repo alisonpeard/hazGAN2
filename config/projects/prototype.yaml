@@ -1,3 +1,5 @@
+dataset: imdaa
+
 # year range (1940 to 2023) 
 year0: 2020
 yearn: 2021
@@ -12,8 +14,8 @@ latitude:
 
 # resolution
 resolution:
-  lon: 64 #8 
-  lat: 64 #8 
+  lon: 128 #8 
+  lat: 128 #8 
 
 sfunc: additive
 
@@ -40,22 +42,21 @@ kimg: 250
 fields:
   ws:
     args:
-      - u10
-      - v10
-    func: wind_speed
+      - GUST_10m
+    func: identity
     hfunc: max
     obj: max
     distn: weibull
   msl:
     args:
-      - msl
+      - PRMSL_msl
     func: identity
     hfunc: min
     obj: min
     distn: genpareto
   tp:
     args:
-      - tp
+      - APCP_sfc
     func: identity
     hfunc: sum
     obj: max
