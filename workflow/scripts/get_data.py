@@ -8,7 +8,9 @@ import dask
 import time
 import xarray as xr
 import logging
-import py_utils.era5_utils as era5
+
+from importlib import import_module
+from py_utils import funcs
 
 logging.basicConfig(
     filename=snakemake.log.file, # try withou the [0] in case it's makin it a dir
@@ -32,8 +34,12 @@ if __name__ == '__main__':
     YMAX       = snakemake.params.ymax
     FIELDS     = snakemake.params.fields
     TIMECOL    = snakemake.params.timecol
+    DATASET    = snakemake.params.dataset
 
     OUTPUT     = snakemake.output.netcdf
+
+    # load dataset module
+    dataset = import_module(f"py_utils.datasets.{DATASET}")
 
     # load params and clip to XMIN, XMAX, YMIN, YMAX
     logging.info(f"Loading parameters from {INPUT}.")
@@ -45,10 +51,15 @@ if __name__ == '__main__':
     for field, info in FIELDS.items():
         infields = info.get("args", [])
         for infield in infields:
-            field_files = glob(os.path.join(INDIR, era5.long_names[infield], 'nc', '*'))
-            field_files = [f for f in field_files if str(YEAR) in f]
+            # find the input file(s)
+            pattern = dataset.parse_input_pattern(INDIR, infield)
+            field_files = glob(pattern)
+            field_files = dataset.filter_files(field_files, YEAR)
             files += field_files
+    
     logging.info(f"Found {len(files)} files for {YEAR}.")
+    for i, file in enumerate(files):
+        logging.info(f"File {i}: {file}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         data = xr.open_mfdataset(files, engine='netcdf4',
@@ -57,7 +68,7 @@ if __name__ == '__main__':
                                      'longitude': '500MB',
                                      'latitude': '500MB'
                                      })
-        data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
+        data = dataset.clip_to_bbox(data, XMIN, XMAX, YMIN, YMAX)
         data = data.rename({TIMECOL: "time"})
     logging.info("Data loaded.")
 
@@ -77,7 +88,7 @@ if __name__ == '__main__':
         hfunc    = config.get("hfunc", "mean")
 
         logging.info(f"Applying {field} = {func}{*infields,}.")
-        data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params)
+        data[field] = getattr(funcs, func)(*[data[i] for i in infields], params=params)
 
         logging.info(f"Finished, resampling as {hfunc}({field}).")
         resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
@@ -85,6 +96,13 @@ if __name__ == '__main__':
         logging.info(f"Finished {field}.")
     
     data_resampled = xr.Dataset(resampled)
+
+    # log data summary
+    logging.info("Resampled data summary:")
+    logging.info(f"Data variables: {data_resampled.data_vars}")
+    logging.info(f"Data coordinates: {data_resampled.coords}")
+    logging.info(f"Data dimensions: {data_resampled.dims}")
+    logging.info(f"Data size: {data_resampled.nbytes * 1e-6:.2f} MB")
 
     # data export settings
     chunk_size  = {'time': '50MB'}

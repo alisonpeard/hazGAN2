@@ -13,7 +13,7 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
 """
-rule get_all_data:
+rule get_all_years:
     """Rule to process all years for the project."""
     input:
         expand(
@@ -34,7 +34,8 @@ rule get_year:
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
         timecol=TIMECOL,
-        fields=FIELDS
+        fields=FIELDS,
+        dataset=DATASET
     resources:
         cpus_per_task=4,
         slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"

@@ -29,6 +29,9 @@ RSUBDIR = config['setup'][DEVICE]['rsubdir']
 # load project-specific configuration
 configfile: f"config/projects/{PROJECT}.yaml"
 
+DATASET    = config["dataset"]
+INDIR      = INDIR[DATASET]
+
 YEAR0      = config["year0"]
 YEARN      = config["yearn"]
 FIELDS     = config["fields"]
@@ -45,5 +48,5 @@ KIMG       = config["kimg"]
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
-# include: "rules/visuals.smk"
+include: "rules/visuals.smk"
 
