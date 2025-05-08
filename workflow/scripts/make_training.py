@@ -146,6 +146,6 @@ if __name__ == "__main__":
     # save
     logging.info("Finished! Saving to netcdf...")
     ds.to_netcdf(OUTPUT)
-    logging.info("Saved to", OUTPUT)
+    logging.info("Saved to{}".format(OUTPUT))
 
     

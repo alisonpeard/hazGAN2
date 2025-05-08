@@ -5,8 +5,9 @@ Must include functions:
 - cdf(q:vector, params:list) -> vector
 - threshold_selector(var:vector) -> list(params:list, p.value:float, pk:float)
 "
-library(goftest)
-
+suppressPackageStartupMessages({
+  library(goftest)
+})
 cdf <- function(q, params) {
   shape <- params$shape
   scale <- params$scale

@@ -14,7 +14,7 @@ rule plot_fitted_parameters:
         pcrit=0.05,
         cmap="PuBu_r"
     conda:
-        PYENV
+        GEOENV
     log:
         file=os.path.join("logs", "plot_parameters.log")
     script:
