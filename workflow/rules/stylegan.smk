@@ -25,13 +25,19 @@ def get_model_path(wildcards):
 
 
 rule ensure_script_executable:
+    """snakemake --profile profiles/cluster ensure_script_executable"""
     output:
         touch("logs/cuda_env_ready.done")
     shell:
-        "chmod +x workflow/scripts/cuda_env.sh"
+        """
+        pwd
+
+        chmod +x workflow/scripts/cuda_env.sh
+        """
 
 
 checkpoint train_stylegan:
+    """snakemake --profile profiles/cluster train_stylegan"""
     input:
         ready="logs/cuda_env_ready.done",
         zipfile=os.path.join(TRAINING_DIR, "images.zip")
@@ -46,10 +52,10 @@ checkpoint train_stylegan:
         "logs/stylegan/train.log"
     shell:
         """
-        source cuda_env.sh
+        source workflow/scripts/cuda_env.sh
 
         mkdir -p {output.outdir}
-        python packages/styleGAN2-DA/src/train.py \
+       python packages/styleGAN2-DA/src/train.py \
             --outdir={output.outdir} \
             --data={input.zipfile} \
             --gpus=1 \
@@ -74,7 +80,7 @@ rule generate_stylegan:
         "logs/stylegan/generate.log"
     shell:
         """
-        source cuda_env.sh
+        source workflow/scripts/cuda_env.sh
 
         python packages/styleGAN2-DA/src/generate.py \
             --outdir={output} \
