@@ -1,6 +1,8 @@
+import os
 import zipfile
 
-def calculate_nimgs(wildcards, years_of_samples=1000):
+def calculate_nimgs(wildcards):
+    years_of_samples = 1000
     with zipfile.ZipFile(os.path.join(TRAINING_DIR, "images.zip"), 'r') as zip_ref:
         img_files = [f for f in zip_ref.namelist() if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         nimgs = len(img_files)
@@ -8,10 +10,30 @@ def calculate_nimgs(wildcards, years_of_samples=1000):
     freq   = nimgs / nyears
     nsamples = int(nimgs * years_of_samples)
     return nsamples
-    
+
+
+def get_model_path(wildcards):
+    checkpoint_output = checkpoints.train_stylegan.get(**wildcards).output.outdir
+    model_dirs = glob(os.path.join(checkpoint_output, "*-images-low_shot-*"))
+    if not model_dirs:
+        raise ValueError(f"No model directories found in {checkpoint_output}")
+    latest_dir = sorted(model_dirs, key=os.path.getmtime)[-1]
+    model_file = os.path.join(latest_dir, f"network-snapshot-{KIMG}.pkl")
+    if not os.path.exists(model_file):
+        raise ValueError(f"Model file {model_file} does not exist")
+    return model_file
+
+
+rule ensure_script_executable:
+    output:
+        touch("logs/cuda_env_ready.done")
+    shell:
+        "chmod +x cuda_env.sh"
+
 
 checkpoint train_stylegan:
     input:
+        ready="logs/cuda_env_ready.done",
         zipfile=os.path.join(TRAINING_DIR, "images.zip")
     output:
         outdir=directory(os.path.join(GENERATED_DIR, "training-output"))
@@ -24,8 +46,10 @@ checkpoint train_stylegan:
         "logs/stylegan/train.log"
     shell:
         """
+        source cuda_env.sh
+
         mkdir -p {output.outdir}
-        python ../../packages/styleGAN2-DA/src/train.py \
+        python packages/styleGAN2-DA/src/train.py \
             --outdir={output.outdir} \
             --data={input.zipfile} \
             --gpus=1 \
@@ -37,22 +61,22 @@ checkpoint train_stylegan:
 
 rule generate_stylegan:
     input:
-        network=os.path.join(TRAINING_DIR,
-                            "training-output",
-                            "00001-images-low_shot-color-translation-cutout",
-                            f"network-snapshot-{KIMG}.pkl")
+        ready="logs/cuda_env_ready.done",
+        network=get_model_path
     output:
         directory(os.path.join(GENERATED_DIR, "images"))
     params:
         trunc=1.0,
-        nimgs=1000 #! want to automate this based on number of images in training set (images.zip) and YEARN - YEAR0
+        nimgs=calculate_nimgs
     conda:
         GPUENV
     log:
         "logs/stylegan/generate.log"
     shell:
         """
-        python ../../packages/styleGAN2-DA/src/generate.py \
+        source cuda_env.sh
+
+        python packages/styleGAN2-DA/src/generate.py \
             --outdir={output} \
             --seeds=1-{params.nimgs} \
             --trunc={params.trunc} \
