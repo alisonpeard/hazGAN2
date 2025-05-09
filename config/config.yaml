@@ -1,5 +1,5 @@
 # Global config file
-project: prototype
+project: bayofbengal_imdaa
 resources: "resources"
 conda-cleanup-envs: true
 conda-cleanup-pkgs: cache
