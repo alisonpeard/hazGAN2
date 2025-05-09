@@ -1,8 +1,15 @@
-name: styleGAN
+name: styleGAN-may
 channels:
+    - nvidia/label/cuda-11.8.0
     - conda-forge
 dependencies:
     - python=3.7
+    - cuda-toolkit
+    - conda-forge::gcc=11
+    - conda-forge::gxx=11
+    - conda-forge::gcc_linux-64=11
+    - conda-forge::gxx_linux-64=11
+    - conda-forge::libxcrypt
     - pip
     - pip:
         - --find-links=https://download.pytorch.org/whl/torch_stable.html
@@ -18,18 +25,26 @@ dependencies:
         - ninja
         - imageio-ffmpeg==0.4.3
 
+# - - - - - NEXT - - - - -
+# git clone git@github.com:alisonpeard/styleGAN-DA.git
+# cd styleGAN2-DA
+# micromamba env create -f environment.yaml
+# micromamba activate styleGAN-may
+# micromamba install -c "nvidia/label/cuda-11.8.0" cuda-toolkit
 
+# path variables (add to shell command or script)
+# CUDA_PATH=$(dirname $(dirname $(which nvcc)))
+# export CUDA_HOME=$CUDA_PATH
+# export PATH=$CUDA_PATH/bin:$PATH
+# export LD_LIBRARY_PATH=$CUDA_PATH/lib64:$LD_LIBRARY_PATH
+# export TORCH_CUDA_ARCH_LIST="7.0" # For V100 GPUs
 
+# # Set paths to use the conda-installed GCC
+# export CC=$(which gcc)
+# export CXX=$(which g++)
+# export CUDAHOSTCXX=$(which g++)
+# # Make sure CUDA can find the right compilers
 
-# micromamba create -n "styleGAN" python=3.7
-# micromamba activate styleGAN
-
-python -m pip install torch===1.7.1+cu110 torchvision===0.8.2+cu110 torchaudio===0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
-python -c "import torch; print(torch.__version__)" # 1.7.1+cu110
- 
-python -m pip install psutil scipy click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3
- 
-git clone https://github.com/NVlabs/stylegan2-ada-pytorch.git
-cd stylegan2-ada-pytorch
-
-
+# - - - - - TEST - - - - -
+# cd src
+# python train.py --outdir=../../data/stylegantraining-runs --data=../../data/stylegan/100-shot-pandas.zip --gpus=1
