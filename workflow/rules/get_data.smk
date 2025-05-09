@@ -13,6 +13,13 @@ micromamba activate snakemake
 snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 ```
 """
+def get_param_file():
+    """Get a parameter file for the project, or a grid file for the dataset."""
+    if os.path.exists(os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")):
+        return os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
+    else:
+        return os.path.join(RESOURCES_DIR, "grids", f"{DATASET}.nc")
+
 rule get_all_years:
     """Rule to process all years for the project."""
     input:
@@ -24,7 +31,7 @@ rule get_all_years:
 rule get_year:
     input:
         indir=INDIR,
-        params=os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
+        params=get_param_file()
     output:
         netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     params:

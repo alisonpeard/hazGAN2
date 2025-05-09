@@ -50,3 +50,11 @@ include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/visuals.smk"
 
+# run full workflow (up to checkpoint)
+rule all:
+    """Complete full data processing sequence."""
+    input:
+        os.path.join(TRAINING_DIR, "images.zip"),
+        os.path.join(FIGURE_DIR, "f01a.png"),
+        os.path.join(FIGURE_DIR, "f01b.png"),
+        os.path.join(FIGURE_DIR, "f01c.png")

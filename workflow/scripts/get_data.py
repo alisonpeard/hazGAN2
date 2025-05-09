@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # snakemake params
     INDIR      = snakemake.input.indir
-    INPUT      = snakemake.input.params
+    PARAMS      = snakemake.input.params
 
     YEAR       = int(snakemake.params.year)
     XMIN       = snakemake.params.xmin
@@ -42,8 +42,8 @@ if __name__ == '__main__':
     dataset = import_module(f"py_utils.datasets.{DATASET}")
 
     # load params and clip to XMIN, XMAX, YMIN, YMAX
-    logging.info(f"Loading parameters from {INPUT}.")
-    params = xr.open_dataset(INPUT)
+    logging.info(f"Loading parameters from {PARAMS}.")
+    params = xr.open_dataset(PARAMS)
     params = params.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
 
     # load data for year
