@@ -25,7 +25,7 @@ setup:
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
-    gpuenv: '../environments/stylegan-linux.yaml'
+    gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: 'time'
     metadata:
@@ -38,7 +38,7 @@ setup:
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
-    gpuenv: '../environments/stylegan-linux.yaml'
+    gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: "time"
     metadata:
