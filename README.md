@@ -150,6 +150,8 @@ and to output the DAG for a specific rule:
 snakemake process_all_data --dag | dot -Tpdf > docs/process_all_data.pdf
 snakemake process_all_data --dag | dot -Tsvg > docs/process_all_data.svg
 
+snakemake --profile profiles/cluster all --dag | dot -Tpdf > docs/workflow.pdf
+
 # with files
 snakemake process_all_data --filegraph | dot -Tpdf > docs/process_all_data.pdf
 snakemake process_all_data --filegraph | dot -Tsvg > docs/process_all_data.svg
