@@ -49,6 +49,7 @@ KIMG       = config["kimg"]
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/visuals.smk"
+include: "rules/stylegan.smk"
 
 # run full workflow (up to checkpoint)
 rule all:

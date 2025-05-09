@@ -36,7 +36,7 @@ marginal_threshold: 0.95
 # training probability space
 domain: gumbel # gumbel, uniform
 
-kimg: 250
+kimg: 300
 
 # output fields
 fields:
