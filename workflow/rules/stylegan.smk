@@ -28,7 +28,7 @@ rule ensure_script_executable:
     output:
         touch("logs/cuda_env_ready.done")
     shell:
-        "chmod +x cuda_env.sh"
+        "chmod +x workflow/scripts/cuda_env.sh"
 
 
 checkpoint train_stylegan:
