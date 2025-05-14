@@ -40,7 +40,9 @@ if __name__ == "__main__":
 
     # Make a more extreme dataset
     if DO_SUBSET:
-        ds['intensity'] = ds.sel(field=THRESH["field"]).anomaly.apply(THRESH["func"], dims=['lon', 'lat'])
+        # func = getattr(np, THRESH["func"])
+        # ds['intensity'] = ds.sel(field=THRESH["field"]).anomaly.reduce(THRESH["func"], dim=['lon', 'lat'])
+        ds['intensity'] = getattr(ds.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
         mask = (ds['intensity'] > THRESH["value"]).values
         idx  = np.where(mask)[0]
         ds   = ds.isel(time=idx)
