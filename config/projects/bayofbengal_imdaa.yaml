@@ -27,7 +27,7 @@ rfunc:
 # event threshold 
 event_subset:
   field: ws
-  value: 15
+  value: 25.5
   func: max
 
 # marginal threshold (for POT)

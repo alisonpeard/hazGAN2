@@ -46,6 +46,8 @@ checkpoint train_stylegan:
     params:
         augment="color,translation,cutout",
         kimg=KIMG
+    resources:
+        gpus=2
     conda:
         GPUENV
     log:
@@ -58,7 +60,7 @@ checkpoint train_stylegan:
        python packages/styleGAN2-DA/src/train.py \
             --outdir={output.outdir} \
             --data={input.zipfile} \
-            --gpus=1 \
+            --gpus={resources.gpus} \
             --DiffAugment={params.augment} \
             --kimg={params.kimg} \
             &> {log}

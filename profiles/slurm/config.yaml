@@ -1,20 +1,7 @@
 config: ["device=cluster"]
 use-conda: true
-# conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
-
-# if sacct disabled
-# executor: cluster-generic
-# cluster-generic-submit-cmd:
-#   mkdir -p logs/{rule} &&
-#   sbatch
-#     --partition=Long
-#     --mem=16G
-#     --time=08:00:00
-#     --cpus-per-task=4
-#     --output=sbatch_dump/%j.out
-#     --error=sbatch_dump/%j.err
 
 # if sacct enabled
 executor: slurm
@@ -34,12 +21,13 @@ set-resources:
         mem_mb_per_cpu: 1G
         runtime: "4h"
     train_stylegan:
+        # gpus: 4
+        # slurm_extra="--gres=gpu:4"
+        slurm_extra: "'--gpus=2'"
+        # cpus_per_task: 8
+        # mem: "32G"
         slurm_partition: "GPU"
         runtime: "6h"
     generate_stylegan:
         slurm_partition: "GPU"
         runtime: "1h"
-
-# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html
-# https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html#specifying-account-and-partition
-# https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
