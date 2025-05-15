@@ -98,7 +98,7 @@ rule process_generated:
     """Transform generated images to netCDF and apply inverse
     transformations."""
     input:
-        images=expand(os.path.join(GENERATED_DIR, "images", "seed{seed:04d}.png"), seed=range(1, calculate_nimgs(wildcards) + 1))
+        image_dir=os.path.join(GENERATED_DIR, "images")
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
         training_data=os.path.join(TRAINING_DIR, "data.nc")
     output:
