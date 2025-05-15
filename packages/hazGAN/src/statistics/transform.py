@@ -3,15 +3,15 @@ import numpy as np
 import xarray as xr
 from functools import partial
 
+
 if __name__ == "__main__":
     from base import *
     from empirical import quantile
-    from empirical import semiparametric_quantile as semiparametric_quantile0
+    from empirical import semiparametric_quantile as semiparametric_quantile
 else:
     from .base import *
     from .empirical import quantile
-    from .empirical import semiparametric_quantile as semiparametric_quantile0
-
+    from .empirical import semiparametric_quantile as semiparametric_quantile
 
 
 def invPIT(
@@ -19,7 +19,7 @@ def invPIT(
         x:np.ndarray,
         theta:np.ndarray=None,
         gumbel_margins:bool=False,
-        distribution:str="genpareto"
+        distns:list=["weibull", "genpareto", "genpareto"]
     ) -> np.ndarray:
     """
     Transform uniform marginals to original distributions via inverse interpolation of empirical CDF.
@@ -34,18 +34,15 @@ def invPIT(
         Parameters of fitted Generalized Pareto Distribution (GPD)
     gumbel_margins : bool, optional (default = False)
         Whether to apply inverse Gumbel transform
-    
+    distribution : list, optional (default = ["weibull", "genpareto", "genpareto"])
+        Distributions to use for quantile calculation. 
+
     Returns
     -------
     np.ndarray
         Transformed marginals with same shape as input u
     """
     u = inv_gumbel(u).numpy() if gumbel_margins else u
-
-    # assert x.shape[1:] == u.shape[1:], (
-    #     f"Marginal dimensions mismatch: {u.shape[1:]} != {x.shape[1:]}"
-    # )
-    semiparametric_quantile = partial(semiparametric_quantile0, distribution=distribution)
 
     # flatten along spatial dimensions
     original_shape = u.shape
@@ -65,7 +62,6 @@ def invPIT(
             )    
 
     # vectorised numpy transform
-    distns = ["weibull", "genpareto", "genpareto"]
     def transform(x, u, theta, i, c):
         x_i = x[:, i, c]
         u_i = u[:, i, c]
@@ -90,7 +86,9 @@ def invPIT(
 
 def invPITDataset(ds:xr.Dataset, theta_var:str="params",
                   u_var:str="uniform", x_var:str="anomaly",
-                  gumbel_margins:bool=False) -> xr.DataArray:
+                  gumbel_margins:bool=False,
+                  distns=["weibull", "genpareto", "genpareto"]
+                  ) -> xr.DataArray:
     """
     Wrapper of invPIT for xarray.Dataset.
     """
@@ -98,7 +96,7 @@ def invPITDataset(ds:xr.Dataset, theta_var:str="params",
     x = ds[x_var].values
     theta = ds[theta_var].values if theta_var in ds else None
 
-    x_inv = invPIT(u, x, theta, gumbel_margins)
+    x_inv = invPIT(u, x, theta, gumbel_margins, distns=distns)
     x_inv = xr.DataArray(x_inv, dims=ds[x_var].dims, coords=ds[x_var].coords)
 
     return x_inv
