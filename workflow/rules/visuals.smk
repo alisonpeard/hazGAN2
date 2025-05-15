@@ -1,3 +1,5 @@
+"""Reference: https://github.com/alisonpeard/styleGAN-DA/blob/main/visualise.py"""
+
 rule plot_fitted_parameters:
     """
     Figure 2: fitted parameters for each variable. Figure 1 in paper.
@@ -20,6 +22,17 @@ rule plot_fitted_parameters:
     script:
         os.path.join("..", "scripts", "parameter_plots.py")
 
+
+# rule plot_samples:
+#     """Figure 3: generated and observed samples."""
+#     input:
+#         train=os.path.join(TRAINING_DIR, "data.nc"),
+#         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+#     output:
+#         outdir=directory(os.path.join(FIGURE_DIR, "samples"))
+#     params:
+#         fields=FIELDS,
+#         shuffle=True,
 
 # rule figure_two:
 #     """
@@ -58,15 +71,6 @@ rule plot_fitted_parameters:
 #     """
 #     rules:
 #         - plot_10_year_samples
-#     """
-# rule plot_samples:
-#     """
-#     Figure 3: generated and observed samples.
-
-#     wildcards:
-#         - field: {field}
-
-#     current script: /Users/alison/Documents/DPhil/github.nosync/styleGAN-DA/visualise.py
 #     """
 
 

@@ -94,10 +94,25 @@ rule generate_stylegan:
         """
 
 
+rule install_hazgan_utils:
+    """Install hazgan_utils package."""
+    output:
+        touch("logs/hazgan_utils.done")
+    conda:
+        GEOENV
+    log:
+        "logs/install_hazgan_utils.log"
+    shell:
+        """
+        cd packages/hazGAN/
+        python -m pip install -e .
+        """
+
 rule process_generated:
     """Transform generated images to netCDF and apply inverse
     transformations."""
     input:
+        ready="logs/hazgan_utils.done",
         image_dir=os.path.join(GENERATED_DIR, "images"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
         training_data=os.path.join(TRAINING_DIR, "data.nc")
@@ -110,35 +125,37 @@ rule process_generated:
         event_subset=config['event_subset'],
         fields=FIELDS
     conda:
-        GEOENV2
+        GEOENV
     log:
         file=os.path.join("logs", "process_generated.log")
     script:
         os.path.join("..", "scripts", "process_generated.py")
 
 
-rule make_benchmarks:
-    """Create benchmark datasets with assumption of total independence/dependence.
+# rule make_benchmarks:
+#     """Create benchmark datasets with assumption of total independence/dependence.
 
-    NOTE: Sampling from base distribution of events (not extremes).
-    """
-    input:
-        data=os.path.join(TRAINING_DIR, "data.nc")
-    output:
-        dependent=os.path.join(GENERATED_DIR, "netcdf", "dependent.nc"),
-        independent=os.path.join(GENERATED_DIR, "netcdf", "independent.nc")
-    params:
-        resx=RESOLUTION['lon'],
-        resy=RESOLUTION['lat'],
-        year0=YEAR0,
-        yearn=YEARN,
-        nyrs=1000,
-        n_hazmaps=10,
-        fields=FIELDS
-    conda:
-        GEOENV2
-    log:
-        file=os.path.join("logs", "make_benchmarks.log")
-    script:
-        os.path.join("..", "scripts", "make_benchmarks.py")
+#     NOTE: Sampling from base distribution of events (not extremes).
+#     """
+#     input:
+#         data=os.path.join(TRAINING_DIR, "data.nc")
+#     output:
+#         dependent=os.path.join(GENERATED_DIR, "netcdf", "dependent.nc"),
+#         independent=os.path.join(GENERATED_DIR, "netcdf", "independent.nc")
+#     params:
+#         resx=RESOLUTION['lon'],
+#         resy=RESOLUTION['lat'],
+#         year0=YEAR0,
+#         yearn=YEARN,
+#         nyrs=1000,
+#         n_hazmaps=10,
+#         fields=FIELDS
+#     conda:
+#         GEOENV
+#     log:
+#         file=os.path.join("logs", "make_benchmarks.log")
+#     script:
+#         os.path.join("..", "scripts", "make_benchmarks.py")
 
+
+# rule make_brownresknick:

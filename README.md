@@ -1,15 +1,15 @@
-[![Snakemake](https://img.shields.io/badge/snakemake-9.1.7-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+[![Snakemake](https://img.shields.io/badge/snakemake->=8.0.0-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
 # HazGAN2 readme
-This repository contains a `snakemake>=8.0` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
+This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
 
-The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
+The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
 
-### Relative paths
-* Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
-* Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
+> ### 💡 Note on snakemake relative paths
+> * Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
+> * Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
 
 ## Quick start (on SoGE cluster)
 ```bash
@@ -17,10 +17,9 @@ conda create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
 conda config --set channel_priority strict # snakemake complains otherwise
 conda install -c conda-forge conda=24.7.1
-
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
 
-snakemake get_all_data --profile profiles/slurm/ --config project=renewablesuk device=cluster
+snakemake --profile profiles/slurm get_all_data
 ```
 
 ## Key rules
@@ -29,43 +28,36 @@ snakemake get_all_data --profile profiles/slurm/ --config project=renewablesuk d
 - `make_paper_figures`: makes the figures for the paper
 
 ## Current status [keep updated]
-Date: 24-04-2025
+Date: 15-05-2025
 
-- **Complete:** `rule make_rgb_images`
-- **Next:** Run full bayofbengal workflow using screen
-    ```bash
-    screen -S bayofbengal
-    micromamba activate snakemake
-    snakemake --profile profiles/slurm/ process_all_data
-
-    # minimize the screen
-    Ctrl + A, D
-
-    # check the screen
-    screen -r bayofbengal
-
-    ```
-- **To do:**
-    - `rule train_stylegan2` (implemented but not tested)
+- **Complete:**
+    - StyleGAN training on cluster GPU nodes
+    - StyleGAN generating new samples
+- **In progress:**
+    - process generated images
+    - make benchmark datasets
+    - plot 64x64 samples
 
 ## Notes on repositories
 
 This repository contains two submodules:
 - [hazGAN](github.com/alisonpeard/hazGAN)
 - [styleGAN2-DA](github.com/alisonpeard/styleGAN2-DA)
+
+
 To clone the repository with the submodules, use the following command:
 ```bash
 git clone --recurse-submodules git@github.com:alisonpeard/hazGAN2.git
 ```
 
-> 📋 Need to clean up the respective submodules.
+> 📋 This isn't working so have just removed `.git` from both for now.
 
 ## Things to do outside of this workflow
 
 This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally. This includes:
 
 - Generate a `params.nc` file for the project
-- All extra analysis
+- All extra analysis (in scripts/Jupyter notebooks)
 
 ## Getting started
 
