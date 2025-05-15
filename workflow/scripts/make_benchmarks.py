@@ -100,8 +100,9 @@ if __name__ == "__main__":
     logging.info(f"Independent dataset shape: {independent_ds.anomaly.shape}")
 
     # save datasets
-    independent_ds.to_netcdf(INDEPENDENT, mode="w", format="NETCDF4")
-    dependent_ds.to_netcdf(DEPENDENT, mode="w", format="NETCDF4")
+    independent_ds.to_netcdf(INDEPENDENT)
+    dependent_ds.to_netcdf(DEPENDENT)
+
     logging.info(f"Saved independent dataset to {INDEPENDENT}")
     logging.info(f"Saved dependent dataset to {DEPENDENT}")
 
