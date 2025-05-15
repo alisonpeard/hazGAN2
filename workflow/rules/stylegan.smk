@@ -94,7 +94,7 @@ rule generate_stylegan:
         """
 
 
-rule install_hazgan_utils:
+rule install_hazgan:
     """Install hazgan_utils package."""
     output:
         touch("logs/hazgan_utils.done")
@@ -105,7 +105,9 @@ rule install_hazgan_utils:
     shell:
         """
         cd packages/hazGAN/
-        python -m pip install -e .
+        python -m pip install .
+
+        python -c "import hazGAN; print(f'HazGAN {hazGAN.__version__} installed successfully')"
         """
 
 rule process_generated:
