@@ -3,6 +3,7 @@
 import os
 from glob import glob
 import logging
+from snakemake.script import snakemake
 
 os.environ["USE_PYGEOS"] = "0"
 from PIL import Image

@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # load the training data
     data   = xr.open_dataset(DATA)
-    params = data.params.values
+    params = data["params"].values
     distns = [field["distn"] for field in FIELDS]
 
     nyears  = YEARN - YEAR0
@@ -60,13 +60,14 @@ if __name__ == "__main__":
         data_vars={
             "anomaly": (("time", "lat", "lon", "field"), independent_x),
             "uniform": (("time", "lat", "lon", "field"), independent_u),
-            "params": (("lat", "lon", "field"), params),
+            "params": (("lat", "lon", "param", "field"), params),
         },
         coords={
             "field": list(FIELDS.keys()),
+            "param": ["loc", "scale", "shape"],
             "time": np.arange(nevents),
-            "lat": data.lat,
-            "lon": data.lon,
+            "lat": data.lat.values,
+            "lon": data.lon.values,
         },
     )
     independent_ds["params"] = (("time", "param"), params)
@@ -90,8 +91,8 @@ if __name__ == "__main__":
             "field": list(FIELDS.keys()),
             "param": ["loc", "scale", "shape"],
             "time": np.arange(N_HAZMAPS),
-            "lat": data.lat,
-            "lon": data.lon
+            "lat": data["lat"].values,
+            "lon": data["lon"].values
         },
     )
 
