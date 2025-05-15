@@ -19,4 +19,4 @@ dependencies:
     - pyyaml
     - h5py
     - pip:
-        - -e ../../packages/hazGAN/
+        - ../../packages/hazGAN/
