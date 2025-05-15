@@ -93,11 +93,13 @@ if __name__ == "__main__":
     # save to NetCDF
     data = xr.Dataset(
         {
-            "anomaly": (("time", "lat", "lon"), images_x),
-            "uniform": (("time", "lat", "lon"), images_u),
-            "params": (("time",), params),
+            "anomaly": (("time", "lat", "lon", "field"), images_x),
+            "uniform": (("time", "lat", "lon", "field"), images_u),
+            "params": (("lat", "lon", "param", "field"), params),
         },
         coords={
+            "param": ["loc", "scale", "shape"],
+            "field": list(FIELDS.keys()),
             "time": (("time"), np.arange(images_x.shape[0])),
             "lat": (("lat"), train["lat"].values),
             "lon": (("lon"), train["lon"].values),
