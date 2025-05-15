@@ -18,3 +18,11 @@ dependencies:
     - matplotlib
     - pyyaml
     - h5py
+    # - cartopy
+    # - tqdm
+    # - fiona
+    # - xagg
+    # - rioxarray
+    # - shapely>=2.0
+    # - seaborn
+    # - libgdal
