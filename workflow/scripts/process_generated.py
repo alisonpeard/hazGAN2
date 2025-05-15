@@ -1,14 +1,13 @@
 """Load all generated PNGs, transform to original scales, and save to NetCDF."""
 # %%
 import os
+from glob import glob
 import logging
 
 os.environ["USE_PYGEOS"] = "0"
 from PIL import Image
 import numpy as np
 import xarray as xr
-
-from calendar import month_name as month
 
 from hazGAN.statistics import gumbel, inv_gumbel, invPIT
 
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     )
     
     # load parameters
-    IMAGES      = snakemake.input.images
+    IMAGE_DIR   = snakemake.input.image_dir
     IMAGE_STATS = snakemake.input.image_stats
     TRAIN       = snakemake.input.training_data
     DO_SUBSET   = snakemake.params.do_subset # NOTE: this is messy... clean later
@@ -31,6 +30,8 @@ if __name__ == "__main__":
     OUTPUT      = snakemake.output.netcdf
 
     # load all images
+    IMAGES = glob(os.path.join(IMAGE_DIR, "*.png"))
+    logging.info(f"Found {len(IMAGES)} images in {IMAGE_DIR}.")
     images = []
     for png in sorted(IMAGES):
         img = Image.open(png)
