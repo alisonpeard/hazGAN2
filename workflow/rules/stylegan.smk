@@ -125,7 +125,7 @@ rule make_benchmarks:
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        dependent=os.path.join(GENERATED_DIR, "netcdf", "dependent.nc")
+        dependent=os.path.join(GENERATED_DIR, "netcdf", "dependent.nc"),
         independent=os.path.join(GENERATED_DIR, "netcdf", "independent.nc")
     params:
         resx=RESOLUTION['lon'],
