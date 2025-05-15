@@ -10,8 +10,9 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-from hazGAN.statistics import gumbel, inv_gumbel, invPIT
+os.system("python -m pip install ../../packages/hazGAN/")
 
+from hazGAN.statistics import gumbel, inv_gumbel, invPIT
 
 if __name__ == "__main__":
     # configure logging
