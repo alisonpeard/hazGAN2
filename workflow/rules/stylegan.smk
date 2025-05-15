@@ -107,6 +107,8 @@ rule install_hazgan:
         cd packages/hazGAN/
         python -m pip install .
 
+        python -m pip install cartopy # temporary fix for cartopy
+
         python -c "import hazGAN; print(f'HazGAN installed successfully')"
         """
 
