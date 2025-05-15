@@ -7,6 +7,10 @@ The workflow has been made as modular as possible to facilitate modifications fo
 
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
 
+### Relative paths
+* Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
+* Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
+
 ## Quick start (on SoGE cluster)
 ```bash
 conda create -c conda-forge -c bioconda -n snakemake snakemake
