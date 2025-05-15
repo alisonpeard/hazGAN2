@@ -110,7 +110,7 @@ rule process_generated:
         event_subset=config['event_subset'],
         fields=FIELDS
     conda:
-        GEOENV
+        GEOENV2
     log:
         file=os.path.join("logs", "process_generated.log")
     script:
