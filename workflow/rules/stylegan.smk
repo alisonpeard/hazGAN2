@@ -108,7 +108,10 @@ rule install_hazgan:
         python -m pip install .
 
         python -m pip install cartopy # temporary fix for cartopy
-
+        python -m pip install matplotlib-scalebar
+        python -m pip install tqdm
+        python -m pip install seaborn
+        
         python -c "import hazGAN; print(f'HazGAN installed successfully')"
         """
 
