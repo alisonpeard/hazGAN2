@@ -1,4 +1,5 @@
 import os
+from glob import glob
 import zipfile
 
 def calculate_nimgs(wildcards):
@@ -8,7 +9,7 @@ def calculate_nimgs(wildcards):
         nimgs = len(img_files)
     nyears = YEARN - YEAR0
     freq   = nimgs / nyears
-    nsamples = int(nimgs * years_of_samples)
+    nsamples = int(freq * years_of_samples)
     return nsamples
 
 
@@ -18,7 +19,7 @@ def get_model_path(wildcards):
     if not model_dirs:
         raise ValueError(f"No model directories found in {checkpoint_output}")
     latest_dir = sorted(model_dirs, key=os.path.getmtime)[-1]
-    model_file = os.path.join(latest_dir, f"network-snapshot-{KIMG}.pkl")
+    model_file = os.path.join(latest_dir, f"network-snapshot-{str(KIMG).zfill(6)}.pkl")
     if not os.path.exists(model_file):
         raise ValueError(f"Model file {model_file} does not exist")
     return model_file
