@@ -94,32 +94,27 @@ rule generate_stylegan:
         """
 
 
-rule install_hazgan:
-    """Install hazgan_utils package."""
-    output:
-        touch("logs/hazgan_utils.done")
-    conda:
-        GEOENV
-    log:
-        "logs/install_hazgan_utils.log"
-    shell:
-        """
-        cd packages/hazGAN/
-        python -m pip install .
-
-        python -m pip install cartopy # temporary fix for cartopy
-        python -m pip install matplotlib-scalebar
-        python -m pip install tqdm
-        python -m pip install seaborn
+# rule install_hazgan:
+#     """Install hazgan_utils package."""
+#     output:
+#         touch("logs/hazgan_utils.done")
+#     conda:
+#         GEOENV
+#     log:
+#         "logs/install_hazgan_utils.log"
+#     shell:
+#         """
+#         cd packages/hazGAN/
+#         python -m pip install .
         
-        python -c "import hazGAN; print(f'HazGAN installed successfully')"
-        """
+#         python -c "import hazGAN; print(f'HazGAN installed successfully')"
+#         """
 
 rule process_generated:
     """Transform generated images to netCDF and apply inverse
     transformations."""
     input:
-        ready="logs/hazgan_utils.done",
+        # ready="logs/hazgan_utils.done",
         image_dir=os.path.join(GENERATED_DIR, "images"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
         training_data=os.path.join(TRAINING_DIR, "data.nc")
