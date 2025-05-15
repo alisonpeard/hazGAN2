@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-os.system("python -m pip install ../../packages/hazGAN/")
+# os.system("python -m pip install ../../packages/hazGAN/")
 
 from hazGAN.statistics import gumbel, inv_gumbel, invPIT
 

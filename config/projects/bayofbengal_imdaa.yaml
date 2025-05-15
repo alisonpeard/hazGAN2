@@ -39,6 +39,9 @@ domain: gumbel # gumbel, uniform
 kimg: 300
 
 # output fields
+# TODO: add units
+# TODO: add cmaps
+# TODO: add titles
 fields:
   ws:
     args:
