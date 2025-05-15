@@ -4,19 +4,19 @@ channels:
 dependencies:
     - python>=3.8,<3.11
     - pip
-    - dask
-    - numpy==1.26.4
-    - pandas
-    - geopandas
-    - xarray
-    - gdal==3.6.2  # newer versions don't seem to support netCDF 
-    - hdf5
-    - netcdf4
-    - scipy
-    - scikit-learn
-    - ipykernel
-    - matplotlib
-    - pyyaml
-    - h5py
+    # - dask
+    # - numpy==1.26.4
+    # - pandas
+    # - geopandas
+    # - xarray
+    # - gdal==3.6.2  # newer versions don't seem to support netCDF 
+    # - hdf5
+    # - netcdf4
+    # - scipy
+    # - scikit-learn
+    # - ipykernel
+    # - matplotlib
+    # - pyyaml
+    # - h5py
     - pip:
         - -e ../../packages/hazGAN/

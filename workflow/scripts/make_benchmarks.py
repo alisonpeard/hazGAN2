@@ -2,7 +2,6 @@
 """Create total dependence/independence benchmarks."""
 # %%
 import os
-from glob import glob
 import logging
 
 os.environ["USE_PYGEOS"] = "0"
@@ -10,7 +9,7 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-from hazGAN.statistics import gumbel, inv_gumbel, invPIT
+from hazGAN.statistics import invPIT
 
 
 def λ(number_extremes:int, total_years:int, unit:int=1) -> float:
@@ -25,43 +24,35 @@ if __name__ == "__main__":
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
     
+    # load i/o
+    DATA   = snakemake.input.data
+    DEPENDENT = snakemake.output.dependent
+    INDEPENDENT = snakemake.output.independent
+
     # load parameters
-    INPUT   = snakemake.input.image_dir
     RESX    = snakemake.params.resx
     RESY    = snakemake.params.resy
     YEAR0   = snakemake.params.year0
-    YEARN   = snakemake.params.year1
-    DO_SUBSET = snakemake.params.do_subset
-    THRESH = snakemake.params.event_subset
+    YEARN   = snakemake.params.yearn
     NYRS    = snakemake.params.nyrs # number of years of data to generate
     FIELDS = snakemake.params.fields
-    data = xr.open_dataset(snakemake.input.data)
-    N_HAZMAPS = 10
+    N_HAZMAPS = snakemake.params.n_hazmaps
 
-    # %%
+    # load the training data
+    data = xr.open_dataset(DATA)
     params = data.params.values
     distns = [field["distn"] for field in FIELDS]
-    ref = data.copy()
-    if DO_SUBSET:
-        data['intensity'] = getattr(data.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
-        mask = (data['intensity'] > THRESH["value"]).values
-        idx  = np.where(mask)[0]
-        data   = data.isel(time=idx)
 
     nyears = YEARN - YEAR0
     h, w, c = RESY, RESX, 3
 
-    x_ref = ref.anomaly.values
     x = data.anomaly.values
-    # %%
-    λ_event  = λ(len(x_ref), nyears) # event rate for all storms
-    λ_extreme = λ(len(x), nyears) # event rate for extreme storms
-    nevents = int(NYRS * λ_event)  # how many storms for NYRS years of data
-    nextremes = int(NYRS * λ_extreme) # how many extreme storms for NYRS years of data
 
-    # %%
-    # make totally independent samples
-    # sample independent events from base distribution
+    # calculate event rate and number of events to generatee
+    λ_event  = λ(len(x), nyears)   # event rate for all storms
+    nevents = int(NYRS * λ_event)  # how many storms for NYRS years of data
+
+    # make totally independent samples (sample from base distribution)
     independent_u = np.random.uniform(1e-6, 1-1e-6, size=(nevents, h, w, c))
 
     # make hazard map-style (dependent) samples
@@ -73,8 +64,44 @@ if __name__ == "__main__":
     dependent_rps       = np.repeat(dependent_rps, h*w*c, axis=0)
     dependent_rps       = dependent_rps.reshape(N_HAZMAPS, h, w, c)
 
-    # %% transform to data space
+    # transform to data space
+    independent_x = invPIT(independent_u, x, params, distns=distns)
+    dependent_x   = invPIT(dependent_u, x, params, distns=distns)
 
-    independent_x = invPIT(independent_u, x_ref, params, distns=distns)
-    dependent_x   = invPIT(dependent_u, x_ref, params, distns=distns)
+    # make datasets
+    independent_ds = xr.Dataset(
+        data_vars={
+            "anomaly": (("time", "lat", "lon"), independent_x),
+            "uniform": (("time", "lat", "lon"), independent_u),
+        },
+        coords={
+            "time": np.arange(nevents),
+            "lat": data.lat,
+            "lon": data.lon,
+        },
+    )
+    independent_ds["params"] = (("time", "param"), params)
+
+    dependent_ds = xr.Dataset(
+        data_vars={
+            "anomaly": (("time", "lat", "lon"), dependent_x),
+            "uniform": (("time", "lat", "lon"), dependent_u),
+        },
+        coords={
+            "time": np.arange(nevents),
+            "lat": data.lat,
+            "lon": data.lon,
+        },
+    )
+    dependent_ds["params"] = (("time", "param"), params)
+    dependent_ds["rps"] = (("time", "hazmap"), dependent_rps)
+
+    logging.info(f"Dependent dataset shape: {dependent_ds.anomaly.shape}")
+    logging.info(f"Independent dataset shape: {independent_ds.anomaly.shape}")
+
+    # save datasets
+    independent_ds.to_netcdf(INDEPENDENT, mode="w", format="NETCDF4")
+    dependent_ds.to_netcdf(DEPENDENT, mode="w", format="NETCDF4")
+    logging.info(f"Saved independent dataset to {INDEPENDENT}")
+    logging.info(f"Saved dependent dataset to {DEPENDENT}")
 
