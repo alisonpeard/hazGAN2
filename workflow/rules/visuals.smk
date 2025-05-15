@@ -23,16 +23,22 @@ rule plot_fitted_parameters:
         os.path.join("..", "scripts", "parameter_plots.py")
 
 
-# rule plot_samples:
-#     """Figure 3: generated and observed samples."""
-#     input:
-#         train=os.path.join(TRAINING_DIR, "data.nc"),
-#         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
-#     output:
-#         outdir=directory(os.path.join(FIGURE_DIR, "samples"))
-#     params:
-#         fields=FIELDS,
-#         shuffle=True,
+rule plot_samples:
+    """Figure 3: generated and observed samples."""
+    input:
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+    output:
+        outdir=directory(os.path.join(FIGURE_DIR, "samples"))
+    params:
+        fields=FIELDS,
+        shuffle=True
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "plot_samples.log")
+    script:
+        os.path.join("..", "scripts", "plot_samples.py")
 
 # rule figure_two:
 #     """
