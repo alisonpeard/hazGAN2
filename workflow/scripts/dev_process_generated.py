@@ -1,35 +1,55 @@
+# %% - - - - - REFERENCE - - - - -
 """Load all generated PNGs, transform to original scales, and save to NetCDF."""
-# %%
 import os
 from glob import glob
 import logging
-from snakemake.script import snakemake
 
 os.environ["USE_PYGEOS"] = "0"
 from PIL import Image
 import numpy as np
 import xarray as xr
 
-# os.system("python -m pip install ../../packages/hazGAN/")
-
 from hazGAN.statistics import gumbel, inv_gumbel, invPIT
 
+# %%
 if __name__ == "__main__":
-    # configure logging
-    logging.basicConfig(
-        filename=snakemake.log.file,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    
+
     # load parameters
-    IMAGE_DIR   = snakemake.input.image_dir
-    IMAGE_STATS = snakemake.input.image_stats
-    TRAIN       = snakemake.input.training_data
-    DO_SUBSET   = snakemake.params.do_subset # NOTE: this is messy... clean later
-    THRESH      = snakemake.params.event_subset
-    FIELDS      = snakemake.params.fields
-    OUTPUT      = snakemake.output.netcdf
+    IMAGE_DIR   = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/images"
+    IMAGE_STATS = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/image_stats.npz"
+    TRAIN       = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
+    OUTPUT = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/data.nc"
+    DO_SUBSET   = True
+    THRESH = {
+        "field": "ws",
+        "func": "max",
+        "value": 25.5,
+    }
+
+    FIELDS = {
+        "ws": {
+            "args": ["GUST_10m"],
+            "func": "identity",
+            "hfunc": "max",
+            "obj": "max",
+            "distn": "weibull",
+        },
+        "msl": {
+            "args": ["PRMSL_msl"],
+            "func": "identity",
+            "hfunc": "min",
+            "obj": "min",
+            "distn": "genpareto",
+        },
+        "tp": {
+            "args": ["APCP_sfc"],
+            "func": "identity",
+            "hfunc": "sum",
+            "obj": "max",
+            "distn": "genpareto",
+        },
+    }
+
 
     # load all images
     IMAGES = glob(os.path.join(IMAGE_DIR, "*.png"))
@@ -42,7 +62,7 @@ if __name__ == "__main__":
     images /= 255
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
-    # apply image statistics to rescale
+    # %% apply image statistics to rescale
     image_stats = np.load(IMAGE_STATS)
     image_minima = image_stats['min']
     image_maxima = image_stats['max']
@@ -90,6 +110,7 @@ if __name__ == "__main__":
     images_tmp = np.flip(images_u, axis=1)
     distns = [field['distn'] for field in FIELDS.values()]
     images_x = invPIT(images_tmp, train_x, params, distns=distns)
+    # images_x   = np.flip(images_x, axis=1)
 
     # save to NetCDF
     data = xr.Dataset(
@@ -106,7 +127,14 @@ if __name__ == "__main__":
             "lon": (("lon"), train["lon"].values),
         },
     )
-
+    # %%
+    FIELD = 0
+    TIME = np.random.randint(0, images_x.shape[0])
+    import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+    data.isel(field=FIELD, time=TIME).anomaly.plot(ax=axs[0], cmap="viridis")
+    data.isel(field=FIELD, param=1).params.plot(ax=axs[1], cmap="viridis")
+    # %%
     data.to_netcdf(OUTPUT, format="NETCDF4")
     logging.info(f"Saved generated data to {OUTPUT}.")
     logging.info("Done.")
