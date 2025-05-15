@@ -22,6 +22,7 @@ for newdir in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]
 
 # choose device-specific conda environments
 GEOENV = config['setup'][DEVICE]['geoenv']
+GEOENV2 = config['setup'][DEVICE]['geoenv2']
 RENV  = config['setup'][DEVICE]['renv']
 GPUENV = config['setup'][DEVICE]['gpuenv']
 RSUBDIR = config['setup'][DEVICE]['rsubdir']
