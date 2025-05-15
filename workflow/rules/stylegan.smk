@@ -107,7 +107,7 @@ rule install_hazgan:
         cd packages/hazGAN/
         python -m pip install .
 
-        python -c "import hazGAN; print(f'HazGAN {hazGAN.__version__} installed successfully')"
+        python -c "import hazGAN; print(f'HazGAN installed successfully')"
         """
 
 rule process_generated:
