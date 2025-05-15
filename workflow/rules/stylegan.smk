@@ -92,3 +92,33 @@ rule generate_stylegan:
             --network={input.network} \
             &> {log}
         """
+
+
+rule process_generated:
+    """Transform generated images to netCDF and apply inverse
+    transformations."""
+    input:
+        images=expand(os.path.join(GENERATED_DIR, "images", "seed{seed:04d}.png"), seed=range(1, calculate_nimgs(wildcards) + 1))
+        image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
+        training_data=os.path.join(TRAINING_DIR, "data.nc")
+    output:
+        netcdf=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+    params:
+        resx=RESOLUTION['lon'],
+        resy=RESOLUTION['lat'],
+        do_subset=True,
+        event_subset=config['event_subset'],
+        fields=FIELDS
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "process_generated.log")
+    script:
+        os.path.join("..", "scripts", "process_generated.py")
+
+
+# rule make_benchmarks:
+#     """Create benchmark datasets with assumption of total independence/dependence.
+    
+#     Based-on analysis.py
+#     """
