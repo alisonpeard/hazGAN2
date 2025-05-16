@@ -25,5 +25,5 @@ dependencies:
     - gdal
     - libgdal
     - pip:
-        - packages/hazGAN/
+        - packages/hazGAN
         - matplotlib-scalebar
