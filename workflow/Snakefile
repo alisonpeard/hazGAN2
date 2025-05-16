@@ -22,7 +22,7 @@ for newdir in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]
 
 # choose device-specific conda environments
 GEOENV = config['setup'][DEVICE]['geoenv']
-GEOENV2 = config['setup'][DEVICE]['geoenv2']
+GEOENV_MINIMAL = config['setup'][DEVICE]['geoenv_minimal']
 RENV  = config['setup'][DEVICE]['renv']
 GPUENV = config['setup'][DEVICE]['gpuenv']
 RSUBDIR = config['setup'][DEVICE]['rsubdir']
@@ -51,6 +51,19 @@ include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/visuals.smk"
 include: "rules/stylegan.smk"
+
+rule test_hagan_install:
+    output:
+        touch("logs/hagan_tested.done")
+    conda:
+        GEOENV_MINIMAL
+    log:
+        "logs/test_hagan_install.log"
+    shell:
+        """
+        python -c "import hazgan; print(f'HazGAN installed successfully')"
+        """
+
 
 # run full workflow (up to checkpoint)
 rule all:

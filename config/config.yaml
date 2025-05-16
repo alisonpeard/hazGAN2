@@ -12,7 +12,6 @@ setup:
       imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
     output: "results"
     geoenv: '../environments/apple-silicon/geo.yaml'
-    geoenv2: '../environments/apple-silicon/geo2.yaml'
     renv: "../environments/apple-silicon/r.yaml"
     gpuenv: ""
     rsubdir: "osx-64"
@@ -25,7 +24,7 @@ setup:
       imdaa: "/soge-home/data/analysis/imdaa/"
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
-    geoenv2: '../environments/linux/geo2.yaml'
+    geoenv_minimal: '../environments/linux/geo-minimal.yaml'
     renv: "../environments/linux/r.yaml"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
@@ -39,7 +38,7 @@ setup:
       imdaa: "/soge-home/data/analysis/imdaa/"
     output: 'results'
     geoenv: '../environments/linux/geo.yaml'
-    geoenv2: '../environments/linux/geo2.yaml'
+    geoenv_minimal: '../environments/linux/geo-minimal.yaml'
     renv: "../environments/linux/r.yaml"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
