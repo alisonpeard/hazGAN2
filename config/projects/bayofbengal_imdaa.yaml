@@ -67,6 +67,6 @@ fields:
     hfunc: sum
     obj: max
     distn: genpareto
-    units: "m"
+    units: "mm" # same as kg p m-2
     cmap: "PuBu"
     title: "Total Precipitation"

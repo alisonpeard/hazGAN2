@@ -60,6 +60,7 @@ if __name__ == "__main__":
         images.append(img)
     images = np.array(images, dtype=np.float32)
     images /= 255
+    images = np.flip(images, axis=1) # flip y-axis
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
     # %% apply image statistics to rescale
@@ -107,9 +108,9 @@ if __name__ == "__main__":
 
     # transform images to original scale using invPIT
     # TODO: need to check y-axis orientation
-    images_tmp = np.flip(images_u, axis=1)
+    # images_tmp = np.flip(images_u, axis=1)
     distns = [field['distn'] for field in FIELDS.values()]
-    images_x = invPIT(images_tmp, train_x, params, distns=distns)
+    images_x = invPIT(images_u, train_x, params, distns=distns)
     # images_x   = np.flip(images_x, axis=1)
 
     # save to NetCDF
