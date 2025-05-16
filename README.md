@@ -22,6 +22,13 @@ python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if 
 snakemake --profile profiles/slurm get_all_data
 ```
 
+But for your mental health you should set up the conda envs on the CPU nodes interactively, using more resources.
+```bash
+srun -p Short --pty --cpus-per-task=16 --mem=32G /bin/bash
+micromamba activate snakemake
+snakemake --profile profiles/cluster test_hazgan_install # I may delete this rule
+```
+
 ## Key rules
 - `get_all_data`: downloads and processes the data from the SoGE filestore
 - `process_all_data`: processes the data for training with styleGAN2

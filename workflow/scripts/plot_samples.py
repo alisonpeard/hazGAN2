@@ -39,16 +39,8 @@ if __name__ == "__main__":
 
     # make the samples
     for i, FIELD in enumerate(FIELDS.keys()):
-        # ! TODO: this should be in config as part of field defn
-        if FIELD == "ws":
-            METRIC = r'ms$^{-1}$'
-            CMAP   = "viridis" # Spectral_r
-        elif FIELD == "tp":
-            METRIC = 'm'
-            CMAP   = "PuBu"
-        elif FIELD == "msl":
-            METRIC = "Pa"
-            CMAP   = "YlOrBr"
+        METRIC = FIELDS[FIELD]["units"]
+        CMAP   = FIELDS[FIELD]["cmap"]
 
         figa = samples.plot(gener_g[gener_ids], train_g[train_ids], field=i, title="", cmap=CMAP, ndecimals=0)
         figb = samples.plot(gener_u[gener_ids], train_u[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=1)
