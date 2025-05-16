@@ -36,12 +36,9 @@ marginal_threshold: 0.95
 # training probability space
 domain: gumbel # gumbel, uniform
 
-kimg: 300
+kimg: 40 #300
 
 # output fields
-# TODO: add units
-# TODO: add cmaps
-# TODO: add titles
 fields:
   ws:
     args:
@@ -50,6 +47,9 @@ fields:
     hfunc: max
     obj: max
     distn: weibull
+    units: "mps"
+    cmap: "viridis"
+    title: "Wind Speed"
   msl:
     args:
       - PRMSL_msl
@@ -57,6 +57,9 @@ fields:
     hfunc: min
     obj: min
     distn: genpareto
+    units: "Pa"
+    cmap: "YlOrRd"
+    title: "Mean Sea Level Pressure"
   tp:
     args:
       - APCP_sfc
@@ -64,3 +67,6 @@ fields:
     hfunc: sum
     obj: max
     distn: genpareto
+    units: "m"
+    cmap: "PuBu"
+    title: "Total Precipitation"
