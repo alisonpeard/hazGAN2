@@ -9,13 +9,11 @@ from snakemake.script import snakemake
 from hazGAN.plotting import samples
 from hazGAN.statistics import gumbel
 
-import ssl
-
+import ssl # fix cartopy issue
 ssl._create_default_https_context = ssl._create_stdlib_context
 
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['font.sans-serif'] = 'Helvetica'
-
+# plt.rcParams['font.family'] = 'sans-serif'å
+# plt.rcParams['font.sans-serif'] = 'Helvetica'
 
 if __name__ == "__main__":
     TRAIN = snakemake.input.train
@@ -23,6 +21,8 @@ if __name__ == "__main__":
     FIELDS = snakemake.params.fields
     SHUFFLE = snakemake.params.shuffle
     OUTDIR  = snakemake.output.outdir
+
+    os.makedirs(OUTDIR, exist_ok=True)
 
     # load data and samples
     train = xr.open_dataset(TRAIN)
