@@ -36,8 +36,8 @@ if __name__ == "__main__":
     logging.info(f"Found {len(IMAGES)} images in {IMAGE_DIR}.")
     images = []
     for png in sorted(IMAGES):
-        img = Image.open(png)
-        images.append(img)
+        with Image.open(png) as img:
+            images.append(img)
     images = np.array(images, dtype=np.float32)
     images /= 255
     images = np.flip(images, axis=1) # flip y-axis (latitude)
