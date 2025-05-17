@@ -82,6 +82,36 @@ rule plot_correlations:
     script:
         os.path.join("..", "scripts", "plot_correlations.py")
 
+
+# rule plot_scatterplots:
+#     """Scatterplots of storm distribution.
+    
+#     Need to map coords to datasets properly...
+#     """
+#     input:
+#         train=os.path.join(TRAINING_DIR, "data.nc"),
+#         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+#     output:
+#         outdir=os.path.join(FIGURE_DIR, "scatterplots")
+#     params:
+#         fields=FIELDS,
+#         dataset=DATASET,
+#         do_subset=True,
+#         event_subset=config['event_subset'],
+#         pois=config["points_of_interest"],
+#         pois_labels=config["points_of_interest_labels"],
+#         ymin=config["latitude"]["min"],
+#         ymax=config["latitude"]["max"],
+#         xmin=config["longitude"]["min"],
+#         xmax=config["longitude"]["max"]
+#     conda:
+#         GEOENV
+#     log:
+#         file=os.path.join("logs", "plot_scatterplots.log")
+#     script:
+#         os.path.join("..", "scripts", "plot_scatterplots.py")
+
+
 # rule figure_two:
 #     """
 #     rules:
