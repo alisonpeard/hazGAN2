@@ -54,6 +54,10 @@ rule plot_barcharts:
         dataset=DATASET,
         do_subset=True,
         event_subset=config['event_subset']
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "plot_barcharts.log")
     script:
         os.path.join("..", "scripts", "plot_barcharts.py")
 
@@ -71,6 +75,10 @@ rule plot_correlations:
         dataset=DATASET,
         do_subset=True,
         event_subset=config['event_subset']
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "plot_correlations.log")
     script:
         os.path.join("..", "scripts", "plot_correlations.py")
 
