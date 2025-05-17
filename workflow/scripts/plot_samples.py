@@ -9,6 +9,9 @@ from snakemake.script import snakemake
 from hazGAN.plotting import samples
 from hazGAN.statistics import gumbel
 
+import ssl
+
+ssl._create_default_https_context = ssl._create_stdlib_context
 
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Helvetica'
