@@ -3,7 +3,9 @@ import os
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from snakemake.scripts import snakemake
+
+from snakemake.script import snakemake
+
 from hazGAN.plotting import samples
 from hazGAN.statistics import gumbel
 
