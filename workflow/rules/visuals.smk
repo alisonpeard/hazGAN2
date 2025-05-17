@@ -1,5 +1,6 @@
 """Reference: https://github.com/alisonpeard/styleGAN-DA/blob/main/visualise.py"""
 
+
 rule plot_fitted_parameters:
     """
     Figure 2: fitted parameters for each variable. Figure 1 in paper.
