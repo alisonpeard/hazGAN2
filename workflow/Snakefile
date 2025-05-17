@@ -50,19 +50,7 @@ include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/visuals.smk"
 include: "rules/stylegan.smk"
-
-rule test_hazgan_install:
-    output:
-        touch("logs/hazgan_tested.done")
-    conda:
-        os.path.join("rules", GEOENV)
-    log:
-        "logs/test_hazgan_install.log"
-    shell:
-        """
-        python -c "import hazGAN; print(f'HazGAN installed successfully')"
-        """
-
+include: "rules/output.smk"
 
 # run full workflow (up to checkpoint)
 rule all:
