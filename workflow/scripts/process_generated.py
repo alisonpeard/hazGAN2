@@ -37,8 +37,9 @@ if __name__ == "__main__":
     images = []
     for png in sorted(IMAGES):
         with Image.open(png) as img:
+            img = np.array(img, dtype=np.float32)
             images.append(img)
-    images = np.array(images, dtype=np.float32)
+    images = np.stack(images, axis=0)
     images /= 255
     images = np.flip(images, axis=1) # flip y-axis (latitude)
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
