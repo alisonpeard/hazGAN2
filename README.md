@@ -43,7 +43,7 @@ Date: 15-05-2025
 - **In progress:**
     - process generated images
     - make benchmark datasets
-    - plot 64x64 samples
+    - plot 64 $\times$ 64 samples
 
 ## Notes on repositories
 

@@ -16,7 +16,7 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 if __name__ == "__main__":
     TRAIN = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
     GENER = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/data.nc"
-    SHUFFLE = False
+    SHUFFLE = True
     OUTDIR  = "/Users/alison/Local/hazGAN2/results/figures/samples"
     DATASET = "imdaa"
     DO_SUBSET   = True
@@ -43,7 +43,7 @@ if __name__ == "__main__":
             "obj": "min",
             "distn": "genpareto",
             "units": "Pa",
-            "cmap": "YlOrRd"
+            "cmap": "Spectral"
         },
         "tp": {
             "args": ["APCP_sfc"],
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
         figa = samples.plot(gener_g[gener_ids], train_g[train_ids], field=i, title="", cmap=CMAP, ndecimals=0)
         figb = samples.plot(gener_u[gener_ids], train_u[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=1)
-        figc = samples.plot(gener_x[gener_ids], train_x[train_ids], field=i, title="", cbar_label=METRIC, cmap=CMAP, alpha=1e-6);
+        figc = samples.plot(gener_x[gener_ids], train_x[train_ids], field=i, title="", cbar_label=METRIC, cmap=CMAP)#, alpha=1e-6);
 
         os.makedirs(OUTDIR, exist_ok=True)
 
