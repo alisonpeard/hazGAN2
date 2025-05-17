@@ -40,6 +40,39 @@ rule plot_samples:
     script:
         os.path.join("..", "scripts", "plot_samples.py")
 
+
+rule plot_barcharts:
+    """Saffir–Simpson barcharts of storm distribution."""
+    input:
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+    output:
+        figure=os.path.join(FIGURE_DIR, "event_intensity_barchart.png")
+    params:
+        fields=FIELDS,
+        dataset=DATASET,
+        do_subset=True,
+        event_subset=config['event_subset']
+    script:
+        os.path.join("..", "scripts", "plot_barcharts.py")
+
+
+rule plot_correlations:
+    """Correlation plots of storm distribution."""
+    input:
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+    output:
+        dir0=os.path.join(FIGURE_DIR, "correlations_field"),
+        dir1=os.path.join(FIGURE_DIR, "correlations_spatial")
+    params:
+        fields=FIELDS,
+        dataset=DATASET,
+        do_subset=True,
+        event_subset=config['event_subset']
+    script:
+        os.path.join("..", "scripts", "plot_correlations.py")
+
 # rule figure_two:
 #     """
 #     rules:
