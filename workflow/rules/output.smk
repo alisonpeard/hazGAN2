@@ -21,6 +21,3 @@ rule make_benchmarks:
         file=os.path.join("logs", "make_benchmarks.log")
     script:
         os.path.join("..", "scripts", "make_benchmarks.py")
-
-
-# rule make_brownresknick:
