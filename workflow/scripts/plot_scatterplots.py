@@ -10,7 +10,7 @@ import logging
 
 from hazGAN.plotting import scatter
 from hazGAN.constants import OBSERVATION_POINTS
-from hazGAN import op2idx # in utils.py, need to check method
+from hazGAN import op2idx # in hazGAN.utils
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -29,6 +29,7 @@ if __name__ == "__main__":
     XMIN = snakemake.params.xmin
     XMAX = snakemake.params.xmax
     POIS = snakemake.params.pois
+    CMAP = snakemake.params.cmap
 
     # YMIN = 10.
     # YMAX = 25.
@@ -75,7 +76,7 @@ if __name__ == "__main__":
 
     for FIELD in range(3):
         fig = scatter.plot(gener_x, train_x, field=FIELD, pixels=pixels, s=10,
-                        cmap='viridis', xlabel="Chittagong", ylabel="Dhaka")
+                        cmap=CMAP, xlabel="Chittagong", ylabel="Dhaka")
 
         fig.savefig(os.path.join(DIR, f"field_{FIELD}.png"), dpi=300)
         plt.close(fig)

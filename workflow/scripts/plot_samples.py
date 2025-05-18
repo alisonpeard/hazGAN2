@@ -1,4 +1,7 @@
-"""Make 64x64 plots of data"""
+"""Make 64x64 plots of data
+
+Note: this is before adding back monthly medians.
+"""
 import os
 import numpy as np
 import xarray as xr
