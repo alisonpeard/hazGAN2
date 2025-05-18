@@ -67,6 +67,7 @@ if __name__ == "__main__":
     gener_u = gener["uniform"].values
     
     # match observation points to indices in the xarray data
+    print(f"Observation points: {POIS}")
     ops = op2idx(POIS, train_x[0, ..., 0], extent=[XMIN, XMAX, YMIN, YMAX])
     pixels = [ops["chittagong"], ops["dhaka"]]
 
