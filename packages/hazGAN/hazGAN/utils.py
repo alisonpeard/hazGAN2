@@ -57,6 +57,7 @@ def get_similarities(ds:xr.Dataset, template:np.ndarray) -> np.ndarray:
 
 
 def op2idx(ops:dict, data:np.ndarray, extent:list):
+    """Convert observation points to indices in a 2D array."""
     h, w = data.shape
 
     lons = np.linspace(extent[0], extent[1], w)
@@ -70,7 +71,8 @@ def op2idx(ops:dict, data:np.ndarray, extent:list):
         op_idx[op] = idx
 
     return op_idx
-    
+
+
 def diff(x, d=1):
     """Difference a (time series) array."""
     return x[d:] - x[:-d]
