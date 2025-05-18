@@ -43,7 +43,7 @@ def plot(fake, real, field=0, pixels=None, cmap=CMAP, s=10,
 
         fig.suptitle(channel_labels[field].capitalize(), y=1.05, fontsize=14, fontweight='bold')
 
-
+        return fig
 
 
 
@@ -73,6 +73,7 @@ def single_scatter(data, ax=None, sample_pixels=None, cmap=CMAP, s=10):
 
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(5, 5))
+    
     scatter_density(sample_x, sample_y, ax, title=axtitle, cmap=cmap, s=s)
 
 
