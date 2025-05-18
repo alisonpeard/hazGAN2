@@ -23,8 +23,8 @@ rule plot_fitted_parameters:
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
     output:
         figa=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
-        figb=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
-        figc=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png")
+        figb=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[1]}.png"),
+        figc=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[2]}.png")
     params:
         fields=FIELDS,
         pcrit=0.05,
