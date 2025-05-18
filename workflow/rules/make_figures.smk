@@ -2,9 +2,9 @@
 rule all_figures:
     """All figures."""
     input:
-        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[0]}.png"),
-        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[1]}.png"),
-        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[2]}.png"),
+        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
+        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[1]}.png"),
+        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[2]}.png"),
         os.path.join(FIGURE_DIR, "samples"),
         os.path.join(FIGURE_DIR, "event_intensity_barchart.png"),
         os.path.join(FIGURE_DIR, "correlations_field"),
@@ -22,9 +22,9 @@ rule plot_fitted_parameters:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
     output:
-        figa=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[0]}.png"),
-        figb=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[1]}.png"),
-        figc=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[2]}.png")
+        figa=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
+        figb=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
+        figc=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png")
     params:
         fields=FIELDS,
         pcrit=0.05,
