@@ -1,4 +1,17 @@
 """Reference: https://github.com/alisonpeard/styleGAN-DA/blob/main/visualise.py"""
+rule all_figures:
+    """All figures."""
+    input:
+        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[0]}.png"),
+        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[1]}.png"),
+        os.path.join(FIGURE_DIR, f"{FIELDS.keys()[2]}.png"),
+        os.path.join(FIGURE_DIR, "samples"),
+        os.path.join(FIGURE_DIR, "event_intensity_barchart.png"),
+        os.path.join(FIGURE_DIR, "correlations_field"),
+        os.path.join(FIGURE_DIR, "correlations_spatial"),
+        os.path.join(FIGURE_DIR, "scatterplots")
+    log:
+        file=os.path.join("logs", "all_figures.log")
 
 
 rule plot_fitted_parameters:
@@ -9,9 +22,9 @@ rule plot_fitted_parameters:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
     output:
-        figa=os.path.join(FIGURE_DIR, "f01a.png"),
-        figb=os.path.join(FIGURE_DIR, "f01b.png"),
-        figc=os.path.join(FIGURE_DIR, "f01c.png")
+        figa=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[0]}.png"),
+        figb=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[1]}.png"),
+        figc=os.path.join(FIGURE_DIR, f"{FIELDS.keys()[2]}.png")
     params:
         fields=FIELDS,
         pcrit=0.05,
@@ -21,7 +34,7 @@ rule plot_fitted_parameters:
     log:
         file=os.path.join("logs", "plot_parameters.log")
     script:
-        os.path.join("..", "scripts", "parameter_plots.py")
+        os.path.join("..", "scripts", "plot_parameters.py")
 
 
 rule plot_samples:
@@ -100,7 +113,8 @@ rule plot_scatterplots:
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
         xmin=config["longitude"]["min"],
-        xmax=config["longitude"]["max"]
+        xmax=config["longitude"]["max"],
+        cmap="viridis"
     conda:
         GEOENV
     log:
