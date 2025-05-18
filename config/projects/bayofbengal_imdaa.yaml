@@ -71,25 +71,25 @@ fields:
     cmap: "PuBu"
     title: "Total Precipitation"
 
-points_of_interest:
+points_of_interest: # (lon, lat)
   # bangladesh
   chittagong:
-    lon: 91.8466
-    lat: 22.3569
+    - 91.8466
+    - 22.3569
   dhaka:
-    lon: 90.4125
-    lat: 23.8103
+    - 90.4125
+    - 23.8103
   # noaa_buoys
   buoy_23223:
-    lon: 89.483
-    lat: 17.333
+    - 89.483
+    - 17.333
   buoy_23218:
-    lon: 88.5
-    lat: 10.165
+    - 88.5
+    - 10.165
   buoy_23008:
-    lon: 90.0
-    lat: 12.0
+    - 90.0
+    - 12.0
   buoy_23007:
-    lon: 90.0
-    lat: 8.0
+    - 90.0
+    - 8.0
 
