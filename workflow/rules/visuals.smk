@@ -30,7 +30,7 @@ rule plot_samples:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
-        outdir=directory(os.path.join(FIGURE_DIR, "samples"))
+        outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
     params:
         fields=FIELDS,
         shuffle=True
@@ -68,8 +68,8 @@ rule plot_correlations:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
-        dir0=os.path.join(FIGURE_DIR, "correlations_field"),
-        dir1=os.path.join(FIGURE_DIR, "correlations_spatial")
+        dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
+        dir1=directory(os.path.join(FIGURE_DIR, "correlations_spatial"))
     params:
         fields=FIELDS,
         dataset=DATASET,
@@ -92,7 +92,7 @@ rule plot_scatterplots:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
-        outdir=os.path.join(FIGURE_DIR, "scatterplots")
+        outdir=directory(os.path.join(FIGURE_DIR, "scatterplots"))
     params:
         do_subset=True,
         event_subset=config['event_subset'],
