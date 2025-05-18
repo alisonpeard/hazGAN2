@@ -48,6 +48,8 @@ if __name__ == "__main__":
     #     "dhaka": [90.4, 23.8],
     # }
 
+    os.makedirs(DIR, exist_ok=True)
+
     # load data and samples
     train = xr.open_dataset(TRAIN)
     if DO_SUBSET:
@@ -75,7 +77,7 @@ if __name__ == "__main__":
         fig = scatter.plot(gener_x, train_x, field=FIELD, pixels=pixels, s=10,
                         cmap='viridis', xlabel="Chittagong", ylabel="Dhaka")
 
-        fig.savefig(os.path.join(DIR, f"{FIELD}.png"), dpi=300)
+        fig.savefig(os.path.join(DIR, f"field_{FIELD}.png"), dpi=300)
         plt.close(fig)
 
 # %%
