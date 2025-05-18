@@ -93,28 +93,6 @@ rule generate_stylegan:
             &> {log}
         """
 
-
-rule process_generated:
-    """Transform generated images to netCDF and apply inverse
-    transformations."""
-    input:
-        image_dir=os.path.join(GENERATED_DIR, "images"),
-        image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
-        training_data=os.path.join(TRAINING_DIR, "data.nc")
-    output:
-        netcdf=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
-    params:
-        resx=RESOLUTION['lon'],
-        resy=RESOLUTION['lat'],
-        do_subset=True,
-        event_subset=config['event_subset'],
-        fields=FIELDS
-    conda:
-        GEOENV
-    log:
-        file=os.path.join("logs", "process_generated.log")
-    script:
-        os.path.join("..", "scripts", "process_generated.py")
 # rule install_hazgan:
 #     """Install hazgan_utils package."""
 #     output:
