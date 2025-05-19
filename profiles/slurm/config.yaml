@@ -15,6 +15,9 @@ default-resources:
 
 # # here only rules, which require different (more) resources:
 set-resources:
+    extract_events:
+        cpus_per_task: 32
+        runtime: "2h"
     fit_marginals:
         slurm_partition: "Medium"
         cpus_per_task: 32
