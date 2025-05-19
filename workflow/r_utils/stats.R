@@ -102,12 +102,15 @@ marginal_transformer <- function(df, metadata, var, q,
   df <- df[df$time %in% metadata$time, ]
 
   #! make a grid for easy chunking
+  log_info("Creating grid for chunking")
   df$grid <- paste(df$lat, df$lon, sep = "_")
   df$grid <- as.integer(factor(df$grid))
-  coords  <- df[, c("lat", "lon", "grid")]
+  coords  <- df[df$time == min(df$time), ]
+  coords  <- coords[, c("lat", "lon", "grid")]
   coords  <- coords[!duplicated(coords), ]
 
   # chunk data for memory efficiency
+  log_info("Chunking data for memory efficiency")
   gridcells <- unique(df$grid)
   gridchunks <- split(
     gridcells, ceiling(seq_along(gridcells) / chunksize)
@@ -310,6 +313,7 @@ marginal_transformer <- function(df, metadata, var, q,
   unlink(tmps)
 
   # map gridcell back to lat/lon
+  log_info("Mapping gridcell back to lat/lon")
   transformed <- left_join(
     transformed,
     coords,
