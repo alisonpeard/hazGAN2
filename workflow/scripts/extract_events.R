@@ -59,13 +59,33 @@ daily$time <- as.Date(daily$time)
 
 # remove seasonality (sfuncs)
 log_info("Removing seasonality")
+log_info(paste0("Dataframe dimensions: ", dim(daily)))
 
 # create a new data frame to store the parameters
-params <- daily[, c("lat", "lon", "time")]
-params$month <- months(params$time)
-params <- params[, c("lat", "lon", "month")]
-params <- params[!duplicated(params), ]
+# params <- daily[, c("lat", "lon", "time")]
+# params$month <- months(params$time)
+# params <- params[, c("lat", "lon", "month")]
+# params <- params[!duplicated(params), ]
 
+# # extract one year from the data
+# params$year  <- year(daily$time)
+# params       <- params[params$year == min(params$year), ]
+# params$month <- months(params$time)
+# params       <- params[, c("lat", "lon", "month")]
+# params <- params |>
+#   group_by(lat, lon, month) |>
+#   slice(1) |>
+#   ungroup()
+
+# faster (hopefully)
+lats <- unique(daily$lat)
+lons <- unique(daily$lon)
+latlon <- data.frame(expand.grid(lat = lats, lon = lons))
+months <- c(1:12)
+params <- latlon[rep(seq_len(nrow(latlon)), each = length(months)), ]
+params$month <- rep(months, nrow(latlon))
+
+# deseasonalize each field
 for (k in seq_along(FIELD_NAMES)) {
   field <- FIELD_NAMES[k]
   log_info(paste0("Deseasonalizing field: ", field))

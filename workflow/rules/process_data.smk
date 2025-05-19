@@ -87,9 +87,6 @@ rule fit_marginals:
 
 rule extract_events:
     """Remove seasonality and extract storm events from the data.
-
-    TODO: may need to re-add medians later. Calculating medians on
-    the fly is less robust.
     
     Params:
         sfunc: str
@@ -100,11 +97,11 @@ rule extract_events:
             or defined in utils.R.
     """
     input:
-        # os.path.join(".snakemake", "conda", ".rpot_installed"),
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
+        medians=os.path.join(PROCESSING_DIR, "medians.csv"),
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
-        daily=os.path.join(PROCESSING_DIR, "daily.parquet"),
+        daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
