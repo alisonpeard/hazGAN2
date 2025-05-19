@@ -46,7 +46,7 @@ rule plot_samples:
         outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
     params:
         fields=FIELDS,
-        shuffle=True
+        shuffle=False
     conda:
         GEOENV
     log:
