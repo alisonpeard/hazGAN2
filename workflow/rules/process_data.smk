@@ -49,7 +49,7 @@ rule make_training_data:
         data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
-        # medians=os.path.join(PROCESSING_DIR, "medians.csv")
+        medians=os.path.join(PROCESSING_DIR, "medians.csv")
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:

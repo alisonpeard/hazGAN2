@@ -18,6 +18,7 @@ import os
 import yaml
 import xarray as xr
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from hazGAN.mangrove_demo import mangroveDamageModel
@@ -29,16 +30,41 @@ if __name__ == "__main__":
         config = yaml.safe_load(stream)
 
     # load generated data
-    THRESHOLD = config['event_subset']['threshold']
+    THRESHOLD = config['event_subset']
+    NYRS = config["yearn"] - config["year0"]
+    MONTH = 9
 
     train = xr.open_dataset(os.path.join("..", "results", "training", "data.nc"))
     gener = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "data.nc"))
     indep = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "independent.nc"))
     depen = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "dependent.nc"))
-    # medians = get_monthly_medians(data_dir, "September") # should be size 1 x 64 x 64 x 3
+    medians = pd.read_parquet(os.path.join("..", "results", "processing", "medians.parquet"))
+    medians = medians[medians["month"] == MONTH]
+    medians
 
-    nobs = train.sizes["time"]
-    nyrs = config["yearn"] - config["year0"]
+    # turn medians into xarray
+    medians = xr.DataArray(
+        medians.values,
+        dims=["lat", "lon", "field"],
+        coords={
+            "lat": train.lat, # ! this is a guess, medians only has grid num
+            "lon": train.lon,
+            "field": list(medians["field"].unique())
+        }
+    )
+
+    # extract the extreme samples
+    if config["event_subset"] is not None:
+        subset = config["event_subset"]
+        threshold = config["event_subset"]['threshold']
+        train['intensity'] = getattr(train.sel(field=subset["field"]).anomaly, subset["func"])(dim=['lon', 'lat'])
+        mask = (train['intensity'] > subset["value"]).values
+        idx  = np.where(mask)[0]
+    else:
+        idx = np.arange(train.sizes["time"])
+
+    nevents = train.sizes["time"]
+    nextremes = len(idx)
 
     # get event sets
     train["value"] = train["anomaly"] + medians
@@ -68,8 +94,15 @@ if __name__ == "__main__":
     indep_damages = indep_damages.rename({"indep_damage": "damage_prob"})
     depen_damages = depen_damages.rename({"depen_damage": "damage_prob"})
 
+    # add rate attribut to each dataset
+    train_damages.attrs["rate"] = nevents / NYRS
+    gener_damages.attrs["rate"] = nextremes / NYRS
+    indep_damages.attrs["rate"] = nevents / NYRS
+    depen_damages.attrs["rate"] = None
+
     # make return period maps from fake winds
     outdir = os.makedirs(os.path.join("..", "results", "mangroves"), exist_ok=True)
+
     train_damages.to_netcdf(os.path.join(outdir, "train_damages.nc"))
     gener_damages.to_netcdf(os.path.join(outdir, "gener_damages.nc"))
     indep_damages.to_netcdf(os.path.join(outdir, "indep_damages.nc"))

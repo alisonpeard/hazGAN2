@@ -17,12 +17,12 @@ deseasonalize <- function(df, var, method = "additive") {
 
 additive <- function(df, vars) {
   df$month <- months(df$time)
-  df <- df[, c(vars, "month", "grid")]
-  monthly_median <- aggregate(. ~ month + grid, df, median)
+  df <- df[, c(vars, "month", "lat", "lon")]
+  monthly_median <- aggregate(. ~ month + lat + lon, df, median)
   df$monthly_median <- left_join(
-    df[, c("month", "grid")],
+    df[, c("month", "lat", "lon")],
     monthly_median,
-    by = c("month" = "month", "grid" = "grid")
+    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
   )[vars]
   df[vars] <- df[vars] - df$monthly_median
   return(list(
@@ -62,10 +62,10 @@ summer <- function(df, vars) {
 
 
 monthly_medians <- function(df, var) {
-  df <- df[, c(var, "time", "grid")]
+  df <- df[, c(var, "time", "lat", "lon")]
   df$month <- months(df$time)
-  monthly_median <- aggregate(. ~ month + grid,
-                              df[, c(var, "grid", "month")],
+  monthly_median <- aggregate(. ~ month + lat + lon,
+                              df[, c(var, "lat", "lon", "month")],
                               median)
   return(monthly_median)
 }
