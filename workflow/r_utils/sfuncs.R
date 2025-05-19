@@ -25,7 +25,10 @@ additive <- function(df, vars) {
     by = c("month" = "month", "grid" = "grid")
   )[vars]
   df[vars] <- df[vars] - df$monthly_median
-  return(df[vars])
+  return(list(
+    df = df[vars],
+    params = monthly_median
+  ))
 }
 
 autumn <- function(df, vars) {
