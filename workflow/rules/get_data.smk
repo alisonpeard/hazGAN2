@@ -15,10 +15,13 @@ snakemake --profile profiles/cluster/ --executor slurm get_data --use-conda
 """
 def get_param_file():
     """Get a parameter file for the project, or a grid file for the dataset."""
-    if os.path.exists(os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")):
-        return os.path.join(RESOURCES_DIR, "params", f"{PROJECT}.nc")
+    if os.path.exists(os.path.join(RESOURCES_DIR, "params.nc")):
+        return os.path.join(RESOURCES_DIR, "params.nc")
     else:
-        return os.path.join(RESOURCES_DIR, "grids", f"{DATASET}.nc")
+        raise FileNotFoundError(
+            f"Parameter file not found in {RESOURCES_DIR}. "
+            "Please create the file first."
+        )
 
 rule get_all_years:
     """Rule to process all years for the project."""
