@@ -17,9 +17,9 @@ resolution:
   lon: 64
   lat: 64
 
-sfunc: additive
+sfunc: additive # in r_utils/sfuncs.R
 
-rfunc:
+rfunc: # in r_utils/rfuncs.R
   args:
     - ws
   func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
@@ -36,15 +36,15 @@ marginal_threshold: 0.95
 # training probability space
 domain: gumbel # gumbel, uniform
 
-kimg: 300
+kimg: 600
 
 # output fields
 fields:
   ws:
     args:
       - GUST_10m
-    func: identity
-    hfunc: max
+    func: identity # defined in py_utils/funcs.py
+    hfunc: max # must be xarray compatible
     obj: max
     distn: weibull
     units: "mps"

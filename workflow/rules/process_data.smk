@@ -166,22 +166,3 @@ rule resample_year:
         file=os.path.join("logs", "resample", "{year}.log")
     script:
         os.path.join("..", "scripts", "resample_data.py")
-
-# rule remove_windbombs:
-#     """Not implemented."""
-#     input:
-#         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
-#     output:
-#         netcdf=os.path.join(PROCESSING_DIR, "data_nobombs.nc"),
-#         windbomb=os.path.join(PROCESSING_DIR, "windbomb.npy")
-#     params:
-#         threshold=0.82
-#     resources:
-#         cpus_per_task=4,
-#         slurm_extra="--output=sbatch_dump/windbombs_%A_%a.out --error=sbatch_dump/windbombs_%A_%a.err"
-#     conda:
-#         os.path.join("..", "..", CONDA)
-#     log:
-#         os.path.join("logs", "windbombs.log")
-#     script:
-#         os.path.join("..", "scripts", "remove_windbombs.py")
