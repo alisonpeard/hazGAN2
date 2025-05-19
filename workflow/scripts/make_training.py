@@ -30,22 +30,22 @@ if __name__ == "__main__":
     DATA     = snakemake.input.data_all
     EVENTS   = snakemake.input.events
     METADATA = snakemake.input.metadata
-    # MEDIANS  = snakemake.input.medians # TODO
+    MEDIANS  = snakemake.input.medians # TODO
     OUTPUT   = snakemake.output.data
     FIELDS = [key for key in snakemake.params.fields.keys()]
 
     # load coordinates
     data = xr.open_dataset(DATA)
-    coords = data['grid'].to_dataframe().reset_index()
+    coords = data[["lat", "lon"]].to_dataframe().reset_index()
     coords = gpd.GeoDataFrame(
         coords, geometry=gpd.points_from_xy(coords['lon'], coords['lat'])
         ).set_crs("EPSG:4326")
     monthly_medians = data.groupby("time.month").median(dim="time").to_dataframe().reset_index()
-    monthly_medians = monthly_medians[['grid', 'month'] + FIELDS]
+    monthly_medians = monthly_medians[["lat", "lon", 'month'] + FIELDS]
 
     # load fitted data                                                                                                        
     df = pd.read_parquet(EVENTS)
-    df = df.merge(coords, on="grid")
+    df = df.merge(coords, on=["lat", "lon"])
     df.columns = [col.replace(".", "_") for col in df.columns]
     df[f'day_of_{FIELDS[0]}'] = df.groupby('event')[f'time_{FIELDS[0]}'].rank('dense')
 
@@ -70,18 +70,18 @@ if __name__ == "__main__":
 
     # merge in monthly medians
     logging.warning("Calculating medians on the fly, this should be done earlier.")
-    nduplicates = monthly_medians.groupby(['month', 'grid']).count().max().max()
+    nduplicates = monthly_medians.groupby(['month', "lat", "lon"]).count().max().max()
     assert nduplicates == 1, "Monthly medians not unique"
     del nduplicates
-    monthly_medians = monthly_medians.groupby(["month", "grid"] + FIELDS).mean().reset_index()
+    monthly_medians = monthly_medians.groupby(["month", "lat", "lon"] + FIELDS).mean().reset_index()
     monthly_medians["month"] = monthly_medians["month"].apply(lambda x: month[x])
 
     for field in FIELDS:
         gdf[f"month_{field}"] = pd.to_datetime(gdf[f"time_{field}"]).dt.month.map(lambda x: month[x])
         n = len(gdf)
         gdf = gdf.join(
-            monthly_medians[['month', 'grid', field]].set_index(["month", "grid"]),
-            on=[f"month_{field}", "grid"],
+            monthly_medians[['month', "lat", "lon", field]].set_index(["month", "lat", "lon"]),
+            on=[f"month_{field}", "lat", "lon"],
             rsuffix="_median"
             )
         assert n == len(gdf), "Merge failed"
@@ -100,7 +100,6 @@ if __name__ == "__main__":
 
     # make training tensors
     gdf  = gdf.sort_values(["event", "lat", "lon"], ascending=[True, True, True]) # [T, i, j, field]
-    grid = gdf["grid"].unique().reshape([ny, nx])
     lat  = gdf["lat"].unique()
     lon  = gdf["lon"].unique()
     X    = gdf[FIELDS].values.reshape([T, ny, nx, nfields])
@@ -131,7 +130,6 @@ if __name__ == "__main__":
                     'event_rp': (['time'], z),
                     'duration': (['time'], s),
                     'params': (['lat', 'lon', 'param', 'field'], params),
-                    'grid': (['lat', 'lon'], grid),
                     },
                     coords={'lat': (['lat'], lat),
                             'lon': (['lon'], lon),

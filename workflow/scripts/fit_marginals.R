@@ -1,8 +1,8 @@
 suppressPackageStartupMessages({
-    library(arrow, quietly = TRUE)
-    library(dplyr, quietly = TRUE)
-    library(logger, quietly = TRUE)
-    source("workflow/r_utils/stats.R")
+  library(arrow, quietly = TRUE)
+  library(dplyr, quietly = TRUE)
+  library(logger, quietly = TRUE)
+  source("workflow/r_utils/stats.R")
 })
 
 # configure logging
@@ -13,7 +13,6 @@ log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(log_level)
 log_debug(paste0("Log file: ", log_file))
 log_debug(paste0("Logger level: ", log_level))
-
 
 # load snakemake rule paramet
 METADATA <- snakemake@input[["metadata"]]
@@ -26,7 +25,7 @@ Q        <- snakemake@params[["q"]]
 daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
-# transform marginals (hardcoded for three fields)
+# transform marginals (hardcoded for three fields) 
 log_info("Tranforming fields...")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
@@ -72,7 +71,7 @@ log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))
 renamer <- function(df, var) {
  df <- df |>
     rename_with(~ paste0(., ".", var),
-                -c("grid", "event", "event.rp", "variable"))
+                -c("lat", "lon", "event", "event.rp", "variable"))
   df <- df |> rename_with(~ var, "variable")
   return(df)
 }
@@ -83,8 +82,8 @@ events_field2 <- renamer(events_field2, fields[2])
 events_field3 <- renamer(events_field3, fields[3])
 
 events <- events_field1 |>
-  inner_join(events_field2, by = c("grid", "event", "event.rp")) |>
-  inner_join(events_field3, by = c("grid", "event", "event.rp"))
+  inner_join(events_field2, by = c("lat", "lon", "event", "event.rp")) |>
+  inner_join(events_field3, by = c("lat", "lon", "event", "event.rp"))
 
 events$thresh.q <- Q # keep track of threshold used
 

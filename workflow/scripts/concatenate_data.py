@@ -25,11 +25,11 @@ if __name__ == "__main__":
         # load datasets
         ds = xr.open_mfdataset(INPUTS, chunks={"time": "500MB"}, engine="netcdf4")
 
-        # add a grid variable for indexing
-        h, w = ds.sizes['lat'], ds.sizes['lon']
-        grid = np.arange(0, h * w, 1).reshape(h, w)
-        grid = xr.DataArray(grid, dims=["lat", "lon"], coords={"lat": ds.lat[::-1], "lon": ds.lon})
-        ds['grid'] = grid
+        # # add a grid variable for indexing
+        # h, w = ds.sizes['lat'], ds.sizes['lon']
+        # grid = np.arange(0, h * w, 1).reshape(h, w)
+        # grid = xr.DataArray(grid, dims=["lat", "lon"], coords={"lat": ds.lat[::-1], "lon": ds.lon})
+        # ds['grid'] = grid
 
         logging.info(f"Saving to {OUTPUT}")
         ds.to_netcdf(OUTPUT)
