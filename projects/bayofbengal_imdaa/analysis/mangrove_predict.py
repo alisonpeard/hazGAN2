@@ -38,20 +38,12 @@ if __name__ == "__main__":
     gener = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "data.nc"))
     indep = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "independent.nc"))
     depen = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "dependent.nc"))
-    medians = pd.read_parquet(os.path.join("..", "results", "processing", "medians.parquet"))
+    
+    # load and process monthly medians (deseaonalize)
+    medians = pd.read_csv(os.path.join("..", "results", "processing", "medians.csv"))
     medians = medians[medians["month"] == MONTH]
-    medians
-
-    # turn medians into xarray
-    medians = xr.DataArray(
-        medians.values,
-        dims=["lat", "lon", "field"],
-        coords={
-            "lat": train.lat, # ! this is a guess, medians only has grid num
-            "lon": train.lon,
-            "field": list(medians["field"].unique())
-        }
-    )
+    medians = medians.set_index(["lat", "lon"])
+    medians = medians.to_xarray()
 
     # extract the extreme samples
     if config["event_subset"] is not None:
@@ -107,5 +99,7 @@ if __name__ == "__main__":
     gener_damages.to_netcdf(os.path.join(outdir, "gener_damages.nc"))
     indep_damages.to_netcdf(os.path.join(outdir, "indep_damages.nc"))
     depen_damages.to_netcdf(os.path.join(outdir, "depen_damages.nc"))
+
+# %%
 
 # %%
