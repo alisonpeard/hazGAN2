@@ -14,6 +14,7 @@
 # Calculate damagearea
 # %%
 import os
+import yaml
 import numpy as np
 import geopandas as gpd
 import xarray as xr
@@ -22,21 +23,41 @@ import matplotlib.pyplot as plt
 
 from hazGAN.mangrove_demo import calculate_total_return_periods, calculate_eads
 
-env = Env()
-env.read_env()
+if __name__ == "__main__":
+    # load project configuration
+    with open(os.path.join("..", "config.yaml"), 'r') as stream:
+        config = yaml.safe_load(stream)
+    
+    wd = os.makedirs(os.path.join("..", "results", "mangroves"), exist_ok=True)
+    nyrs = config["yearn"] - config["year0"]
+
+    # load damage data
+    THRESHOLD = config['event_subset']['threshold']
+    train_damages = xr.open_dataset(os.path.join(wd, "train_damages.nc"))
+    gener_damages = xr.open_dataset(os.path.join(wd, "gener_damages.nc"))
+    indep_damages = xr.open_dataset(os.path.join(wd, "indep_damages.nc"))
+    depen_damages = xr.open_dataset(os.path.join(wd, "depen_damages.nc"))
+    mangr_grid    = xr.open_dataset(os.path.join(wd, "mangrove_grid.nc")) #! check
+    
+    # event rates
+    train_damages["rate"] = train_damages.sizes["time"] / nyrs
+    gener_damages["rate"] = train_damages["rate"]
+
+# %% - - - - OLDER STUFF - - - - 
+
 
 # %% load generated data
-samples_dir = env.str("SAMPLES_DIR")
-data_dir    = env.str("DATA_DIR")
-mangroves_dir = env.str("MANGROVE_DIR")
-mangroves_path = env.str("MANGROVES")
+# samples_dir = env.str("SAMPLES_DIR")
+# data_dir    = env.str("DATA_DIR")
+# mangroves_dir = env.str("MANGROVE_DIR")
+# mangroves_path = env.str("MANGROVES")
 
-mangrove_grid = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "mangrove_grid.nc"))
-train_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "train_damages.nc"))
-valid_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "valid_damages.nc"))
-fake_damages  = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "fake_damages.nc"))
-independent_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "independent_damages.nc"))
-dependent_damages   = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "dependent_damages.nc"))
+# mangrove_grid = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "mangrove_grid.nc"))
+# train_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "train_damages.nc"))
+# valid_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "valid_damages.nc"))
+# fake_damages  = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "fake_damages.nc"))
+# independent_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "independent_damages.nc"))
+# dependent_damages   = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "dependent_damages.nc"))
 
 # 16-03-2025, different rates for different datasets
 train_damages['rate'] = (train_damages.sizes['sample'] + valid_damages.sizes['sample']) / 81

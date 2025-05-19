@@ -101,6 +101,12 @@ marginal_transformer <- function(df, metadata, var, q,
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
 
+  #! make a grid for easy chunking
+  df$grid <- paste(df$lat, df$lon, sep = "_")
+  df$grid <- as.integer(factor(df$grid))
+  coords  <- df[, c("lat", "lon", "grid")]
+  coords  <- coords[!duplicated(coords), ]
+
   # chunk data for memory efficiency
   gridcells <- unique(df$grid)
   gridchunks <- split(
@@ -303,9 +309,16 @@ marginal_transformer <- function(df, metadata, var, q,
 
   unlink(tmps)
 
+  # map gridcell back to lat/lon
+  transformed <- left_join(
+    transformed,
+    coords,
+    by = c("grid" = "grid")
+  )
+
   # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
-              "grid", "thresh", "scale", "shape", # NOTE: omitting "p" for now
+              "lat", "lon", "thresh", "scale", "shape",
               "pk", "ecdf", "scdf", "box.test")
 
   transformed <- transformed[, fields]
