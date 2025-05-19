@@ -39,48 +39,9 @@ if __name__ == "__main__":
     depen_damages = xr.open_dataset(os.path.join(wd, "depen_damages.nc"))
     mangr_grid    = xr.open_dataset(os.path.join(wd, "mangrove_grid.nc")) #! check
     
-    # event rates
-    train_damages["rate"] = train_damages.sizes["time"] / nyrs
-    gener_damages["rate"] = train_damages["rate"]
 
 # %% - - - - OLDER STUFF - - - - 
-
-
-# %% load generated data
-# samples_dir = env.str("SAMPLES_DIR")
-# data_dir    = env.str("DATA_DIR")
-# mangroves_dir = env.str("MANGROVE_DIR")
-# mangroves_path = env.str("MANGROVES")
-
-# mangrove_grid = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "mangrove_grid.nc"))
-# train_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "train_damages.nc"))
-# valid_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "valid_damages.nc"))
-# fake_damages  = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "fake_damages.nc"))
-# independent_damages = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "independent_damages.nc"))
-# dependent_damages   = xr.open_dataset(os.path.join(samples_dir, "mangrove_demo", "dependent_damages.nc"))
-
-# 16-03-2025, different rates for different datasets
-train_damages['rate'] = (train_damages.sizes['sample'] + valid_damages.sizes['sample']) / 81
-valid_damages['rate'] = train_damages['rate']
-fake_damages['rate']  = train_damages['rate']
-dependent_damages['rate'] = 1249 / 81
-independent_damages['rate'] = 1249 / 81
-
-if False:
-    #  Step 1: Clip mangroves to bay of bengal
-    mangroves = gpd.read_file(mangroves_path)
-    mangroves = gpd.read_file(global_mangrove_watch, mask=aoi)
-    mangroves = mangroves.set_crs(epsg=4326).drop(columns='PXLVAL')
-    mangroves['area']  = mangroves.to_crs(bay_of_bengal_crs).area
-    mangrove_centroids = mangroves.set_geometry(mangroves.centroid)
-    mangrove_centroids  = mangrove_centroids.sort_values(by='area', ascending=False)
-
-    # Step 2: Project mangroves to grid
-    from hazGAN.mangrove_demo import mangroveDamageModel
-    mangroves = gpd.read_file(os.path.join(mangroves_dir, "mangroves.geojson"))
-    model = mangroveDamageModel()
-    mangrove_grid = model.intersect_mangroves_with_grid(mangroves, valid_damages)
-    mangrove_grid.to_netcdf(os.path.join(samples_dir, "mangrove_demo", "mangrove_grid.nc"))
+    
 
 # %% Step 3:
 train_damages['expected_damage']       = train_damages['damage_prob'] * mangrove_grid['area']

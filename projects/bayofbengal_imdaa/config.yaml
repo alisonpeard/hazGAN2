@@ -93,3 +93,6 @@ points_of_interest: # (lon, lat)
     - 90.0
     - 8.0
 
+
+local_crs: 24346 # https://epsg.io/24346
+
