@@ -42,18 +42,23 @@ if __name__ == "__main__":
         train_ids = np.random.permutation(train_u.shape[0])
         gener_ids = np.random.permutation(gener_u.shape[0])
     else:
-        train_ids = np.arange(train_u.shape[0])
-        gener_ids = np.arange(gener_u.shape[0])
+        # train_ids = np.arange(train_u.shape[0])
+        # gener_ids = np.arange(gener_u.shape[0])
+        
+        # sort by ascending wind speed
+        # ! HARDCODED
+        train_ids = np.argsort(np.max(train_u[..., 0], axis=(1, 2)))[::-1]
+        gener_ids = np.argsort(np.max(gener_u[..., 0], axis=(1, 2)))[::-1]
 
     # make the samples
     for i, FIELD in enumerate(FIELDS.keys()):
         METRIC = FIELDS[FIELD]["units"]
         CMAP   = FIELDS[FIELD]["cmap"]
 
-        figa = samples.plot(gener_g[gener_ids], train_g[train_ids], field=i, title="", cmap=CMAP, ndecimals=0)
+        figa = samples.plot(gener_g[gener_ids], train_g[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=0)
         figb = samples.plot(gener_u[gener_ids], train_u[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=1)
         figc = samples.plot(gener_x[gener_ids], train_x[train_ids], field=i, title="", cbar_label=METRIC, cmap=CMAP, alpha=1e-6);
 
-        figa.savefig(os.path.join(OUTDIR, f"{FIELD}_gumbel.png"), dpi=300)
-        figb.savefig(os.path.join(OUTDIR, f"{FIELD}_uniform.png"), dpi=300)
-        figc.savefig(os.path.join(OUTDIR, f"{FIELD}_anomaly.png"), dpi=300)
+        figa.savefig(os.path.join(OUTDIR, f"{FIELD}_gumbel.png"), dpi=300, bbox_inches="tight")
+        figb.savefig(os.path.join(OUTDIR, f"{FIELD}_uniform.png"), dpi=300, bbox_inches="tight")
+        figc.savefig(os.path.join(OUTDIR, f"{FIELD}_anomaly.png"), dpi=300, bbox_inches="tight")
