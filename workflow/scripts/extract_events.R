@@ -58,10 +58,22 @@ daily$time <- as.Date(daily$time)
 
 # remove seasonality (sfuncs)
 log_info("Removing seasonality")
+
+# create a new data frame to store the parameters
+params <- daily[, c("grid", "time")]
+params$month <- months(params$time)
+params <- aggregate(. ~ month + grid, params, mean)
+params <- params[, c("grid", "month")]
+
 for (k in seq_along(FIELD_NAMES)) {
   field <- FIELD_NAMES[k]
   deseasonalized <- deseasonalize(daily, field, method = SFUNC)
-  daily[, field] <- deseasonalized
+  daily[, field] <- deseasonalized$df
+  params[, field] <- left_join(
+    params[, c("month", "grid")],
+    deseasonalized$params,
+    by = c("month" = "month", "grid" = "grid")
+  )[field]
 }
 
 # ====== 2.EXTRACT EVENTS ======================================================
@@ -71,7 +83,8 @@ metadata <- identify_events(daily, RFUNC)
 # ====== 3.SAVE RESULTS ========================================================
 log_info(paste0("Finished event extraction. Saving ",
                 METADATA_OUT, ", and ", DAILY_OUT, " ..."))
-write_parquet(metadata, METADATA_OUT)
+write_parquet(params, MEDIANS_OUT)
 write_parquet(daily, DAILY_OUT)
+write_parquet(metadata, METADATA_OUT)
 
 # ==============================================================================
