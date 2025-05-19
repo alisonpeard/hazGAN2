@@ -59,7 +59,8 @@ daily$time <- as.Date(daily$time)
 
 # remove seasonality (sfuncs)
 log_info("Removing seasonality")
-log_info(paste0("Dataframe dimensions: ", dim(daily)))
+log_info(paste0("Dataframe rows: ", nrow(daily)))
+log_info(paste0("Dataframe columns: ", ncol(daily)))
 
 # create a new data frame to store the parameters
 # params <- daily[, c("lat", "lon", "time")]
@@ -81,7 +82,7 @@ log_info(paste0("Dataframe dimensions: ", dim(daily)))
 lats <- unique(daily$lat)
 lons <- unique(daily$lon)
 latlon <- data.frame(expand.grid(lat = lats, lon = lons))
-months <- c(1:12)
+months <- month.name
 params <- latlon[rep(seq_len(nrow(latlon)), each = length(months)), ]
 params$month <- rep(months, nrow(latlon))
 
