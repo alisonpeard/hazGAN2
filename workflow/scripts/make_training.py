@@ -36,6 +36,7 @@ if __name__ == "__main__":
 
     # load coordinates
     data = xr.open_dataset(DATA)
+    # coords = data.isel(time=0, field-0)
     coords = data[["lat", "lon"]].to_dataframe().reset_index()
     coords = gpd.GeoDataFrame(
         coords, geometry=gpd.points_from_xy(coords['lon'], coords['lat'])
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     df[f'day_of_{FIELDS[0]}'] = df.groupby('event')[f'time_{FIELDS[0]}'].rank('dense')
 
     # get event times and durations
-    events = pd.read_parquet(METADATA)
+    events = pd.read_csv(METADATA)
     times = pd.to_datetime(
         events[['event', 'time']]
         .groupby('event').first()['time']
@@ -102,6 +103,13 @@ if __name__ == "__main__":
     gdf  = gdf.sort_values(["event", "lat", "lon"], ascending=[True, True, True]) # [T, i, j, field]
     lat  = gdf["lat"].unique()
     lon  = gdf["lon"].unique()
+
+    # Before the reshape operations
+    expected_size = T * ny * nx
+    actual_size = len(gdf) / nfields  # Divide by nfields since we have multiple fields per row
+    logging.info(f"Expected entries: {expected_size}, Actual entries: {actual_size}")
+    assert expected_size == actual_size, "Expected vs actual size mismatch"
+    
     X    = gdf[FIELDS].values.reshape([T, ny, nx, nfields])
     D    = gdf[[f"day_of_{FIELDS[0]}"]].values.reshape([T, ny, nx])
     U0   = gdf[[f"ecdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
@@ -144,6 +152,6 @@ if __name__ == "__main__":
     # save
     logging.info("Finished! Saving to netcdf...")
     ds.to_netcdf(OUTPUT)
-    logging.info("Saved to{}".format(OUTPUT))
+    logging.info("Saved to {}".format(OUTPUT))
 
     

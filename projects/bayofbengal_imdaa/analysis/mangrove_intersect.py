@@ -28,7 +28,8 @@ if __name__ == "__main__":
     with open(os.path.join("..", "config.yaml"), 'r') as stream:
         config = yaml.safe_load(stream)
     
-    wd = os.makedirs(os.path.join("..", "results", "mangroves"), exist_ok=True)
+    wd = os.path.join("..", "results", "mangroves")
+    os.makedirs(wd, exist_ok=True)
     nyrs = config["yearn"] - config["year0"]
 
     # load damage data
