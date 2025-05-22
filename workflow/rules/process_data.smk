@@ -46,10 +46,9 @@ checkpoint make_rgb_images:
 rule make_training_data:
     """Convert dataframe to training netCDF."""
     input:
-        data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
-        medians=os.path.join(PROCESSING_DIR, "medians.csv")
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
+        medians=os.path.join(PROCESSING_DIR, "medians.parquet")
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
@@ -69,7 +68,7 @@ rule fit_marginals:
     >>> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
     """
     input:
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
         events=os.path.join(PROCESSING_DIR, "events.parquet")
@@ -99,8 +98,8 @@ rule extract_events:
     input:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     output:
-        medians=os.path.join(PROCESSING_DIR, "medians.csv"),
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.csv"),
+        medians=os.path.join(PROCESSING_DIR, "medians.parquet"),
+        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     params:
         resx=RESOLUTION['lon'],

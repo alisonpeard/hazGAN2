@@ -4,18 +4,19 @@ Process the marginals with fitted tails to make training dataset for the GAN.
 NOTE: generic names (shape, scale, loc) will be used regardless of distribution.
 These should be set to NaN accordingly.
 
-TODO: This script can be made way more concise.
+TODO: This script is bloated, it can be made way more concise.
 """
 # %%
 import os
 os.environ["USE_PYGEOS"] = "0"
 import numpy as np
 import pandas as pd
+# from shapely.geometry import Point
 import geopandas as gpd
 import xarray as xr
 import logging
 
-from calendar import month_name as month
+from calendar import month_name
 
 
 if __name__ == "__main__":
@@ -27,31 +28,25 @@ if __name__ == "__main__":
     )
     
     # load parameters
-    DATA     = snakemake.input.data_all
     EVENTS   = snakemake.input.events
     METADATA = snakemake.input.metadata
     MEDIANS  = snakemake.input.medians # TODO
     OUTPUT   = snakemake.output.data
     FIELDS = [key for key in snakemake.params.fields.keys()]
 
-    # load coordinates
-    data = xr.open_dataset(DATA)
-    # coords = data.isel(time=0, field-0)
-    coords = data[["lat", "lon"]].to_dataframe().reset_index()
-    coords = gpd.GeoDataFrame(
-        coords, geometry=gpd.points_from_xy(coords['lon'], coords['lat'])
-        ).set_crs("EPSG:4326")
-    monthly_medians = data.groupby("time.month").median(dim="time").to_dataframe().reset_index()
-    monthly_medians = monthly_medians[["lat", "lon", 'month'] + FIELDS]
+    # load monthly medians
+    monthly_medians = pd.read_parquet(MEDIANS)
+    msg = f"Shape of monthly medians: {monthly_medians.shape=}"
+    logging.info(msg) # 49162 is 64 x 64 x 12
 
     # load fitted data                                                                                                        
     df = pd.read_parquet(EVENTS)
-    df = df.merge(coords, on=["lat", "lon"])
     df.columns = [col.replace(".", "_") for col in df.columns]
     df[f'day_of_{FIELDS[0]}'] = df.groupby('event')[f'time_{FIELDS[0]}'].rank('dense')
+    logging.info(f"Latitudes: {df.lat.nunique()=}")
 
     # get event times and durations
-    events = pd.read_csv(METADATA)
+    events = pd.read_parquet(METADATA)
     times = pd.to_datetime(
         events[['event', 'time']]
         .groupby('event').first()['time']
@@ -61,7 +56,13 @@ if __name__ == "__main__":
     events = events[["event", "event.size", "lambda"]].groupby("event").mean()
     events = events.to_dict()["event.size"]
     df["size"] = df["event"].map(events)
-    gdf = gpd.GeoDataFrame(df, geometry="geometry").set_crs("EPSG:4326")
+
+
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(
+        df["lon"],
+        df["lat"],
+        crs="EPSG:4326"
+    )).set_crs("EPSG:4326")
 
     # check ecdfs are in (0, 1)
     ecdf_cols = [f"ecdf_{field}" for field in FIELDS]
@@ -70,15 +71,16 @@ if __name__ == "__main__":
         assert gdf[col].min() >= 0, f"ECDF values for {col} should be >= 0"
 
     # merge in monthly medians
-    logging.warning("Calculating medians on the fly, this should be done earlier.")
+    msg = f"Shape of monthly medians: {monthly_medians.shape}"
+    logging.info(msg) # 49162 is 64 x 64 x 12
     nduplicates = monthly_medians.groupby(['month', "lat", "lon"]).count().max().max()
-    assert nduplicates == 1, "Monthly medians not unique"
+    assert nduplicates == 1, "Monthly medians have duplicates. Check the data."
     del nduplicates
-    monthly_medians = monthly_medians.groupby(["month", "lat", "lon"] + FIELDS).mean().reset_index()
-    monthly_medians["month"] = monthly_medians["month"].apply(lambda x: month[x])
+    msg = f"Shape of monthly medians: {monthly_medians.shape}"
+    logging.info(msg) # 49162 is 64 x 64 x 12
 
     for field in FIELDS:
-        gdf[f"month_{field}"] = pd.to_datetime(gdf[f"time_{field}"]).dt.month.map(lambda x: month[x])
+        gdf[f"month_{field}"] = pd.to_datetime(gdf[f"time_{field}"]).dt.month.map(lambda x: month_name[x])
         n = len(gdf)
         gdf = gdf.join(
             monthly_medians[['month', "lat", "lon", field]].set_index(["month", "lat", "lon"]),
@@ -103,13 +105,6 @@ if __name__ == "__main__":
     gdf  = gdf.sort_values(["event", "lat", "lon"], ascending=[True, True, True]) # [T, i, j, field]
     lat  = gdf["lat"].unique()
     lon  = gdf["lon"].unique()
-
-    # Before the reshape operations
-    expected_size = T * ny * nx
-    actual_size = len(gdf) / nfields  # Divide by nfields since we have multiple fields per row
-    logging.info(f"Expected entries: {expected_size}, Actual entries: {actual_size}")
-    assert expected_size == actual_size, "Expected vs actual size mismatch"
-    
     X    = gdf[FIELDS].values.reshape([T, ny, nx, nfields])
     D    = gdf[[f"day_of_{FIELDS[0]}"]].values.reshape([T, ny, nx])
     U0   = gdf[[f"ecdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
@@ -117,6 +112,22 @@ if __name__ == "__main__":
     M    = gdf[[f"{field}_median" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
     z    = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(T)
     s    = gdf[["event", "size"]].groupby("event").mean().values.reshape(T)
+
+    assert lat.shape == (ny,), f"Unexpected shape: {lat.shape=}"
+    assert lon.shape == (nx,), f"Unexpected shape: {lon.shape=}"
+    assert X.shape == (T, ny, nx, nfields), f"Unexpected shape: {X.shape=}"
+    assert D.shape == (T, ny, nx), f"Unexpected shape: {D.shape=}"
+    assert U0.shape == (T, ny, nx, nfields), f"Unexpected shape: {U0.shape=}"
+    assert U1.shape == (T, ny, nx, nfields), f"Unexpected shape: {U1.shape=}"
+
+    print(f"Shape {nx=}")
+    print(f"Shape {ny=}")
+    print(f"Shape {T=}")
+    print(f"Shape {nfields=}")
+    print(f"Shape {lat.shape=}")
+    print(f"Shape {lon.shape=}")
+    print(f"Shape {U0.shape=}")
+    print(f"Shape {U1.shape=}")
 
     # TODO: add checks here of lifetime max / total
     logging.warning("Lifetime max / total not checked")
@@ -149,6 +160,9 @@ if __name__ == "__main__":
                             'yearly_freq': rate,
                             'fields_info': str(FIELDS)})
 
+    assert ds.uniform.shape[1:] == (ny, nx, nfields), f"Unexpected shape: {ds.uniform.shape=}"
+    logging.info(f"Shape of dataset: {ds.uniform.shape=}")
+    print(f"Shape of dataset: {ds.uniform.shape=}")
     # save
     logging.info("Finished! Saving to netcdf...")
     ds.to_netcdf(OUTPUT)

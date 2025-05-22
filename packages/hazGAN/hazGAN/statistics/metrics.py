@@ -49,10 +49,12 @@ def pairwise_extremal_coeffs(uniform):
 def minner_product(a, b, batch_size=100):
     """Use broadcasting with batching to get sum of pairwise minima."""
     # a is (4096, 1248), b is (1248, 4096)
-    result = np.zeros((4096, 4096))
+    n = a.shape[0]
+    assert n == b.shape[-1], "First and last dimensions must match."
+    result = np.zeros((n, n))
     
-    for i in range(0, 4096, batch_size):
-        batch_end = min(i + batch_size, 4096)
+    for i in range(0, n, batch_size):
+        batch_end = min(i + batch_size, n)
         batch_a = a[i:batch_end]  # Shape: (batch_size, 1248)
         
         batch_result = np.sum(
