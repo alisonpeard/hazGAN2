@@ -37,6 +37,8 @@ if __name__ == "__main__":
 
     # load data
     ds = xr.open_dataset(DATA)
+    assert ds.uniform.shape[1:] == (RESX, RESY, 3), f"Unexpected shape: {ds.uniform.shape}"
+
 
     # Make a more extreme dataset
     if DO_SUBSET:

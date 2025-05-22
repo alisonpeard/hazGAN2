@@ -78,7 +78,7 @@ def invPIT(
         for i in range(hw) for channel in range(c) 
     ])
 
-    quantiles = quantiles.T
+    quantiles = quantiles.T #! why?
     quantiles = quantiles.reshape(*original_shape)
 
     return quantiles

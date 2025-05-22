@@ -31,6 +31,9 @@ if __name__ == "__main__":
     FIELDS      = snakemake.params.fields
     OUTPUT      = snakemake.output.netcdf
 
+    TRAIN_DIR   = snakemake.input.training_dir
+    OUT_TRAIN   = snakemake.output.train
+
     # load all images
     IMAGES = glob(os.path.join(IMAGE_DIR, "*.png"))
     logging.info(f"Found {len(IMAGES)} images in {IMAGE_DIR}.")
@@ -41,8 +44,18 @@ if __name__ == "__main__":
             images.append(img)
     images = np.stack(images, axis=0)
     images /= 255
-    images = np.flip(images, axis=1) # flip y-axis (latitude)
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
+
+    IMAGES_TRAIN = glob(os.path.join(TRAIN_DIR, "*.png"))
+    logging.info(f"Found {len(IMAGES_TRAIN)} training images in {TRAIN_DIR}.")
+    images_train = []
+    for png in sorted(IMAGES_TRAIN):
+        with Image.open(png) as img:
+            img = np.array(img, dtype=np.float32)
+            images_train.append(img)
+    images_train = np.stack(images_train, axis=0)
+    images_train /= 255
+    logging.info(f"Created training images ndarray of shape {images_train.shape}.")
 
     # apply image statistics to rescale
     image_stats = np.load(IMAGE_STATS)
@@ -52,9 +65,15 @@ if __name__ == "__main__":
     image_range  = image_maxima - image_minima
     logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
 
-    # rescale images to Gumbel scale
+    # rescale images to Gumbel scale and flip back y-axis
     images_g = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    images_u = inv_gumbel(images_g) # np.exp(-np.exp(-images_g))
+    images_u = inv_gumbel(images_g)    # np.exp(-np.exp(-images_g))
+    images   = np.flip(images, axis=1) # flip y-axis (latitude)
+
+    # # rescale train in same way
+    # compare_g = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    # compare_u = inv_gumbel(compare_g) # np.exp(-np.exp(-train_g))
+    # compare_train = np.flip(compare_un, axis=1) # flip y-axis (latitude)
 
     # load the training data for the inverse ECDF and parameters
     # NOTE: here is a good place to check distribution of data... skipping for now
@@ -96,6 +115,7 @@ if __name__ == "__main__":
     data = xr.Dataset(
         {
             "anomaly": (("time", "lat", "lon", "field"), images_x),
+            "gumbel": (("time", "lat", "lon", "field"), images_g),
             "uniform": (("time", "lat", "lon", "field"), images_u),
             "params": (("lat", "lon", "param", "field"), params),
         },
