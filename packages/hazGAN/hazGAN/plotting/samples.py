@@ -29,8 +29,8 @@ def plot(fake, train, field=0, transform=None, vmin=None, vmax=None, cmap=CMAP, 
     train = train[..., field].copy()
 
     if alpha_vlim:
-        vmin = vmin or np.nanquantile(np.concatenate([fake, train]), alpha)
-        vmax = vmax or np.nanquantile(np.concatenate([fake, train]), 1-alpha)
+        vmin = vmin or np.nanquantile(np.concatenate([train]), alpha) # used to be [fake, train]
+        vmax = vmax or np.nanquantile(np.concatenate([train]), 1-alpha) # used to be [fake, train]
     else:
         vmin = vmin or min(np.nanmin(fake), np.nanmin(train))
         vmax = vmax or max(np.nanmax(fake), np.nanmax(train))
@@ -52,15 +52,6 @@ def plot(fake, train, field=0, transform=None, vmin=None, vmax=None, cmap=CMAP, 
             j = i - midpoint
             im = contourmap(train[j, ...], ax=ax, vmin=vmin, vmax=vmax,
                             cmap=cmap, linewidth=linewidth, ndecimals=ndecimals)
-
-    # # add (a) and (b) labels to top left of both blocks
-    # axs[0, 0].text(.3, .7, "HazGAN", transform=axs[0, 0].transAxes, ha='center', va='bottom',
-    #             fontsize=20, 
-    #             bbox=dict(facecolor='white', alpha=.8, linewidth=0, edgecolor='white', boxstyle='round,pad=0.2'))
-    
-    # axs[midrow, 0].text(.25, .7, "ERA5", transform=axs[midrow, 0].transAxes, ha='center', va='bottom',
-    #             fontsize=20, 
-    #             bbox=dict(facecolor='white', alpha=.8, linewidth=0, edgecolor='white', boxstyle='round,pad=0.2'))
 
     axs[0, 0].set_ylabel("HazGAN", fontsize=18)
     axs[midrow, 0].set_ylabel("ERA5", fontsize=18)

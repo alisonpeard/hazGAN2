@@ -4,9 +4,11 @@ rule process_generated:
     input:
         image_dir=os.path.join(GENERATED_DIR, "images"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
+        training_dir=os.path.join(TRAINING_DIR, "rgb"),
         training_data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        netcdf=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        netcdf=os.path.join(GENERATED_DIR, "netcdf", "data.nc"),
+        train=os.path.join(GENERATED_DIR, "netcdf", "train.nc")
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],

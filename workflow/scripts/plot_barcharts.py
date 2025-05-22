@@ -15,6 +15,8 @@ from hazGAN.plotting import misc
 if __name__ == "__main__":
     TRAIN = snakemake.input.train
     GENER = snakemake.input.generated
+    MEDIANS = snakemake.input.medians
+    MONTH   = snakemake.params.month
     FIGURE  = snakemake.output.figure
     DATASET = snakemake.params.dataset.upper()
     DO_SUBSET = snakemake.params.do_subset
@@ -46,6 +48,16 @@ if __name__ == "__main__":
 
     warn("Haven't added medians back yet, these are anomalies")
     warn("This relies on the wind channel == 0.")
+    # load medians
+    medians = pd.read_parquet(MEDIANS)
+    medians["lon"] = medians["lon"].astype(np.float32)
+    medians["lat"] = medians["lat"].astype(np.float32)
+    medians = medians.set_index(["lon", "lat"]).to_xarray()
+    medians = medians.sel(month=MONTH)
+
+    # add medians for month back to samples
+    train_x += medians
+    gener_x += medians
 
     bar_width = 0.25
     fig, ax = misc.saffirsimpson_barchart(gener_x, train_x, bar_width=bar_width, title="")

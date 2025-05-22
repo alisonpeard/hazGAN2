@@ -28,6 +28,7 @@ if __name__ == "__main__":
     DATASET = snakemake.params.dataset.upper()
     DO_SUBSET = snakemake.params.do_subset
     THRESH = snakemake.params.event_subset
+    OUTRES = snakemake.params.outres
 
     # TRAIN = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
     # GENER = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/data.nc"
@@ -74,8 +75,19 @@ if __name__ == "__main__":
         fig_pears.savefig(os.path.join(DIR0, f"pearson_{FIELDS[0]}-{FIELDS[1]}.png"), dpi=300)
     
     # %% - - - - - Plot spatial correlations - - - - - - - - - - - - - - - - -
+    logging.info("Resampling to 16 x 16")
+    outres = OUTRES
+    ntrain, inx, iny, _ = train_u.shape
+    ngener, _, _, _ = gener_u.shape
+    bin_size = inx // outres
+    train_u = train_u.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    gener_u = gener_u.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    logging.info(f"Train shape: {train_u.shape}")
+    logging.info(f"Generated shape: {gener_u.shape}")
+
     for FIELD in [0, 1, 2]:
         logging.info(f"Plotting field {FIELD}")
+        
         fig_smith = spatial.plot(gener_u, train_u, spatial.smith1990, field=FIELD, figsize=.6,
                     title="", cbar_label=r"$\hat\theta$",
                     cmap="Spectral", vmin=1, vmax=4)

@@ -19,8 +19,7 @@ rule plot_fitted_parameters:
     Figure 2: fitted parameters for each variable. Figure 1 in paper.
     """
     input:
-        data_all=os.path.join(PROCESSING_DIR, "data_all.nc"),
-        events=os.path.join(PROCESSING_DIR, "events.parquet"),
+        events=os.path.join(PROCESSING_DIR, "events.parquet")
     output:
         figa=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
         figb=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[1]}.png"),
@@ -59,10 +58,12 @@ rule plot_barcharts:
     """Saffir–Simpson barcharts of storm distribution."""
     input:
         train=os.path.join(TRAINING_DIR, "data.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc"),
+        medians=os.path.join(PROCESSING_DIR, "medians.parquet")
     output:
         figure=os.path.join(FIGURE_DIR, "event_intensity_barchart.png")
     params:
+        month="September",
         fields=FIELDS,
         dataset=DATASET,
         do_subset=True,
@@ -87,7 +88,8 @@ rule plot_correlations:
         fields=FIELDS,
         dataset=DATASET,
         do_subset=True,
-        event_subset=config['event_subset']
+        event_subset=config['event_subset'],
+        outres=16
     conda:
         GEOENV
     log:

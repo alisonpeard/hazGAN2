@@ -1,3 +1,8 @@
+"""
+TODO: This code is super bloated, it can be made way more concise.
+
+No need to turn into a data frame?
+"""
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -10,7 +15,6 @@ import scipy.stats
 import logging
 
 if __name__ == "__main__":
-    DATA_ALL= snakemake.input.data_all
     EVENTS  = snakemake.input.events
     FIGa = snakemake.output.figa
     FIGb = snakemake.output.figb
@@ -28,22 +32,16 @@ if __name__ == "__main__":
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
-    # load coordinates
-    coords = xr.open_dataset(DATA_ALL)
-    coords = coords[["lat","lon"]].to_dataframe().reset_index()
-    coords = gpd.GeoDataFrame(
-        coords, geometry=gpd.points_from_xy(coords['lon'], coords['lat'])
-        ).set_crs("EPSG:4326")
-
     # load GPD-fitted data   
     df = pd.read_parquet(EVENTS)
-    df["lat"] = df["lat"].astype(float).round(6) # about 11 cm
-    df["lon"] = df["lon"].astype(float).round(6)
-    coords["lat"] = coords["lat"].astype(float).round(6)
-    coords["lon"] = coords["lon"].astype(float).round(6)
-    df = df.merge(coords, on=["lat", "lon"])
+    df["lat"] = df["lat"].astype(float)
+    df["lon"] = df["lon"].astype(float)
     df.columns = [col.replace(".", "_") for col in df.columns]
-    gdf = gpd.GeoDataFrame(df, geometry="geometry").set_crs("EPSG:4326")
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(
+        df["lon"],
+        df["lat"],
+        crs="EPSG:4326"
+    )).set_crs("EPSG:4326")
 
     # log statistics (max, min) for each (variable, parameter)
     for var in FIELDS.keys():
@@ -69,6 +67,11 @@ if __name__ == "__main__":
 
     # turn it into an xarray dataset
     ds = gdf.set_index(['lat', 'lon', 'event']).to_xarray().isel(event=0)
+
+    print(f"Latitude dimensions: {gdf['lat'].nunique()=}")
+    print(f"Longitude dimensions: {gdf['lon'].nunique()=}")
+    logging.info(f"Latitude dimensions: {gdf['lat'].nunique()=}")
+    logging.info(f"Longitude dimensions: {gdf['lon'].nunique()=}")
 
     n = 0
     for var, info in FIELDS.items():
