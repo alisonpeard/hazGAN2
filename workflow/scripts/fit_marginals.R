@@ -47,6 +47,7 @@ field_summary <- function(i) {
 }
 
 log_debug(field_summary(1))
+Q <- 0.95 # doesn't do anything
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q, distn = distns[1],
   log_file = log_file, log_level = log_level

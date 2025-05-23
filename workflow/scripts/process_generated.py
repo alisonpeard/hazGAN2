@@ -65,15 +65,21 @@ if __name__ == "__main__":
     image_range  = image_maxima - image_minima
     logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
 
-    # rescale images to Gumbel scale and flip back y-axis
+    # rescale images to Gumbel scale
     images_g = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
     images_u = inv_gumbel(images_g)    # np.exp(-np.exp(-images_g))
-    images   = np.flip(images, axis=1) # flip y-axis (latitude)
 
-    # # rescale train in same way
-    # compare_g = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    # compare_u = inv_gumbel(compare_g) # np.exp(-np.exp(-train_g))
-    # compare_train = np.flip(compare_un, axis=1) # flip y-axis (latitude)
+    # flip back y-axis (latitude)
+    images_g = np.flip(images_g, axis=1) # flip y-axis (latitude)
+    images_u = np.flip(images_u, axis=1) # flip y-axis (latitude)
+
+    # rescale train in same way
+    compare_g = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    compare_u = inv_gumbel(compare_g) # np.exp(-np.exp(-train_g))
+    compare_g = np.flip(compare_g, axis=1) # flip y-axis (latitude)
+    compare_u = np.flip(compare_u, axis=1) # flip y-axis (latitude)
+
+    #!! TODO: finish here !
 
     # load the training data for the inverse ECDF and parameters
     # NOTE: here is a good place to check distribution of data... skipping for now
@@ -107,9 +113,9 @@ if __name__ == "__main__":
         images_u = np.clip(images_u, 1e-6, 1 - 1e-6)
 
     # transform images to original scale using invPIT
-    # TODO: need to check y-axis orientation
     distns = [field['distn'] for field in FIELDS.values()]
     images_x = invPIT(images_u, train_x, params, distns=distns)
+    compare_x = invPIT(compare_u, train_x, params, distns=distns)
 
     # save to NetCDF
     data = xr.Dataset(
@@ -131,4 +137,22 @@ if __name__ == "__main__":
     data.to_netcdf(OUTPUT, format="NETCDF4")
     logging.info(f"Saved generated data to {OUTPUT}.")
     logging.info("Done.")
+
+    # %% save the comparison dataset
+    compare_data = xr.Dataset(
+        {
+            "anomaly": (("time", "lat", "lon", "field"), compare_x),
+            "gumbel": (("time", "lat", "lon", "field"), compare_g),
+            "uniform": (("time", "lat", "lon", "field"), compare_u),
+        },
+        coords={
+            "field": list(FIELDS.keys()),
+            "time": (("time"), np.arange(compare_g.shape[0])),
+            "lat": (("lat"), train["lat"].values),
+            "lon": (("lon"), train["lon"].values),
+        },
+    )
+
+    compare_data.to_netcdf(OUT_TRAIN, format="NETCDF4")
+    logging.info(f"Saved training data to {OUT_TRAIN}.")
 # %%
