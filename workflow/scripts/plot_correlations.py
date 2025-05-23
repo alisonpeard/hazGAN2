@@ -55,10 +55,12 @@ if __name__ == "__main__":
     
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
+    train_g = -np.log(-np.log(train_u))
 
     gener = xr.open_dataset(GENER)
     gener_x = gener["anomaly"].values
     gener_u = gener["uniform"].values
+    gener_g = gener["gumbel"].values
 
     for FIELDS in [[0, 1], [0, 2], [1, 2]]:
         logging.info(f"Plotting fields {FIELDS[0]} and {FIELDS[1]}")
@@ -80,20 +82,27 @@ if __name__ == "__main__":
     ntrain, inx, iny, _ = train_u.shape
     ngener, _, _, _ = gener_u.shape
     bin_size = inx // outres
-    train_u = train_u.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
-    gener_u = gener_u.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
-    logging.info(f"Train shape: {train_u.shape}")
-    logging.info(f"Generated shape: {gener_u.shape}")
+
+    train_sample = train_u #! change back to train_u later
+    gener_sample = gener_u
+
+    train_sample = train_sample .reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    gener_sample = gener_sample .reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    logging.info(f"Train shape: {train_sample.shape}")
+    logging.info(f"Generated shape: {gener_sample.shape}")
 
     for FIELD in [0, 1, 2]:
         logging.info(f"Plotting field {FIELD}")
         
-        fig_smith = spatial.plot(gener_u, train_u, spatial.smith1990, field=FIELD, figsize=.6,
+        # plot Pearson correlation
+        fig_pears = spatial.plot(gener_sample , train_sample , spatial.pearson, field=FIELD, figsize=.6,
+                    title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r")
+        fig_pears.savefig(os.path.join(DIR1, f"pearson_{FIELD}.png"), dpi=300)
+
+        logging.info(f"Plotting Smith (1990) field {FIELD}")
+        fig_smith = spatial.plot(gener_sample , train_sample , spatial.smith1990, field=FIELD, figsize=.6,
                     title="", cbar_label=r"$\hat\theta$",
                     cmap="Spectral", vmin=1, vmax=4)
         fig_smith.savefig(os.path.join(DIR1, f"smith1990_{FIELD}.png"), dpi=300)
-        # plot Pearson correlation
-        fig_pears = spatial.plot(gener_u, train_u, spatial.pearson, field=FIELD, figsize=.6,
-                    title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r")
-        fig_pears.savefig(os.path.join(DIR1, f"pearson_{FIELD}.png"), dpi=300)
-    # %%
+        
+# %%
