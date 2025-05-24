@@ -1,0 +1,100 @@
+# StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
+dataset: era5
+
+# year range (1940 to 2023)
+year0: 1940
+yearn: 2023
+
+# geographical boundaries
+longitude:
+  min: 80.0
+  max: 95.0
+latitude:
+  min: 10.0
+  max: 25.0
+
+# resolution
+resolution:
+  lon: 64
+  lat: 64
+
+sfunc: additive # in r_utils/sfuncs.R
+
+rfunc: # in r_utils/rfuncs.R
+  args:
+    - ws
+  func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+# event threshold 
+event_subset:
+  field: ws
+  value: 15 # 25.5
+  func: max
+
+# marginal threshold (for POT)
+marginal_threshold: 0.95
+
+# training probability space
+domain: gumbel # gumbel, uniform
+
+kimg: 300 # 600
+
+# output fields
+fields:
+  ws:
+    args:
+      - u10
+      - v10
+    func: wind_speed # defined in py_utils/funcs.py
+    hfunc: max # must be xarray compatible
+    obj: max
+    distn: weibull
+    units: "mps"
+    cmap: "viridis"
+    title: "Wind Speed"
+  tp:
+    args:
+      - tp
+    func: identity
+    hfunc: sum
+    obj: max
+    distn: genpareto
+    units: "m" # same as kg p m-2
+    cmap: "PuBu"
+    title: "Total Precipitation"
+  msl:
+    args:
+      - msl
+    func: identity
+    hfunc: min
+    obj: min
+    distn: genpareto
+    units: "Pa"
+    cmap: "YlOrRd"
+    title: "Mean Sea Level Pressure"
+
+points_of_interest: # (lon, lat)
+  # bangladesh
+  chittagong:
+    - 91.8466
+    - 22.3569
+  dhaka:
+    - 90.4125
+    - 23.8103
+  # noaa_buoys
+  buoy_23223:
+    - 89.483
+    - 17.333
+  buoy_23218:
+    - 88.5
+    - 10.165
+  buoy_23008:
+    - 90.0
+    - 12.0
+  buoy_23007:
+    - 90.0
+    - 8.0
+
+
+local_crs: 24346 # https://epsg.io/24346
+
