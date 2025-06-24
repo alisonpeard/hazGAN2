@@ -19,7 +19,8 @@ conda config --set channel_priority strict # snakemake complains otherwise
 conda install -c conda-forge conda=24.7.1
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
 
-snakemake --profile profiles/slurm get_all_data
+snakemake --profile profiles/slurm -n
+snakemake --profile profiles/slurm
 ```
 
 But for your mental health you should set up the conda envs on the CPU nodes interactively, using more resources.
