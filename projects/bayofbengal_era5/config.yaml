@@ -2,7 +2,7 @@
 dataset: era5
 
 # year range (1940 to 2023)
-year0: 1940
+year0: 1941
 yearn: 2023
 
 # geographical boundaries
@@ -12,6 +12,12 @@ longitude:
 latitude:
   min: 10.0
   max: 25.0
+
+# specific dates to exclude (based-on scripts/windbombs.py)
+exclude:
+  - "1952-05-09" # Cyclone NORA
+  - "1992-04-15" # Cyclone PHET
+  - "1997-05-16" # Cyclone 03B
 
 # resolution
 resolution:
