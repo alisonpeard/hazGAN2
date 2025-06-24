@@ -1,4 +1,3 @@
-# %%
 """
 Rain bombs are a known issue in ERA5 data[2]. Though not addressed in the documentation,
 the Bay of Bengal wind data has clusters of very high winds that do not look realistic[1].

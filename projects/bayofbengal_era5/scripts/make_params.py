@@ -1,8 +1,5 @@
 """
-Forum: https://forum.ecmwf.int/t/unusual-10m-wind-distribution-over-bay-of-bengal/7399 
-
-Solutions:
-
+Make parameters to use when pre-processing the ERA5 data.
 """
 # %%
 import os
