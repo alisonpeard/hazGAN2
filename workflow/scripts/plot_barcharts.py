@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import logging
 from warnings import warn
 
 from hazGAN.plotting import misc
@@ -15,12 +16,19 @@ from hazGAN.plotting import misc
 if __name__ == "__main__":
     TRAIN = snakemake.input.train
     GENER = snakemake.input.generated
-    MEDIANS = snakemake.input.medians
     MONTH   = snakemake.params.month
     FIGURE  = snakemake.output.figure
     DATASET = snakemake.params.dataset.upper()
     DO_SUBSET = snakemake.params.do_subset
     THRESH = snakemake.params.event_subset
+
+    # configure logging
+    logging.basicConfig(
+        filename=snakemake.log.file,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+    logging.info(f"Plotting barcharts for {DATASET} dataset, month {MONTH}")
 
     # TRAIN = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
     # GENER = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/data.nc"
@@ -35,6 +43,8 @@ if __name__ == "__main__":
 
     # load data and samples
     train = xr.open_dataset(TRAIN)
+    medians = train.sel(month=[MONTH]).medians.values
+    
     if DO_SUBSET:
         train['intensity'] = getattr(train.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
         mask = (train['intensity'] > THRESH["value"]).values
@@ -46,16 +56,8 @@ if __name__ == "__main__":
     gener = xr.open_dataset(GENER)
     gener_x = gener["anomaly"].values
 
-    warn("Haven't added medians back yet, these are anomalies")
-    warn("This relies on the wind channel == 0.")
-    # load medians
-    medians = pd.read_parquet(MEDIANS)
-    medians["lon"] = medians["lon"].astype(np.float32)
-    medians["lat"] = medians["lat"].astype(np.float32)
-    medians = medians.set_index(["lon", "lat"]).to_xarray()
-    medians = medians.sel(month=MONTH)
-
     # add medians for month back to samples
+    logging.info(f"{medians.shape=}, {train_x.shape=}, {gener_x.shape=}")
     train_x += medians
     gener_x += medians
 

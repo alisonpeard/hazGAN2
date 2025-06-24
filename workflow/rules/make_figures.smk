@@ -58,8 +58,7 @@ rule plot_barcharts:
     """Saffir–Simpson barcharts of storm distribution."""
     input:
         train=os.path.join(TRAINING_DIR, "data.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc"),
-        medians=os.path.join(PROCESSING_DIR, "medians.parquet")
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         figure=os.path.join(FIGURE_DIR, "event_intensity_barchart.png")
     params:
