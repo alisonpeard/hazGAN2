@@ -25,7 +25,7 @@ setup:
     renv: "../environments/linux/r.yaml"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
-    timecol: 'time'
+    timecol: 'valid_time'
     metadata:
       institution: "Oxford School of Geography and the Environment"
       description: "Analysis on departmental cluster"
@@ -37,7 +37,7 @@ setup:
     renv: "../environments/linux/r.yaml"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
-    timecol: "time"
+    timecol: "valid_time"
     metadata:
       institution: "Oxford School of Gography and the Environment"
       description: "Analysis on departmental cluster"
