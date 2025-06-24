@@ -18,7 +18,6 @@ import logging
 
 from calendar import month_name
 
-
 if __name__ == "__main__":
     # configure logging
     logging.basicConfig(
@@ -30,13 +29,15 @@ if __name__ == "__main__":
     # load parameters
     EVENTS   = snakemake.input.events
     METADATA = snakemake.input.metadata
-    MEDIANS  = snakemake.input.medians # TODO
+    MEDIANS  = snakemake.input.medians
     OUTPUT   = snakemake.output.data
     FIELDS = [key for key in snakemake.params.fields.keys()]
 
     # load monthly medians
-    monthly_medians = pd.read_parquet(MEDIANS)
-    msg = f"Shape of monthly medians: {monthly_medians.shape=}"
+    medians = pd.read_parquet(MEDIANS)
+    medians["lat"] = medians["lat"].astype(float)
+    medians["lon"] = medians["lon"].astype(float)
+    msg = f"Shape of monthly medians: {medians.shape=}"
     logging.info(msg) # 49162 is 64 x 64 x 12
 
     # load fitted data                                                                                                        
@@ -57,7 +58,6 @@ if __name__ == "__main__":
     events = events.to_dict()["event.size"]
     df["size"] = df["event"].map(events)
 
-
     gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(
         df["lon"],
         df["lat"],
@@ -70,26 +70,6 @@ if __name__ == "__main__":
         assert gdf[col].max() <= 1, f"ECDF values for {col} should be <= 1"
         assert gdf[col].min() >= 0, f"ECDF values for {col} should be >= 0"
 
-    # merge in monthly medians
-    msg = f"Shape of monthly medians: {monthly_medians.shape}"
-    logging.info(msg) # 49162 is 64 x 64 x 12
-    nduplicates = monthly_medians.groupby(['month', "lat", "lon"]).count().max().max()
-    assert nduplicates == 1, "Monthly medians have duplicates. Check the data."
-    del nduplicates
-    msg = f"Shape of monthly medians: {monthly_medians.shape}"
-    logging.info(msg) # 49162 is 64 x 64 x 12
-
-    for field in FIELDS:
-        gdf[f"month_{field}"] = pd.to_datetime(gdf[f"time_{field}"]).dt.month.map(lambda x: month_name[x])
-        n = len(gdf)
-        gdf = gdf.join(
-            monthly_medians[['month', "lat", "lon", field]].set_index(["month", "lat", "lon"]),
-            on=[f"month_{field}", "lat", "lon"],
-            rsuffix="_median"
-            )
-        assert n == len(gdf), "Merge failed"
-        del gdf[f'month_{field}']
-
     # use lat and lon columns to label grid points in (i,j) format
     gdf["lat"] = gdf["geometry"].apply(lambda x: x.y)
     gdf["lon"] = gdf["geometry"].apply(lambda x: x.x)
@@ -101,6 +81,11 @@ if __name__ == "__main__":
     ny      = gdf["lat"].nunique()
     T       = gdf["event"].nunique()
 
+    # process monthly medians
+    medians["month_id"] = medians["month"].map(lambda x: list(month_name).index(x))
+    medians = medians.sort_values(["month_id", "lat", "lon"], ascending=[True, True, True])
+    medians = medians.drop(columns=["month_id"])
+
     # make training tensors
     gdf  = gdf.sort_values(["event", "lat", "lon"], ascending=[True, True, True]) # [T, i, j, field]
     lat  = gdf["lat"].unique()
@@ -109,9 +94,9 @@ if __name__ == "__main__":
     D    = gdf[[f"day_of_{FIELDS[0]}"]].values.reshape([T, ny, nx])
     U0   = gdf[[f"ecdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
     U1   = gdf[[f"scdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
-    M    = gdf[[f"{field}_median" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
     z    = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(T)
     s    = gdf[["event", "size"]].groupby("event").mean().values.reshape(T)
+    M    = medians[FIELDS].values.reshape([12, ny, nx, nfields])
 
     assert lat.shape == (ny,), f"Unexpected shape: {lat.shape=}"
     assert lon.shape == (nx,), f"Unexpected shape: {lon.shape=}"
@@ -144,7 +129,7 @@ if __name__ == "__main__":
     ds = xr.Dataset({'uniform': (['time', 'lat', 'lon', 'field'], U1),
                     'ecdf': (['time', 'lat', 'lon', 'field'], U0),
                     'anomaly': (['time', 'lat', 'lon', 'field'], X),
-                    'medians': (['time', 'lat', 'lon', 'field'], M),
+                    'medians': (['month', 'lat', 'lon', 'field'], M),
                     f'day_of_{FIELDS[0]}': (['time', 'lat', 'lon'], D),
                     'event_rp': (['time'], z),
                     'duration': (['time'], s),
@@ -154,7 +139,8 @@ if __name__ == "__main__":
                             'lon': (['lon'], lon),
                             'time': times,
                             'field': FIELDS,
-                            'param': ['loc', 'scale', 'shape']
+                            'param': ['loc', 'scale', 'shape'],
+                            'month': medians["month"].unique()
                     },
                     attrs={'CRS': 'EPSG:4326',
                             'yearly_freq': rate,

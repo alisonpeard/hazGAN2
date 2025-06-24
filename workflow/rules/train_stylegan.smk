@@ -92,20 +92,3 @@ rule generate_stylegan:
             --network={input.network} \
             &> {log}
         """
-
-# rule install_hazgan:
-#     """Install hazgan_utils package."""
-#     output:
-#         touch("logs/hazgan_utils.done")
-#     conda:
-#         GEOENV
-#     log:
-#         "logs/install_hazgan_utils.log"
-#     shell:
-#         """
-#         cd packages/hazGAN/
-#         python -m pip install .
-        
-#         python -c "import hazGAN; print(f'HazGAN installed successfully')"
-#         """
-
