@@ -1,6 +1,8 @@
 """
 Get ERA5 data from SoGE cluster. Run from repository root.
 
+NOTE: add GCS bucket methods too.
+
 ```bash
 # environment set up
 micromamba create -c conda-forge -c bioconda -n snakemake snakemake
