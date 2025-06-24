@@ -5,6 +5,8 @@ This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stabl
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
 
+StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
+
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
 
 > ### 💡 Note on snakemake relative paths

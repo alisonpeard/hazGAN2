@@ -22,8 +22,7 @@ GENERATED_DIR  = os.path.join(RESULTS_DIR, "generated")
 FIGURE_DIR     = os.path.join(RESULTS_DIR, "figures")
 
 # make parent directories
-for newdir in [RESULTS_DIR, RESOURCES_DIR]:
-    os.makedirs(newdir, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # make subdirectories (with .gitignore)
 for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
