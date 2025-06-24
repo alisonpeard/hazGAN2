@@ -111,8 +111,7 @@ rule extract_events:
         rfunc=RFUNC,
         sfunc=SFUNC
     resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/storms_%A_%a.out --error=sbatch_dump/storms_%A_%a.err"
+        cpus_per_task=4
     conda:
         RENV
     log:
@@ -131,8 +130,7 @@ rule concatenate_data:
     output:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/concat_%A_%a.out --error=sbatch_dump/concat_%A_%a.err"
+        cpus_per_task=4
     conda:
         GEOENV
     log:
@@ -155,8 +153,7 @@ rule resample_year:
     conda:
         GEOENV
     resources:
-        cpus_per_task=4,
-        slurm_extra="--output=sbatch_dump/resample_%A_%a.out --error=sbatch_dump/resample_%A_%a.err"
+        cpus_per_task=4
     log:
         file=os.path.join("logs", "resample", "{year}.log")
     script:
