@@ -25,5 +25,5 @@ dependencies:
     - gdal
     - libgdal
     - pip:
-        - -e ../../packages/hazGAN # this works
-        - -r ../../packages/hazGAN/requirements.txt
+        - -e ../../../packages/hazGAN # this works
+        - -r ../../../packages/hazGAN/requirements.txt
