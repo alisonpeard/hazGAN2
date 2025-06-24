@@ -129,6 +129,8 @@ rule concatenate_data:
         )
     output:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
+    params:
+        exclude=config['exclude']
     resources:
         cpus_per_task=4
     conda:

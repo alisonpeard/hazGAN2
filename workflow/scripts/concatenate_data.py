@@ -14,25 +14,30 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-if __name__ == "__main__":
+def main(input, output, params):
         start = time.time()
         logging.info("Starting resampling script.")
 
-        # snakemake params
-        INPUTS  = snakemake.input.netcdfs
-        OUTPUT = snakemake.output.netcdf
+        ds = xr.open_mfdataset(input.netcdfs, chunks={"time": "500MB"}, engine="netcdf4")
 
-        # load datasets
-        ds = xr.open_mfdataset(INPUTS, chunks={"time": "500MB"}, engine="netcdf4")
+        logging.info(f"Saving to {output.netcdf}")
+        encoding = {
+            var: {"zlib": True, "complevel": 5} for var in ds.data_vars
+        }
 
-        # # add a grid variable for indexing
-        # h, w = ds.sizes['lat'], ds.sizes['lon']
-        # grid = np.arange(0, h * w, 1).reshape(h, w)
-        # grid = xr.DataArray(grid, dims=["lat", "lon"], coords={"lat": ds.lat[::-1], "lon": ds.lon})
-        # ds['grid'] = grid
+        # remove any dates that are in the exclude list
+        exclude_dates = [np.datetime64(date) for date in params.exclude]
+        date_mask = np.isin(ds.time.values, exclude_dates, invert=True)
+        ds = ds.isel(time=date_mask)
 
-        logging.info(f"Saving to {OUTPUT}")
-        ds.to_netcdf(OUTPUT)
+        ds.to_netcdf(output.netcdf, encoding=encoding)
 
-        logging.info(f"Saved {OUTPUT}")
+        logging.info(f"Saved {output.netcdf}")
         logging.info(f"Resampling took {time.time() - start} seconds.")
+
+
+if __name__ == "__main__":
+        input = snakemake.input
+        output = snakemake.output
+        params = snakemake.params
+        main(input, output, params)
