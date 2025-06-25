@@ -26,7 +26,7 @@ def get_param_file():
 
 rule get_all_years:
     """Rule to process all years for the project.
-    >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 20
+    >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 40
     """
     input:
         expand(
