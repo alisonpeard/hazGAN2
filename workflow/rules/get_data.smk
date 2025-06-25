@@ -38,6 +38,7 @@ rule get_all_years:
 rule get_year:
     """
     >>> snakemake --profile profiles/slurm/ --executor slurm --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
+    >>> snakemake --profile profiles/cluster --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
     """
     input:
         indir=INDIR,
