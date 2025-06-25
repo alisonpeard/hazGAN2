@@ -43,36 +43,19 @@ def main(input, output, params):
         logging.info(f"File {i}: {file}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-        # data = xr.open_mfdataset(files, engine='netcdf4',
-        #                          chunks={
-        #                              "time": "500MB",
-        #                              params.timecol: "500MB",
-        #                              'longitude': '500MB',
-        #                              'latitude': '500MB'
-        #                              })
-        datasets = []
-        for file in files:
-            data_i = xr.open_dataset(file, engine='netcdf4', chunks={
-                "time": "500MB",
-                params.timecol: "500MB",
-                'longitude': '500MB',
-                'latitude': '500MB'
-            })
+        def preprocess(ds):
+            if params.timecol in ds.coords and params.timecol != "time":
+                ds = ds.rename({params.timecol: "time"})
+            return ds
 
-            if params.timecol in data_i.coords:
-                logging.warning(f"Removing coordinate {params.timecol} from dataset {file}.")
-                data_i = data_i.rename({params.timecol: "time"})
-
-            data_i = dataset.clip_to_bbox(data_i, params.xmin, params.xmax, params.ymin, params.ymax)
-            
-            logging.info(f"\nData loaded with {len(data_i.time)} time steps, {len(data_i.latitude)} latitudes, and {len(data_i.longitude)} longitudes.")
-            logging.info(f"Dimensions: {data_i.dims} and variables: {data_i.data_vars}")
-
-            datasets.append(data_i)
-
-        data = xr.merge(datasets)
-        logging.info(f"Data loaded with {len(data.time)} time steps, {len(data.latitude)} latitudes, and {len(data.longitude)} longitudes.")
-        logging.info(f"Dimensions: {data.dims} and variables: {data.data_vars}")
+        data = xr.open_mfdataset(files, engine='netcdf4',
+                                 preprocess=preprocess,
+                                 chunks={
+                                     "time": "500MB",
+                                     'longitude': '500MB',
+                                     'latitude': '500MB'
+                                     })
+        data = dataset.clip_to_bbox(data, params.xmin, params.xmax, params.ymin, params.ymax)
         
     logging.info("\n\nData loaded.")
 
@@ -112,13 +95,10 @@ def main(input, output, params):
     logging.info(f"Data size: {data_resampled.nbytes * 1e-6:.2f} MB")
 
     # data export settings
-    chunk_size  = {'time': '50MB'}
-    compression = {'zlib': True, 'complevel': 5}
+    compression = {'zlib': True, 'complevel': 1}
     encoding = {var: compression for var in data_resampled.data_vars}
 
     # save data to netcdf
-    data_resampled = data_resampled.chunk(chunk_size)
-    os.makedirs(os.path.dirname(output.netcdf), exist_ok=True)
     logging.info(f"Saving data to {output.netcdf}")
     data_resampled.to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
     logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB")
