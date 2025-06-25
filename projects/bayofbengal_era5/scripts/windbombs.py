@@ -46,17 +46,15 @@ PROBLEM_DATES = [
     "1992-04-15",
     "1997-05-16"
 ]
-SAMPLES = ['/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1997.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1992.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1952.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1995.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1963.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1953.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1950.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1949.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1946.nc',
-                '/Volumes/mistral/alison/hazGAN2/projects/bayofbengal_era5/results/processing/input/1945.nc'
+SAMPLES = [
+    # 2020,
+    # 1997,
+    # 1952,
+    1992
 ]
+
+SAMPLES = [os.path.join(INPUT_DIR, f"{year}.nc") for year in SAMPLES]
+SAMPLES = ["/Users/alison/Downloads/1992.nc"]
 
 def has_blobs(x, max_sigma=SIGMA, threshold=THRESH):
     """Apply blob detection to the dataset."""
@@ -71,6 +69,7 @@ def get_blobs(x, max_sigma=SIGMA, threshold=THRESH):
 
 
 if __name__ == "__main__":
+    wdir = os.path.dirname(__file__)
     # run this first to manually check the parameters are finding the right blobs
     for file in tqdm(SAMPLES, desc="Processing sample files"):
         ds = xr.open_dataset(file)
@@ -86,16 +85,18 @@ if __name__ == "__main__":
 
         print(f"Found {len(blobs)} for {file} at time {ds.time[t].values}.")
         fig, ax = plt.subplots(figsize=(3, 3))
-        ax.imshow(arr)
+        ax.imshow(arr, cmap="binary_r")
         for blob in blobs:
             y, x, r = blob
-            c = plt.Circle((x, y), r, color="lime", linewidth=2, fill=False)
+            c = plt.Circle((x, y), r, color="r", linewidth=1, fill=False)
             ax.add_patch(c)
         ax.set_axis_off()
         plt.show()
 
+        fig.savefig(os.path.join("..", "results", "figures", f"windbomb_{t}.png"), dpi=300, bbox_inches="tight")
 
-    # %%
+
+    # %% then run this to process all files
     files = sorted(glob(os.path.join(INPUT_DIR, "*.nc")), reverse=True)
     print(f"Found {len(files)} files in {INPUT_DIR}.")
 
