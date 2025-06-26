@@ -17,6 +17,8 @@ rule all_figures:
 rule plot_fitted_parameters:
     """
     Figure 2: fitted parameters for each variable. Figure 1 in paper.
+
+    >>> snakemake --profile profiles/cluster plot_fitted_parameters
     """
     input:
         events=os.path.join(PROCESSING_DIR, "events.parquet")
