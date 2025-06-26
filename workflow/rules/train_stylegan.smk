@@ -38,7 +38,7 @@ rule ensure_script_executable:
 
 
 checkpoint train_stylegan:
-    """snakemake --profile profiles/cluster train_stylegan"""
+    """snakemake --profile profiles/slurm train_stylegan"""
     input:
         ready="logs/cuda_env_ready.done",
         zipfile=os.path.join(TRAINING_DIR, "images.zip")

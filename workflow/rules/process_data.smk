@@ -10,7 +10,8 @@ event footprints for training GAN.
  
 # run rule project root and login node
 >>> micromamba activate snakemake
->>> snakemake --profile profiles/cluster/ --executor slurm process_data --use-conda
+>>> snakemake --profile profiles/cluster/ --use-conda process_all_data
+>>> snakemake --profile profiles/slurm/ --executor slurm --use-conda process_all_data
 """
 rule process_all_data:
     """Complete full data processing sequence."""
@@ -19,7 +20,10 @@ rule process_all_data:
 
 
 checkpoint make_rgb_images:
-    """Make PNGs of the training data."""
+    """Make PNGs of the training data.
+    
+    >>> snakemake --profile profiles/cluster/ --use-conda make_rgb_images
+    """
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:

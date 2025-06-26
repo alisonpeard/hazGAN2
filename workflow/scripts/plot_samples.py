@@ -15,8 +15,6 @@ from hazGAN.statistics import gumbel
 import ssl # fix cartopy issue
 ssl._create_default_https_context = ssl._create_stdlib_context
 
-# plt.rcParams['font.family'] = 'sans-serif'å
-# plt.rcParams['font.sans-serif'] = 'Helvetica'
 
 if __name__ == "__main__":
     TRAIN = snakemake.input.train
@@ -62,3 +60,14 @@ if __name__ == "__main__":
         figa.savefig(os.path.join(OUTDIR, f"{FIELD}_gumbel.png"), dpi=300, bbox_inches="tight")
         figb.savefig(os.path.join(OUTDIR, f"{FIELD}_uniform.png"), dpi=300, bbox_inches="tight")
         figc.savefig(os.path.join(OUTDIR, f"{FIELD}_anomaly.png"), dpi=300, bbox_inches="tight")
+
+        dates = {
+            "generated": gener.time.values[gener_ids],
+            "training": train.time.values[train_ids],
+        }
+        # save to .txt file
+        with open(os.path.join(OUTDIR, f"{FIELD}_dates.txt"), "w") as f:
+            f.write(f"Generated dates: {dates['generated']}\n")
+            f.write(f"Training dates: {dates['training']}\n")
+
+

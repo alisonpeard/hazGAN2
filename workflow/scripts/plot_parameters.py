@@ -98,11 +98,19 @@ if __name__ == "__main__":
 
         try:
             # make cbars horizontal
-            cbar_kwargs = {"label": None, "shrink": 0.7, "orientation": "horizontal", "pad": 0.05}
-            ds[f"pk_{var}"].plot(ax=axs[0], cmap=p_cmap, vmin=PCRIT, cbar_kwargs=cbar_kwargs)
+            cbar_kwargs = {"label": None, "shrink": 0.9, "orientation": "horizontal", "pad": 0.05}
+            ds[f"pk_{var}"].plot(ax=axs[0], cmap=p_cmap, vmin=PCRIT, cbar_kwargs=cbar_kwargs, vmax=1)
             ds[f"thresh_{var}"].plot(ax=axs[1], cmap=cmap, cbar_kwargs=cbar_kwargs)
             ds[f"scale_{var}"].plot(ax=axs[2], cmap=cmap, cbar_kwargs=cbar_kwargs)
             ds[f"shape_{var}"].plot(ax=axs[3], cmap=cmap, cbar_kwargs=cbar_kwargs) #, vmin=-0.81, vmax=0.28)
+
+            for ax in[axs[0], axs[1], axs[2], axs[3]]:
+                ax.add_feature(cfeature.COASTLINE, linewidth=0.5, color="k")
+                gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='white', alpha=0.1)
+                gl.top_labels = False
+                gl.right_labels = False
+                gl.left_labels = False
+                gl.bottom_labels = False
 
             # plot some densities
             shapes_all = gdf[f'shape_{var}'].values
