@@ -9,6 +9,7 @@ PROJECT = config.get("project", "prototype")
 DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
 WD      = os.path.join("projects", PROJECT)
+SRC     = os.path.join(WD, "src")
 
 # assert WD exists
 assert os.path.exists(WD), f"Project directory {WD} does not exist."

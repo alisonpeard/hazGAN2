@@ -53,7 +53,8 @@ rule get_year:
         ymax=config["latitude"]["max"],
         timecol=TIMECOL,
         fields=FIELDS,
-        dataset=DATASET
+        dataset=DATASET,
+        src=SRC
     resources:
         cpus_per_task=4,
         # slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
