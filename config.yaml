@@ -1,0 +1,43 @@
+# Global config file
+project: bayofbengal_era5
+resources: "resources"
+conda-cleanup-envs: true
+conda-cleanup-pkgs: cache
+
+# environment specs 
+setup:
+  local:
+    input:
+      era5: "/Users/alison/Documents/DPhil/data/era5"
+      imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
+    geoenv: '../environments/apple-silicon/geo.yaml' # if running from .smk file
+    renv: "../environments/apple-silicon/r.yaml"
+    gpuenv: ""
+    rsubdir: "osx-64"
+    timecol: "time"
+    metadata:
+      description: "Analysis on Apple Silicon M2"
+  cluster:
+    input:
+      era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
+      imdaa: "/soge-home/data/analysis/imdaa/"
+    geoenv: '../environments/linux/geo.yaml'
+    renv: "../environments/linux/r.yaml"
+    gpuenv: '../environments/linux/stylegan.yaml'
+    rsubdir: "linux-64"
+    timecol: 'valid_time'
+    metadata:
+      institution: "Oxford School of Geography and the Environment"
+      description: "Analysis on departmental cluster"
+  slurm:
+    input:
+      era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
+      imdaa: "/soge-home/data/analysis/imdaa/"
+    geoenv: '../environments/linux/geo.yaml'
+    renv: "../environments/linux/r.yaml"
+    gpuenv: '../environments/linux/stylegan.yaml'
+    rsubdir: "linux-64"
+    timecol: "valid_time"
+    metadata:
+      institution: "Oxford School of Gography and the Environment"
+      description: "Analysis on departmental cluster"

@@ -1,8 +1,10 @@
-library(dplyr)
-library(future)
-library(furrr)
-library(lubridate)
-library(logger)
+suppressPackageStartupMessages({
+    library(dplyr, quietly = TRUE)
+    library(future, quietly = TRUE)
+    library(furrr, quietly = TRUE)
+    library(lubridate, quietly = TRUE)
+    library(logger, quietly = TRUE)
+})
 
 `%ni%` <- Negate(`%in%`)
 
@@ -11,7 +13,7 @@ ecdf <- function(x) {
   x <- sort(x)
   n <- length(x)
   if (n < 1) {
-    stop("'x' must have ≥1 non-missing values")
+    stop("ecdf - 'x' must have ≥1 non-missing values")
   }
   vals <- unique(x)
   rval <- approxfun(vals, cumsum(tabulate(match(x, vals))) / (n + 1),
@@ -23,7 +25,7 @@ ecdf <- function(x) {
   attr(rval, "call") <- sys.call()
   rval
 }
- 
+
 scdf <- function(train, params, cdf){
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
@@ -47,7 +49,7 @@ load_distn <- function(distn) {
 
   # check it exists
   if (!file.exists(module)) {
-    stop(paste("Module for distribution not found:", module))
+    stop(paste("stats.R::load_distn - Module for distribution not found:", module))
   }
 
   env <- new.env()
@@ -59,17 +61,56 @@ load_distn <- function(distn) {
   ))
 }
 
+format_stack_trace <- function(calls, max_depth = 10) {
+  calls <- tail(calls, max_depth)
+  formatted <- character(length(calls))
+  for (i in seq_along(calls)) {
+    formatted[i] <- paste0(i, ": ", deparse1(calls[[i]]))
+  }
+  paste(formatted, collapse = "\n  ")
+}
+
+log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
+  msg <- conditionMessage(error)
+  stack_formatted <- sapply(stack, function(call) deparse1(call))
+
+  error_report <- paste0(
+    "stats.R::fit_gridcell - ",
+    "ERROR IN GRID CELL ", grid_i, "\n",
+    "===========================\n",
+    "WARN: ", msg, "\n"
+  )
+  
+  log_error(skip_formatter(error_report))
+}
+
 marginal_transformer <- function(df, metadata, var, q,
                                  distn = "genpareto",
                                  chunksize = 128,
-                                 log_file = tempfile(fileext = ".log")) {
+                                 log_file = tempfile(fileext = ".log"),
+                                 log_level = INFO) {
+  # configure logging (again)
+  log_file <- as.character(log_file)
+  log_appender(appender_file(log_file, append = TRUE))
+  log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
+  log_threshold(log_level)
+
   # load functions for supplied distribution
   distn <- load_distn(distn)
 
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
 
+  #! make a grid for easy chunking
+  log_info("Creating grid for chunking")
+  df$grid <- paste(df$lat, df$lon, sep = "_")
+  df$grid <- as.integer(factor(df$grid))
+  coords  <- df[df$time == min(df$time), ]
+  coords  <- coords[, c("lat", "lon", "grid")]
+  coords  <- coords[!duplicated(coords), ]
+
   # chunk data for memory efficiency
+  log_info("Chunking data for memory efficiency")
   gridcells <- unique(df$grid)
   gridchunks <- split(
     gridcells, ceiling(seq_along(gridcells) / chunksize)
@@ -87,8 +128,10 @@ marginal_transformer <- function(df, metadata, var, q,
 
   # setup multiprocessing, test with `plan(sequential)`
   ncores <- max(1, min(availableCores(), nchunks))
-  log_info(paste0("Using ", ncores, " cores"))
   plan(multisession, workers = ncores)
+  log_debug(paste0("stats.R::marginal_transformer - Available cores: ", availableCores()))
+  log_debug(paste0("stats.R::marginal_transformer - Number of chunks: ", nchunks))
+  log_debug(paste0("stats.R::marginal_transformer - Using ", ncores, " cores"))
 
   # fit marginals using POT methods
   fit_gridcell <- function(grid_i, df) {
@@ -100,6 +143,24 @@ marginal_transformer <- function(df, metadata, var, q,
       by = c("time" = "time")
     )
 
+    # check gridcell statistics
+    log_debug(paste0(
+      "stats.R::fit_gridcell - Gridcell statistics\n",
+      "==============================\n",
+      "Gridcell: ", grid_i, "\n",
+      "Variable: ", var, "\n",
+      "N: ", nrow(gridcell), "\n",
+      "Min: ", min(gridcell[[var]], na.rm = TRUE), "\n",
+      "Max: ", max(gridcell[[var]], na.rm = TRUE), "\n",
+      "Mean: ", mean(gridcell[[var]], na.rm = TRUE), "\n",
+      "Q70: ", quantile(gridcell[[var]], 0.7, na.rm = TRUE), "\n",
+      "Q95: ", quantile(gridcell[[var]], 0.95, na.rm = TRUE), "\n",
+      "Q99: ", quantile(gridcell[[var]], 0.99, na.rm = TRUE), "\n",
+      "Median: ", median(gridcell[[var]], na.rm = TRUE), "\n",
+      "SD: ", sd(gridcell[[var]], na.rm = TRUE), "\n\n",
+      "Vector (tail): ", paste0(tail(gridcell[[var]], 30), collapse = ", "), "\n\n"
+    ))
+
     # extract maximum for each event
     maxima <- gridcell |>
       group_by(event) |>
@@ -110,6 +171,33 @@ marginal_transformer <- function(df, metadata, var, q,
         event.rp = event.rp,
         grid = grid
       )
+
+    # check maxima statistics
+    log_debug(paste0(
+      "stats.R::fit_gridcell - Grouped (maxima) statistics\n",
+      "==============================\n",
+      "N: ", nrow(maxima), "\n",
+      "Min: ", min(maxima$variable, na.rm = TRUE), "\n",
+      "Max: ", max(maxima$variable, na.rm = TRUE), "\n",
+      "Mean: ", mean(maxima$variable, na.rm = TRUE), "\n",
+      "Q70: ", quantile(maxima$variable, 0.7, na.rm = TRUE), "\n",
+      "Q95: ", quantile(maxima$variable, 0.95, na.rm = TRUE), "\n",
+      "Q99: ", quantile(maxima$variable, 0.99, na.rm = TRUE), "\n",
+      "Median: ", median(maxima$variable, na.rm = TRUE), "\n",
+      "SD: ", sd(maxima$variable, na.rm = TRUE), "\n\n",
+      "Vector (tail): ", paste0(tail(maxima$variable, 30), collapse = ", "), "\n\n"
+    ))
+
+    # Check for empty maxima early
+    if (nrow(maxima) == 0) {
+      log_warn(paste0("stats.R::fit_gridcell - Empty maxima dataframe for grid cell ", grid_i))
+      # Create a 1-row dummy frame with all required columns
+      return(data.frame(
+        event = NA, variable = NA, time = NA, event.rp = NA,
+        grid = grid_i, thresh = NA, scale = NA, shape = NA,
+        p = 0, pk = 0, ecdf = NA, scdf = NA, box.test = 0
+      ))
+    }
 
     # omit test years from fitting functions
     if (exists("TEST.YEARS")) {
@@ -138,15 +226,11 @@ marginal_transformer <- function(df, metadata, var, q,
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
-      # log error
-      msg <- paste0(
-        "MLE failed for grid cell ", grid_i, "\n",
-        "Error message: ", conditionMessage(e), "\n"
-      )
-      log_error(msg)
+      # highest level error handling
+      log_fit_gridcell_error(grid_i, e)
 
       # fallback to empirical fits
-      maxima$thresh <- NA
+      maxima$thresh <- Inf
       maxima$scale  <- NA
       maxima$shape  <- NA
       maxima$p      <- 0
@@ -161,6 +245,7 @@ marginal_transformer <- function(df, metadata, var, q,
     nexcesses <- length(excesses)
     if (nexcesses < 30) {
       log_warn(paste0(
+        "stats.R::fit_gridcell - ",
         "Only ", nexcesses,
         " exceedences in gridcell ",
         grid_i, ". ",
@@ -173,16 +258,19 @@ marginal_transformer <- function(df, metadata, var, q,
 
       if (is.na(p_box)) {
         log_warn(paste0(
+          "stats.R::fit_gridcell - ",
           "Ljung-Box test returned NA for gridcell ",
           grid_i, ". Value: ", round(p_box, 4)
         ))
       } else if (p_box < 0.1) {
         log_warn(paste0(
+          "stats.R::fit_gridcell - ",
           "p-value ≤ 10% for H0: independent exceedences in ",
           grid_i, ". Value: ", round(p_box, 4)
         ))
       } else {
         log_info(paste0(
+          "stats.R::fit_gridcell - ",
           "p-value > 10% for H0: independent exceedences in ",
           grid_i, ". Value: ", round(p_box, 4)
         ))
@@ -197,14 +285,13 @@ marginal_transformer <- function(df, metadata, var, q,
   fit_gridchunk <- function(i) {
     # Reconfigure logging in workers
     library(logger)
-
     log_file <- as.character(log_file)
     log_appender(appender_file(log_file, append = TRUE))
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-    log_threshold(INFO)
+    log_threshold(log_level)
+    log_info(paste0("stats.R::fit_gridchunk - Fitting gridchunk ", i))
 
-    log_info(paste0("Fitting gridchunk ", i))
-
+    # load data chunk from RDS
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
@@ -225,9 +312,17 @@ marginal_transformer <- function(df, metadata, var, q,
 
   unlink(tmps)
 
+  # map gridcell back to lat/lon
+  log_info("Mapping gridcell back to lat/lon")
+  transformed <- left_join(
+    transformed,
+    coords,
+    by = c("grid" = "grid")
+  )
+
   # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
-              "grid", "thresh", "scale", "shape", "p",
+              "lat", "lon", "thresh", "scale", "shape",
               "pk", "ecdf", "scdf", "box.test")
 
   transformed <- transformed[, fields]

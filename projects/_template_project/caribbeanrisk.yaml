@@ -1,0 +1,62 @@
+dataset: w5e5
+
+# year range
+year0: 2020
+yearn: 2021
+
+# geographical boundaries
+longitude:
+  min: 80 # -62.0
+  max: 95 # -60.5
+latitude:
+  min: 10 # 11.9
+  max: 25 # 15.7
+
+# resolution---check if nonstandard allowed in StyleGAN2
+resolution:
+  lon: 64 # 53
+  lat: 64 # 45
+
+
+# marginal threshold
+marginal_threshold:
+  low: 0.6
+  final: 0.95
+ 
+# output fields
+fields:
+  tp:
+    args:
+      - tp
+    func: identity
+    hfunc: sum
+    obj: max
+    distn: genpareto
+  sro: # TODO: check if this variable is good enough or if I should calculate it from tp
+    args:
+      - sro
+    func: identity
+    hfunc: sum
+    obj: max
+    distn: genpareto
+  ws:
+    args:
+      - u10
+      - v10
+    func: wind_speed
+    hfunc: max
+    obj: max
+    distn: weibull # exponential (not implemented yet)
+
+rfunc:
+  args:
+    - tp
+  func: sum # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
+
+# event threshold
+event_threshold:
+  field: tp
+  value: 1
+  func: max
+
+sfunc: additive 

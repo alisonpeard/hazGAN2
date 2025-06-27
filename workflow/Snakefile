@@ -1,30 +1,46 @@
 import os
 import yaml
+import glob
 
 # load device configuration
-configfile: "config/config.yaml"
-PROJECT = config["project"]
-DEVICE  = config.get("device", "local")
+configfile: "config.yaml"
+PROJECT = config.get("project", "prototype")
+# DEVICE  = config.get("device", "local")
+DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
-WD      = config['setup'][DEVICE]['output']
-RESOURCES_DIR  = config["resources"]
+WD      = os.path.join("projects", PROJECT)
+
+# assert WD exists
+assert os.path.exists(WD), f"Project directory {WD} does not exist."
 
 # set up directories on device
-PROJDIR        = os.path.join(WD, PROJECT)
-PROCESSING_DIR = os.path.join(PROJDIR, "processing")
-TRAINING_DIR   = os.path.join(PROJDIR, "training")
-GENERATED_DIR  = os.path.join(PROJDIR, "generated")
-FIGURE_DIR     = os.path.join(PROJDIR, "figures")
-for directory in [PROJDIR, PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
-    os.makedirs(directory, exist_ok=True)
+RESULTS_DIR    = os.path.join(WD, "results")
+RESOURCES_DIR  = os.path.join(WD, "resources")
+PROCESSING_DIR = os.path.join(RESULTS_DIR, "processing")
+TRAINING_DIR   = os.path.join(RESULTS_DIR, "training")
+GENERATED_DIR  = os.path.join(RESULTS_DIR, "generated")
+FIGURE_DIR     = os.path.join(RESULTS_DIR, "figures")
+
+# make parent directories
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+# make subdirectories (with .gitignore)
+for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
+    os.makedirs(newdir, exist_ok=True)
+    with open(os.path.join(newdir, ".gitignore"), "w") as f:
+        f.write("*")
 
 # choose device-specific conda environments
-PYENV = config['setup'][DEVICE]['pyenv']
-RENV  = config['setup'][DEVICE]['renv']
+GEOENV  = config['setup'][DEVICE]['geoenv']
+RENV    = config['setup'][DEVICE]['renv']
+GPUENV  = config['setup'][DEVICE]['gpuenv']
 RSUBDIR = config['setup'][DEVICE]['rsubdir']
 
 # load project-specific configuration
-configfile: f"config/projects/{PROJECT}.yaml"
+configfile: f"projects/{PROJECT}/config.yaml"
+
+DATASET    = config["dataset"]
+INDIR      = INDIR[DATASET]
 
 YEAR0      = config["year0"]
 YEARN      = config["yearn"]
@@ -34,11 +50,31 @@ LONGITUDE  = config["longitude"]
 LATITUDE   = config["latitude"]
 RFUNC      = config["rfunc"]
 SFUNC      = config["sfunc"]
-YEARS      = list(range(YEAR0, YEARN))
-TIMECOL    = config['setup'][DEVICE]["timecol"]
 MTHRESH    = config["marginal_threshold"]
+YEARS      = list(range(YEAR0, YEARN))
+KIMG       = config["kimg"]
+TIMECOL    = config['setup'][DEVICE]["timecol"]
 
 # load rules
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
-include: "rules/visuals.smk"
+include: "rules/train_stylegan.smk"
+include: "rules/process_output.smk"
+include: "rules/make_figures.smk"
+
+# run full workflow (up to checkpoint)
+rule all:
+    """Complete full data processing sequence."""
+    input:
+        os.path.join(GENERATED_DIR, "netcdf", "data.nc"),
+        os.path.join(GENERATED_DIR, "netcdf", "dependent.nc"),
+        os.path.join(GENERATED_DIR, "netcdf", "independent.nc"),
+        expand(
+            os.path.join(FIGURE_DIR, "{key}.png"),
+            key=list(FIELDS.keys())
+        ),
+        os.path.join(FIGURE_DIR, "samples"),
+        os.path.join(FIGURE_DIR, "event_intensity_barchart.png"),
+        os.path.join(FIGURE_DIR, "correlations_field"),
+        os.path.join(FIGURE_DIR, "correlations_spatial"),
+        os.path.join(FIGURE_DIR, "scatterplots")
