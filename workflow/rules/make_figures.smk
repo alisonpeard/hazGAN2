@@ -38,6 +38,26 @@ rule plot_fitted_parameters:
         os.path.join("..", "scripts", "plot_parameters.py")
 
 
+rule plot_samples_trainonly:
+    """Figure 3: generated and observed samples.
+    
+    >>> snakemake --profile profiles/slurm plot_samples_trainonly
+    """
+    input:
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+    output:
+        outdir=directory(directory(os.path.join(FIGURE_DIR, "train_samples")))
+    params:
+        fields=FIELDS,
+        shuffle=False
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "plot_samples_trainonly.log")
+    script:
+        os.path.join("..", "scripts", "plot_samples_trainonly.py")
+
+
 rule plot_samples:
     """Figure 3: generated and observed samples.
     

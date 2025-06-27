@@ -1,5 +1,5 @@
 """
-Functions to create variables of interest from ERA5 data.
+Functions to create variables of interest from climate data.
 
 Add custom functions as needed, inputs must be xarray DataArrays of
 ERA5/IMDAA variables, outputs must be xarray DataArrays the same shape.
@@ -93,10 +93,3 @@ def solar_power(t2m:xr.DataArray, ssrd:xr.DataArray, u10:xr.DataArray,
   pr = performance_ratio(cell_temp, **param_dict)
   potential = pr * (ssrd / params['g_stc'])
   return potential
-
-
-
-
-
-
-
