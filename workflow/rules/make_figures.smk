@@ -39,7 +39,10 @@ rule plot_fitted_parameters:
 
 
 rule plot_samples:
-    """Figure 3: generated and observed samples."""
+    """Figure 3: generated and observed samples.
+    
+    >>> snakemake --profile profiles/cluster plot_samples
+    """
     input:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
