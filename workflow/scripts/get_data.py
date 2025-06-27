@@ -8,7 +8,10 @@ import dask
 import time
 import xarray as xr
 import logging
-import py_utils.era5_utils as era5
+
+from importlib import import_module
+from py_utils import funcs
+
 
 logging.basicConfig(
     filename=snakemake.log.file, # try withou the [0] in case it's makin it a dir
@@ -17,49 +20,44 @@ logging.basicConfig(
 )
 logging.info("Starting data acquisition script (before main).")
 
-if __name__ == '__main__':
+
+
+def main(input, output, params):
     start = time.time()
     logging.info("Starting data acquisition script.")
+    # load dataset module
+    dataset = import_module(f"py_utils.datasets.{params.dataset}")
 
-    # snakemake params
-    INDIR      = snakemake.input.indir
-    INPUT      = snakemake.input.params
-
-    YEAR       = int(snakemake.params.year)
-    XMIN       = snakemake.params.xmin
-    XMAX       = snakemake.params.xmax
-    YMIN       = snakemake.params.ymin
-    YMAX       = snakemake.params.ymax
-    FIELDS     = snakemake.params.fields
-    TIMECOL    = snakemake.params.timecol
-
-    OUTPUT     = snakemake.output.netcdf
-
-    # load params and clip to XMIN, XMAX, YMIN, YMAX
-    logging.info(f"Loading parameters from {INPUT}.")
-    params = xr.open_dataset(INPUT)
-    params = params.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
-
-    # load data for year
+    # load and clip to area of interest
     files = []
-    for field, info in FIELDS.items():
+    for field, info in params.fields.items():
         infields = info.get("args", [])
         for infield in infields:
-            field_files = glob(os.path.join(INDIR, era5.long_names[infield], 'nc', '*'))
-            field_files = [f for f in field_files if str(YEAR) in f]
+            pattern = dataset.parse_input_pattern(input.indir, infield)
+            field_files = glob(pattern)
+            field_files = dataset.filter_files(field_files, params.year)
             files += field_files
-    logging.info(f"Found {len(files)} files for {YEAR}.")
+    
+    logging.info(f"Found {len(files)} files for {params.year}.")
+    for i, file in enumerate(files):
+        logging.info(f"File {i}: {file}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+        def preprocess(ds):
+            if params.timecol in ds.coords and params.timecol != "time":
+                ds = ds.rename({params.timecol: "time"})
+            return ds
+
         data = xr.open_mfdataset(files, engine='netcdf4',
+                                 preprocess=preprocess,
                                  chunks={
-                                     TIMECOL: "500MB",
+                                     "time": "500MB",
                                      'longitude': '500MB',
                                      'latitude': '500MB'
                                      })
-        data = data.sel(longitude=slice(XMIN, XMAX), latitude=slice(YMAX, YMIN))
-        data = data.rename({TIMECOL: "time"})
-    logging.info("Data loaded.")
+        data = dataset.clip_to_bbox(data, params.xmin, params.xmax, params.ymin, params.ymax)
+        
+    logging.info("\n\nData loaded.")
 
     # log data summary
     logging.info("Data summary:")
@@ -67,31 +65,43 @@ if __name__ == '__main__':
     logging.info(f"Data coordinates: {data.coords}")
     logging.info(f"Data dimensions: {data.dims}")
 
-    # resample data to daily
+    logging.info(f"Loading parameters from {input.params}.")
+    theta = xr.open_dataset(input.params)
+    theta = theta.sel(longitude=slice(params.xmin, params.xmax), latitude=slice(params.ymax, params.ymin))
+
     logging.info("Resampling data to daily aggregates.")
     resampled = {}
-    for field, info in FIELDS.items():
+    for field, config in params.fields.items():
         logging.info(f"Processing {field}.")
-        infields = info.get("args", [])
-        func = info.get("func", "identity")
-        agg = info.get("agg", "mean")
-        #! This is where output variables are created
-        #! Add parameter loading here
-        #! Untested
+        infields = config.get("args", [])
+        func     = config.get("func", "identity")
+        hfunc    = config.get("hfunc", "mean")
+
         logging.info(f"Applying {field} = {func}{*infields,}.")
-        data[field] = getattr(era5, func)(*[data[i] for i in infields], params=params)
-        logging.info(f"Finished, resampling {field}.")
-        resampled[field] = getattr(data[field].resample(time='1D'), agg)()
-        logging.info(f"Resampled using {agg}){field}).")
+        data[field] = getattr(funcs, func)(*[data[i] for i in infields], params=theta)
+
+        logging.info(f"Finished, resampling as {hfunc}({field}).")
+        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
+        
+        logging.info(f"Finished {field}.")
+    
     data_resampled = xr.Dataset(resampled)
 
-    # save data
-    chunk_size = {'time': '50MB'}
-    data_resampled = data_resampled.chunk(chunk_size)
-    os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
-    logging.info(f"Saving data to {OUTPUT}")
-    data_resampled.to_netcdf(OUTPUT, engine='netcdf4')
-    logging.info(f"Saved. File size: {os.path.getsize(OUTPUT) * 1e-6:.2f} MB")
+    # log data summary
+    logging.info("Resampled data summary:")
+    logging.info(f"Data variables: {data_resampled.data_vars}")
+    logging.info(f"Data coordinates: {data_resampled.coords}")
+    logging.info(f"Data dimensions: {data_resampled.dims}")
+    logging.info(f"Data size: {data_resampled.nbytes * 1e-6:.2f} MB")
+
+    # data export settings
+    compression = {'zlib': True, 'complevel': 1}
+    encoding = {var: compression for var in data_resampled.data_vars}
+
+    # save data to netcdf
+    logging.info(f"Saving data to {output.netcdf}")
+    data_resampled.to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+    logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB")
 
     # print data summary to logs
     logging.info("Data summary:")
@@ -102,8 +112,8 @@ if __name__ == '__main__':
     data.close()
     data_resampled.close()
 
-    # Verify time encoding
-    data = xr.open_dataset(OUTPUT, decode_times=False, engine='netcdf4')
+    # verify time encoding
+    data = xr.open_dataset(output.netcdf, decode_times=False, engine='netcdf4')
     times = data.isel(time=slice(0, 4)).time.data
     logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
     logging.info(f"Encoding metadata: {data.time.attrs}")
@@ -111,4 +121,10 @@ if __name__ == '__main__':
 
     end = time.time()
     logging.info(f"Time taken: {end - start:.2f} seconds.")
-# %%
+
+
+if __name__ == '__main__':
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
+    main(input, output, params)

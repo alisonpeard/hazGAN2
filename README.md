@@ -1,16 +1,73 @@
-[![Snakemake](https://img.shields.io/badge/snakemake-9.1.7-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+[![Snakemake](https://img.shields.io/badge/snakemake->=8.0.0-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
 # HazGAN2 readme
-This repository contains a `snakemake>=8.0` workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
+This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
 
-The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this readme describes how to get started with the workflow.
+StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
+
+The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
+
+> ### 💡 Note on snakemake relative paths
+> * Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
+> * Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
+
+## Quick start (on SoGE cluster)
+```bash
+conda create -c conda-forge -c bioconda -n snakemake snakemake
+conda activate snakemake
+conda config --set channel_priority strict # snakemake complains otherwise
+conda install -c conda-forge conda=24.7.1
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
+
+snakemake --profile profiles/slurm -n
+snakemake --profile profiles/slurm
+```
+
+But for your mental health you should set up the conda envs on the CPU nodes interactively, using more resources.
+```bash
+srun -p Short --pty --cpus-per-task=16 --mem=32G /bin/bash
+micromamba activate snakemake
+snakemake --profile profiles/cluster test_hazgan_install # I may delete this rule
+```
+
+## Key rules
+- `get_all_data`: downloads and processes the data from the SoGE filestore
+- `process_all_data`: processes the data for training with styleGAN2
+- `make_paper_figures`: makes the figures for the paper
 
 ## Current status [keep updated]
-Date: 24-04-2025
+Date: 15-05-2025
+
+- **Complete:**
+    - StyleGAN training on cluster GPU nodes
+    - StyleGAN generating new samples
+- **In progress:**
+    - process generated images
+    - make benchmark datasets
+    - plot 64 $\times$ 64 samples
+
+## Notes on repositories
+
+This repository contains two submodules:
+- [hazGAN](github.com/alisonpeard/hazGAN)
+- [styleGAN2-DA](github.com/alisonpeard/styleGAN2-DA)
 
 
+To clone the repository with the submodules, use the following command:
+```bash
+git clone --recurse-submodules git@github.com:alisonpeard/hazGAN2.git
+```
+
+> 📋 This isn't working so have just removed `.git` from both for now.
+
+## Things to do outside of this workflow
+
+This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally. This includes:
+
+- Generate a `params.nc` file for the project
+- All extra analysis (in scripts/Jupyter notebooks)
 
 ## Getting started
 
@@ -98,6 +155,8 @@ and to output the DAG for a specific rule:
 # without files
 snakemake process_all_data --dag | dot -Tpdf > docs/process_all_data.pdf
 snakemake process_all_data --dag | dot -Tsvg > docs/process_all_data.svg
+
+snakemake --profile profiles/cluster all --dag | dot -Tpdf > docs/workflow.pdf
 
 # with files
 snakemake process_all_data --filegraph | dot -Tpdf > docs/process_all_data.pdf
@@ -198,8 +257,13 @@ hazGAN2/
 │   ├── .gitignore
 │   └── {projectname}/
 │       ├── processing/
+│       │   └── yearly/
 │       ├── training/
+│       │   └── rgb/
 │       ├── generated/
+│       │   └── stylegan-output/
+│       │       └── {networkname}/
+│       │               └── generated-{domain}/
 │       └── analysis/
 ├── resources/
 │   ├── .gitignore
@@ -212,6 +276,46 @@ hazGAN2/
 └── logs/
     └── .gitignore
 ```
+### DVC data versioning
+
+To set up DVC, install it into its own conda environment:
+```bash
+# Create new environment
+conda create -n dvc python=3.10
+conda activate dvc
+
+# Install OpenSSL through conda (instead of relying on system OpenSSL)
+conda install -c conda-forge openssl
+
+pip install "dvc[gdrive]"
+```
+
+If the above doesn't work, try installing DVC through conda-forge instead:
+```bash
+conda install -c conda-forge dvc
+pip install "dvc[gdrive]"  # To add Google Drive support
+```
+
+The original data for [the paper](link/to/paper) is versioned [here](https://github.com/alisonpeard/hazGAN-data) and can be cloned independentendly using
+
+```bash
+git clone git@github.com:alisonpeard/hazGAN-data.git
+dvc pull
+```
+
+You will need to sign into your Google account and grant access to the DVC app. If you are SSH-ing into a remote server, you need to
+1. Connect with local port forwarding
+```bash
+ssh -L 8080:localhost:8080 <username>@<remote_server>
+```
+2. After running `dvc pull`, copy and paste the URL from the terminal into your local browser. This will open a Google login page. After logging in, you will be redirected to a page with a code. Copy this code and paste it into the terminal on the remote server.
+3. After pasting the code, you will be asked to grant access to the DVC app. Click "Allow" and you should see a message saying "You can now close this window". You can now close the browser window and return to the terminal.
+4. You should now see a message saying "Authentication successful".
+
+To set up your own DVC file tracking, in the parent repo type `dvc init` and `dvc add results`, to start tracking everything in the results folder with DVC. DVC will prompt you to commit these changes to git. Follow the instructions [here](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive#using-a-custom-google-cloud-project-recommended) to set up a Google Cloud Project and link it to your DVC repo. You need to set the project status to published rather than testing to allow access. Set the upstream remote and push.
+
+> 💭 There is also an `ssh` version of this for remote filestores. 
+
 
 ### Tasks
 - [ ] Separate conda environments for each rule set

@@ -1,6 +1,8 @@
 "Functions related to creating and declustering an event intensity
 time series. Coles (2001) runs declustering."
-library(extRemes)
+suppressPackageStartupMessages({
+  library(extRemes)
+})
 source("workflow/r_utils/rfuncs.R")
 
 `%ni%` <- Negate(`%in%`)
