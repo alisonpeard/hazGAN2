@@ -1,5 +1,7 @@
 """
 Resample ERA5 (or other gridded) data to another lower resolution using GDAL
+
+(snakemake) (base) alison@Alisons-MacBook-Pro hazGAN2 % gdalwarp -t_srs EPSG:4326 -ts 64 64 -r max -overwrite -of netCDF NETCDF:results/prototype/processing/input/2020.nc:wc results/prototype/processing/resampled/2020_wc.nc
 """
 # %%
 import os
@@ -19,15 +21,16 @@ if __name__ == "__main__":
     logging.info("Starting resampling script.")
 
     # snakemake params
-    YEAR  = int(snakemake.params.year)
-    RESX  = snakemake.params.resx
-    RESY  = snakemake.params.resy
+    YEAR   = int(snakemake.params.year)
+    RESX   = snakemake.params.resx
+    RESY   = snakemake.params.resy
     INPUT  = snakemake.input.netcdf
     OUTPUT = snakemake.output.netcdf
     FIELDS = snakemake.params.fields
 
     # make output directory
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
+    logging.info(f"Output directory {os.path.dirname(OUTPUT)} created.")
 
     # find input files
     fields = list(FIELDS.keys())
@@ -43,7 +46,8 @@ if __name__ == "__main__":
         # sample field
         method = methods["hfunc"]
         tmpfile = OUTPUT.replace('.nc', f'_{field}.nc')
-        command = f'gdalwarp -t_srs EPSG:4326 -ts {RESX} {RESY} -r {method} -overwrite -of netCDF "NETCDF:{INPUT}:{field}" {tmpfile}'
+
+        command = f'gdalwarp -t_srs EPSG:4326 -ts {RESX} {RESY} -r {method} -overwrite -of netCDF NETCDF:"{INPUT}":{field} {tmpfile}'
         logging.info(f"Submitting GDAL command: {command}")
         os.system(command)
 
