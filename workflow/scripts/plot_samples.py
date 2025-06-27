@@ -67,7 +67,7 @@ if __name__ == "__main__":
         }
         # save to .txt file
         with open(os.path.join(OUTDIR, f"{FIELD}_dates.txt"), "w") as f:
-            f.write(f"Generated dates: {dates['generated']}\n")
-            f.write(f"Training dates: {dates['training']}\n")
+            for data in dates["training"]:
+                f.write(f"Training date: {data}\n")
 
 
