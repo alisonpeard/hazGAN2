@@ -10,9 +10,7 @@ import time
 import xarray as xr
 import logging
 from importlib import import_module
-
 import src
-
 
 
 logging.basicConfig(
@@ -134,7 +132,7 @@ if __name__ == '__main__':
     # combine functions from src.funcs and params.src.funcs
     funcs = argparse.Namespace()
     funcs.__dict__.update(vars(src.funcs))
-    funcs.__dict__.update(vars(params.src.funcs))
+    funcs.__dict__.update(vars(import_module(params.src).funcs))
     dataset = import_module(f"src.datasets.{params.dataset}")
 
     main(input, output, params)
