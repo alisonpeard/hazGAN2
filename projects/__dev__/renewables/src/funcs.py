@@ -1,26 +1,15 @@
 """
-Functions to create variables of interest from climate data.
-
-Add custom functions as needed, inputs must be xarray DataArrays of
-ERA5/IMDAA variables, outputs must be xarray DataArrays the same shape.
-
-Reference here: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview
-
+Functions for pre-processing input data and calculating derived variables.
 """
 import numpy as np
 import xarray as xr
 
-def unpack(params:xr.Dataset):
-  """Unpack variables as named dict"""
-  return {var: params[var] for var in params.data_vars}
 
-def identity(x, *args, **kwargs):
-    return x
-
-def wind_speed(u, v, *args, **kwargs):
+def wind_speed(u:xr.DataArray, v:xr.DataArray, *args, **kwargs) -> xr.DataArray:
     return np.sqrt(u**2 + v**2)
 
-def wind_direction(u, v, *args, **kwargs):
+
+def wind_direction(u:xr.DataArray, v:xr.DataArray, *args, **kwargs) -> xr.DataArray:
     return (np.arctan2(u, v) * 180 / np.pi + 360) % 360
 
 # wind power functions
