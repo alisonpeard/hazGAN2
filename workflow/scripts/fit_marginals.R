@@ -2,7 +2,7 @@ suppressPackageStartupMessages({
   library(arrow, quietly = TRUE)
   library(dplyr, quietly = TRUE)
   library(logger, quietly = TRUE)
-  source("workflow/r_utils/stats.R")
+  source("workflow/src/R/stats.R")
 })
 
 # configure logging
