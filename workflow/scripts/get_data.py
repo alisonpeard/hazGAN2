@@ -9,8 +9,8 @@ import dask
 import time
 import xarray as xr
 import logging
-from importlib import import_module
-import src
+from src import funcs
+from src import datasets
 
 
 logging.basicConfig(
@@ -26,7 +26,7 @@ def main(input, output, params):
     start = time.time()
     logging.info("Starting data acquisition script.")
     # load dataset module
-    
+    dataset = getattr(datasets, params.dataset)
 
     # load and clip to area of interest
     files = []
@@ -128,11 +128,5 @@ if __name__ == '__main__':
     input  = snakemake.input
     output = snakemake.output
     params = snakemake.params
-
-    # combine functions from src.funcs and params.src.funcs
-    funcs = argparse.Namespace()
-    funcs.__dict__.update(vars(src.funcs))
-    funcs.__dict__.update(vars(import_module(params.src).funcs))
-    dataset = import_module(f"src.datasets.{params.dataset}")
 
     main(input, output, params)
