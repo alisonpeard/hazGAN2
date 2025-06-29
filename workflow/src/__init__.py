@@ -1,4 +1,5 @@
-"from src import funcs;print(funcs.identity)""""
+"""
+>>> from src import funcs;print(funcs.identity)
 >>> export SNAKEMAKE_PROJECT=bayofbengal_era5
 >>> python -c "from src import funcs;print(funcs.identity);print(funcs.wind_speed);"
 """
