@@ -3,7 +3,7 @@ time series. Coles (2001) runs declustering."
 suppressPackageStartupMessages({
   library(extRemes)
 })
-source("workflow/r_utils/rfuncs.R")
+source("workflow/src/R/rfuncs.R")
 
 `%ni%` <- Negate(`%in%`)
 

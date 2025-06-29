@@ -4,7 +4,7 @@ suppressPackageStartupMessages({
   library(lubridate)
   library(methods) # for S4 methods / snakemake
 })
-# source("workflow/r_utils/utils.R")
+# source("workflow/src/R/utils.R")
 
 deseasonalize <- function(df, var, method = "additive") {
   # add more methods below, var is a list of variables
