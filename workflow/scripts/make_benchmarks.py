@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-from hazGAN.statistics import invPIT
+from src import statistics
 
 
 def λ(number_extremes:int, total_years:int, unit:int=1) -> float:
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # make totally independent samples (sample from base distribution)
     independent_u = np.random.uniform(1e-6, 1-1e-6, size=(nevents, h, w, c))
-    independent_x = invPIT(independent_u, x, params, distns=distns) # bottleneck
+    independent_x = statistics.invPIT(independent_u, x, params, distns=distns) # bottleneck
 
     independent_ds = xr.Dataset(
         data_vars={
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     dependent_u   = 1 - dependent_survival
     dependent_u   = np.repeat(dependent_u, h*w*c, axis=0)
     dependent_u   = dependent_u.reshape(nrps, h, w, c)
-    dependent_x   = invPIT(dependent_u, x, params, distns=distns)
+    dependent_x   = statistics.invPIT(dependent_u, x, params, distns=distns)
 
     dependent_ds = xr.Dataset(
         data_vars={
