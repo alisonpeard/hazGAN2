@@ -45,7 +45,7 @@ scdf <- function(train, params, cdf){
 
 load_distn <- function(distn) {
   # find appropriate function definition file
-  module <- paste0("workflow/r_utils/", distn, ".R")
+  module <- paste0("workflow/src/R/", distn, ".R")
 
   # check it exists
   if (!file.exists(module)) {
