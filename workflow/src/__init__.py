@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from .python import funcs
 from .python import datasets
+from .python import statistics
+from .python import plotting
 
 
 def load_project_funcs(project_name=None):

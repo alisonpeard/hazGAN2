@@ -8,8 +8,8 @@ from warnings import warn
 
 import logging
 
-from hazGAN.plotting import fields
-from hazGAN.plotting import spatial
+from src.plotting import fields
+from src.plotting import spatial
 
 # set font to Helvetica
 # plt.rcParams['font.family'] = 'sans-serif'

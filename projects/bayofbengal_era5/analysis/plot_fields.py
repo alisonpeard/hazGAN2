@@ -18,22 +18,24 @@ def damagefield(
     ref = tree[label].to_dataset()
     idx = (abs(ref['return_period'] - rp)).argmin().item()
     rp = ref['return_period'].isel(sample=idx).item()
-    
-    # Plot on each row without colorbars
-    im1 = ds.isel(sample=idx, field=0)[ds_var].plot.contourf(ax=axs[0], cmap="viridis", levels=10,
-                                                    add_colorbar=False, vmin=0, vmax=32)
-    im2 = ds.isel(sample=idx, field=1)[ds_var].plot.contourf(ax=axs[1], cmap="PuBu", levels=10, 
-                                                    add_colorbar=False, vmin=0, vmax=0.66)
-    im3 = ds.isel(sample=idx)['damage_prob'].plot.contourf(ax=axs[2], cmap="YlOrRd", levels=10,
-                                                    add_colorbar=False, vmin=0, vmax=0.9)
-    
-    # Store the image references for later colorbar creation
-    if add_colorbar:
-        return im1, im2, im3
-    
+    im1 = ds.isel(sample=idx, field=0)[ds_var].plot.contourf(
+        ax=axs[0], cmap="viridis", levels=10, add_colorbar=False, vmin=0, vmax=32
+        )
+    im2 = ds.isel(sample=idx, field=1)[ds_var].plot.contourf(
+        ax=axs[1], cmap="PuBu", levels=10, add_colorbar=False, vmin=0, vmax=0.66
+        )
+    im3 = ds.isel(sample=idx)['damage_prob'].plot.contourf(
+        ax=axs[2], cmap="YlOrRd", levels=10, add_colorbar=False, vmin=0, vmax=0.9
+        )
     axs[0].set_title(f"{label}\n(1-in-{rp:.0f})")
     axs[1].set_title("")
     axs[2].set_title("")
+
+    if add_colorbar:
+        # store the image references for later colorbar creation
+        return im1, im2, im3
+    
+    
 
 
 if __name__ == "__main__":
@@ -104,4 +106,5 @@ if __name__ == "__main__":
 
     os.makedirs('../results/figures/mangroves', exist_ok=True)
     fig.savefig("../results/figures/mangroves/damage_fields.png", dpi=300, bbox_inches='tight', transparent=True)
+
 # %%
