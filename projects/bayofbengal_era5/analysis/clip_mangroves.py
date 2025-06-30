@@ -4,7 +4,8 @@ import yaml
 import geopandas as gpd
 import xarray as xr
 from shapely.geometry import box
-from .mangroves.model import mangroveDamageModel
+
+from mangroves.model import mangroveDamageModel
 
 MANGROVES = "/Users/alison/Documents/DPhil/data/gmw-v3-2020.nosync/gmw_v3_2020_vec.gpkg"
 
@@ -39,6 +40,7 @@ if __name__ == "__main__":
 
         # intersect mangroves with grid
         mangroves = gpd.read_file(os.path.join("..", "resources", "mangroves.geojson"))
-        model = mangroveDamageModel()
-        mangrove_grid = model.intersect_mangroves_with_grid(mangroves, grid_damages)
-        mangrove_grid.to_netcdf(os.path.join(wd, "mangrove_grid.nc"))
+        #! add new stuff here
+        # model = mangroveDamageModel()
+        # mangrove_grid = model.intersect_mangroves_with_grid(mangroves, grid_damages)
+        # mangrove_grid.to_netcdf(os.path.join(wd, "mangrove_grid.nc"))

@@ -113,7 +113,7 @@ rule plot_correlations:
         dataset=DATASET,
         do_subset=True,
         event_subset=config['event_subset'],
-        outres=16
+        outres=32
     conda:
         GEOENV
     log:
