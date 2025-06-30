@@ -1,18 +1,13 @@
-# Step 1: Mangrove damage probability fields
-# convert samples to netcdf and add dependence assumption fields
-# load samples as netcdf (including dependentce assumptions)
-# add monthly medians
-# load traning data -> 
-# get yearly rate
-# define damage ufunc and apply it to each netcdf samples, train, test
-# NEW: save damages
-
-# Step 2: Intersect damage fields with mangrove fields
-# load mangroves
-# intersect mangroves with damage fields
-# get mangrove damages
-# Calculate damagearea
-
+"""
+Step 1: Mangrove damage probability fields
+convert ERA5 data, generated samples and benchmark data to netcdf
+load samples as netcdf
+add monthly medians
+load traning data -> 
+get yearly rate
+define damage ufunc and apply it to each netcdf samples, train, test
+NEW: save damages
+"""
 # %%
 import os
 import yaml
@@ -21,7 +16,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from hazGAN.mangrove_demo import mangroveDamageModel
+from .mangroves.model import mangroveDamageModel
 # from analysis import load_samples, get_monthly_medians, λ
 
 if __name__ == "__main__":
@@ -30,7 +25,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(stream)
 
     # load generated data
-    THRESHOLD = config['event_subset']
+    THRESHOLD = config['event_subset']["value"]
     NYRS = config["yearn"] - config["year0"]
     MONTH = 9
 
@@ -94,12 +89,12 @@ if __name__ == "__main__":
 
     # make return period maps from fake winds
     outdir = os.makedirs(os.path.join("..", "results", "mangroves"), exist_ok=True)
+    outdir = os.makedirs(os.path.join(outdir, "damage_fields"), exist_ok=True)
 
-    train_damages.to_netcdf(os.path.join(outdir, "train_damages.nc"))
-    gener_damages.to_netcdf(os.path.join(outdir, "gener_damages.nc"))
-    indep_damages.to_netcdf(os.path.join(outdir, "indep_damages.nc"))
-    depen_damages.to_netcdf(os.path.join(outdir, "depen_damages.nc"))
+    train_damages.to_netcdf(os.path.join(outdir, "train.nc"))
+    gener_damages.to_netcdf(os.path.join(outdir, "gener.nc"))
+    indep_damages.to_netcdf(os.path.join(outdir, "indep.nc"))
+    depen_damages.to_netcdf(os.path.join(outdir, "depen.nc"))
 
-# %%
 
 # %%
