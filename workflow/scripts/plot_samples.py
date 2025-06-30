@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 
 from snakemake.script import snakemake
 
-from hazGAN.plotting import samples
-from hazGAN.statistics import gumbel
+from src.plotting import samples
+from src.statistics import gumbel
 
 import ssl # fix cartopy issue
 ssl._create_default_https_context = ssl._create_stdlib_context

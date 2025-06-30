@@ -131,3 +131,4 @@ if __name__ == "__main__":
     os.makedirs('../results/figures/mangroves', exist_ok=True)
     plt.savefig('../results/figures/mangroves/risk_profile.pdf', dpi=300, bbox_inches='tight')
 
+# %%

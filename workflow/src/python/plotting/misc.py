@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hazGAN.statistics import ecdf
+from ..statistics import ecdf
 
 yellows = ['#fff2ccff', '#f1c232ff', '#e69138ff', '#cc4125ff']
 blues = ['#fff2ccff', '#a2c4c9ff', '#0097a7ff', '#0b5394ff']

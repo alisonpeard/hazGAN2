@@ -5,11 +5,10 @@ from scipy.stats import gaussian_kde
 import matplotlib.pyplot as plt
 
 from .base import CMAP
-from ..constants import channel_labels
 
 
 def plot(fake, real, field=0, pixels=None, cmap=CMAP, s=10,
-         xlabel=None, ylabel=None, figsize=(6, 3)):
+         xlabel=None, ylabel=None, figsize=(6, 3), channel_labels:dict=None):
         # find corresponding to OPs like before
         n, h, w, c = real.shape
         if pixels is None:
