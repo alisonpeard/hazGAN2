@@ -8,7 +8,7 @@ from .base import CMAP
 
 
 def plot(fake, real, field=0, pixels=None, cmap=CMAP, s=10,
-         xlabel=None, ylabel=None, figsize=(6, 3), channel_labels:dict=None):
+         xlabel=None, ylabel=None, figsize=(6, 3)):
         # find corresponding to OPs like before
         n, h, w, c = real.shape
         if pixels is None:
@@ -39,8 +39,6 @@ def plot(fake, real, field=0, pixels=None, cmap=CMAP, s=10,
             ax.label_outer()
         
         plt.tight_layout()
-
-        fig.suptitle(channel_labels[field].capitalize(), y=1.05, fontsize=14, fontweight='bold')
 
         return fig
 
