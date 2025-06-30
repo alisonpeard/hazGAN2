@@ -1,3 +1,6 @@
+"""
+Switch to exactextract.
+"""
 # %%
 import os
 import sys
@@ -7,8 +10,6 @@ import xagg as xa
 import geopandas as gpd
 from joblib import load
 
-from ..constants import bay_of_bengal_crs
-from . import MangroveDamage
 
 class mangroveDamageModel(object):
     def __init__(self, modelpath=None) -> None:
