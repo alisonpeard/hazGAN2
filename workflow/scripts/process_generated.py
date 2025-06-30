@@ -3,16 +3,13 @@
 import os
 from glob import glob
 import logging
-from snakemake.script import snakemake
 
 os.environ["USE_PYGEOS"] = "0"
 from PIL import Image
 import numpy as np
 import xarray as xr
 
-# os.system("python -m pip install ../../packages/hazGAN/")
-
-from hazGAN.statistics import gumbel, inv_gumbel, invPIT
+from src.python.statistics import gumbel, inv_gumbel, invPIT
 
 if __name__ == "__main__":
     # configure logging

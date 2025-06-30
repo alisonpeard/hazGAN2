@@ -1,6 +1,9 @@
 rule process_generated:
     """Transform generated images to netCDF and apply inverse
-    transformations."""
+    transformations.
+    
+    >>> snakemake --profile profiles/slurm process_generated
+    """
     input:
         image_dir=os.path.join(GENERATED_DIR, "images"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz"),
