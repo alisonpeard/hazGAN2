@@ -1,104 +1,13 @@
-# Step 1: Mangrove damage probability fields
-# convert samples to netcdf and add dependence assumption fields
-# load samples as netcdf (including dependentce assumptions)
-# add monthly medians
-# load traning data -> 
-# get yearly rate
-# define damage ufunc and apply it to each netcdf samples, train, test
-# NEW: save damages
-
-# Step 2: Intersect damage fields with mangrove fields
-# load mangroves
-# intersect mangroves with damage fields
-# get mangrove damages
-# Calculate damagearea
 # %%
-import os
-import yaml
-import numpy as np
-import geopandas as gpd
-import xarray as xr
-from environs import Env
-import matplotlib.pyplot as plt
+    from hazGAN.plotting.misc import blues
 
-from hazGAN.mangrove_demo import calculate_total_return_periods, calculate_eads
-
-if __name__ == "__main__":
-    # load project configuration
-    with open(os.path.join("..", "config.yaml"), 'r') as stream:
-        config = yaml.safe_load(stream)
-    
-    wd = os.path.join("..", "results", "mangroves")
-    os.makedirs(wd, exist_ok=True)
-    nyrs = config["yearn"] - config["year0"]
-
-    # load damage data
-    THRESHOLD = config['event_subset']['threshold']
-    train_damages = xr.open_dataset(os.path.join(wd, "train_damages.nc"))
-    gener_damages = xr.open_dataset(os.path.join(wd, "gener_damages.nc"))
-    indep_damages = xr.open_dataset(os.path.join(wd, "indep_damages.nc"))
-    depen_damages = xr.open_dataset(os.path.join(wd, "depen_damages.nc"))
-    mangr_grid    = xr.open_dataset(os.path.join(wd, "mangrove_grid.nc")) #! check
-    
-
-# %% - - - - OLDER STUFF - - - - 
-    
-
-# %% Step 3:
-train_damages['expected_damage']       = train_damages['damage_prob'] * mangrove_grid['area']
-valid_damages['expected_damage']       = valid_damages['damage_prob'] * mangrove_grid['area']
-fake_damages['expected_damage']        = fake_damages['damage_prob'] * mangrove_grid['area']
-independent_damages['expected_damage'] = independent_damages['damage_prob'] * mangrove_grid['area']
-dependent_damages['expected_damage']   = dependent_damages['damage_prob'] * mangrove_grid['area']
-
-#%% make yearly rate calculation
-
-# %%
-tree = xr.DataTree()
-tree['ERA5'] = xr.DataTree(train_damages)
-tree['Validation'] = xr.DataTree(valid_damages)
-tree['HazGAN']  = xr.DataTree(fake_damages)
-tree['Independent'] = xr.DataTree(independent_damages)
-# tree['dependent']   = xr.DataTree(dependent_damages)
-# tree.to_netcdf(os.path.join(mangroves_dir, "damage_areas.nc"))
-
-# %%
-def calculate_total_return_periods(damages:xr.Dataset,
-                                   var:str) -> xr.Dataset:
-    if len(damages.data_vars) > 0: # skip root node in datatree
-        # aggregate to overall damages
-        npy = damages['rate'].values.item()
-        totals = damages[var].sum(dim=['lat', 'lon']).to_dataset()
-        
-        # calculate return periods
-        N = totals[var].sizes['sample']
-        rank = totals[var].rank(dim='sample')
-        totals['exceedence_prob'] = 1 - rank / (1 + N)
-        totals['return_period'] = 1 / (npy * totals['exceedence_prob'])
-        totals = totals.sortby('return_period')
-        return totals
-
-tree = tree.map_over_datasets(calculate_total_return_periods, 'expected_damage')
-tree['Dependent'] = dependent_damages
-tree['Dependent']['expected_damage'] = tree['Dependent']['expected_damage'].sum(dim=['lat', 'lon'])
-
-
-# %%
-def truncate_rps(ds:xr.Dataset, minrp:float=1, maxrp:float=500) -> xr.Dataset:
-    if len(ds.data_vars) > 0:
-        ds = ds.where(ds['return_period'] >= minrp, drop=True)
-        ds = ds.where(ds['return_period'] <= maxrp, drop=True)
-    return ds
-
-tree = tree.map_over_datasets(truncate_rps)
-
-xmin = min([ds['return_period'].min() for ds in tree.values()]).data.item()
-xmax = max([ds['return_period'].max() for ds in tree.values()]).data.item()
-ymin = min([ds['expected_damage'].min() for ds in tree.values()]).data.item()
-ymax = max([ds['expected_damage'].max() for ds in tree.values()]).data.item()
+    xmin = min([ds['return_period'].min() for ds in tree.values()]).data.item()
+    xmax = max([ds['return_period'].max() for ds in tree.values()]).data.item()
+    ymin = min([ds['expected_damage'].min() for ds in tree.values()]).data.item()
+    ymax = max([ds['expected_damage'].max() for ds in tree.values()]).data.item()
 
 # %% PLOT THE LAMB (2010) RISK PROFILE
-from hazGAN.plotting.misc import blues
+
 
 def riskprofileplot(tree:xr.DataTree, label:str, ax:plt.Axes,
                     truncate:bool=False, minrp:float=1, maxrp:float=500, **kwargs):
@@ -261,11 +170,11 @@ cbar_ax3 = fig.add_subplot(gs[2, 4])
 
 # Call damagefield for the first three columns without colorbars
 damagefield(tree, 'ERA5', train_damages, 'train', axs[:, 0])
-damagefield(tree, 'Dependent', dependent_damages, 'dependent', axs[:, 1])
-damagefield(tree, 'Independent', independent_damages, 'independent', axs[:, 2])
+damagefield(tree, 'Dependent', depen_damages, 'dependent', axs[:, 1])
+damagefield(tree, 'Independent', indep_damages, 'independent', axs[:, 2])
 
 # Call the last column with colorbar flag set to True to get the image references
-im1, im2, im3 = damagefield(tree, 'HazGAN', fake_damages, 'fake', axs[:, 3], add_colorbar=True)
+im1, im2, im3 = damagefield(tree, 'HazGAN', gener_damages, 'fake', axs[:, 3], add_colorbar=True)
 
 # Add colorbars using the image references from the last column
 plt.colorbar(im1, cax=cbar_ax1, orientation='vertical', label='')

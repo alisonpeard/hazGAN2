@@ -58,7 +58,7 @@ checkpoint train_stylegan:
         source workflow/scripts/cuda_env.sh
 
         mkdir -p {output.outdir}
-        python src/stylegan/train.py \
+        python workflow/src/stylegan/train.py \
             --outdir={output.outdir} \
             --data={input.zipfile} \
             --gpus={resources.gpus} \

@@ -1,9 +1,10 @@
+"""Import mangrove data and clip to Bay of Bengal AOI."""
 import os
 import yaml
 import geopandas as gpd
 import xarray as xr
 from shapely.geometry import box
-from hazGAN.mangrove_demo import mangroveDamageModel
+from .mangroves.model import mangroveDamageModel
 
 MANGROVES = "/Users/alison/Documents/DPhil/data/gmw-v3-2020.nosync/gmw_v3_2020_vec.gpkg"
 
