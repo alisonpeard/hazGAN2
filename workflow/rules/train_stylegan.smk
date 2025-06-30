@@ -48,7 +48,7 @@ checkpoint train_stylegan:
         augment="color,translation,cutout",
         kimg=KIMG
     resources:
-        gpus=2
+        gpus=1
     conda:
         GPUENV
     log:

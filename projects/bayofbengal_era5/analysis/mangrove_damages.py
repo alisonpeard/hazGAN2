@@ -69,6 +69,6 @@ if __name__ == "__main__":
         return ds
 
     tree = tree.map_over_datasets(truncate_rps)
-    tree.to_netcdf(os.path.join(wd, "damages_scenarios.nc"))
+    tree.to_netcdf(os.path.join(wd, "damage_scenarios.nc"))
 
 # %%
