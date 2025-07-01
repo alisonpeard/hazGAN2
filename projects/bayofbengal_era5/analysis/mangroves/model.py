@@ -6,11 +6,11 @@ import os
 import sys
 import numpy as np
 import xarray as xr
-# import xagg as xa
 import geopandas as gpd
 from joblib import load
 
-from exactextract import exact_extract
+import xagg as xa
+# from exactextract import exact_extract
 
 
 class mangroveDamageModel(object):
@@ -81,64 +81,12 @@ class mangroveDamageModel(object):
             self,
             mangroves:gpd.GeoDataFrame,
             grid:xr.DataArray,
-            crs=4326, #bay_of_bengal_crs,
-            crs_out=None
-            ) -> xr.Dataset:
-        """Use exactextract to intersect mangroves with damage fields"""
-        # calculate intersections
-        mangroves = mangroves.to_crs(crs)
-        # grid   = grid.rio.reproject(crs)
-        # weightmap = xa.pixel_overlaps(grid, mangroves)
-        
-        rstats = exact_extract(
-            grid,
-            mangroves,
-            ['sum'],
-            # include_cols=['coords'],
-            output='pandas'
-        )
-
-
-
-        # %% old below here
-
-        # calculate overlaps
-        mangroves_gridded = weightmap.agg
-        mangroves_gridded['npix'] = mangroves_gridded['pix_idxs'].apply(len)
-        mangroves_gridded['rel_area'] = mangroves_gridded['rel_area'].apply(lambda x: np.squeeze(x, axis=0))
-        mangroves_gridded = mangroves_gridded.explode(['rel_area', 'pix_idxs'])
-
-        # sum all relative mangrove areas in the same pixel
-        mangroves_gridded['area'] = mangroves_gridded['area'] * mangroves_gridded['rel_area']
-        mangroves_gridded = mangroves_gridded.groupby('pix_idxs').agg({'area': 'sum', 'coords': 'first'})
-
-        # convert pd.DataFrame to xarray.Dataset
-        lons = weightmap.source_grid['lon'].values
-        lats = weightmap.source_grid['lat'].values
-        mangroves_gridded = mangroves_gridded.reset_index()
-        mangroves_gridded['lon'] = mangroves_gridded['pix_idxs'].apply(lambda j: lons[j])
-        mangroves_gridded['lat'] = mangroves_gridded['pix_idxs'].apply(lambda i: lats[i])
-        mangroves_gridded['lon'] = mangroves_gridded['lon'].astype(float)
-        mangroves_gridded['lat'] = mangroves_gridded['lat'].astype(float)
-        mangroves_gridded['area'] = mangroves_gridded['area'].astype(float)
-        mangroves_gridded['area'] = mangroves_gridded['area'] * 1e-6 # convert to sqkm
-        mangroves_gridded = mangroves_gridded.set_index(['lat', 'lon'])[['area']]
-        mangroves_gridded = xr.Dataset.from_dataframe(mangroves_gridded)
-
-        return mangroves_gridded
-
-
-    def intersect_mangroves_with_grid_xagg(
-            self,
-            mangroves:gpd.GeoDataFrame,
-            grid:xr.DataArray,
-            crs=4326, #bay_of_bengal_crs,
-            crs_out=None
+            crs=4326,
             ) -> xr.Dataset:
         """Use xagg to intersect mangroves with damage fields"""
         # calculate intersections
         mangroves = mangroves.to_crs(crs)
-        # grid   = grid.rio.reproject(crs)
+        grid      = grid.rio.reproject(crs)
         weightmap = xa.pixel_overlaps(grid, mangroves)
 
         # calculate overlaps
@@ -164,8 +112,4 @@ class mangroveDamageModel(object):
         mangroves_gridded = mangroves_gridded.set_index(['lat', 'lon'])[['area']]
         mangroves_gridded = xr.Dataset.from_dataframe(mangroves_gridded)
 
-        # if crs_out:
-        #     mangroves_gridded = mangroves_gridded.rio.set_crs(crs_out)
-        # if plot:
-        #     mangroves_gridded.area.plot(cmap="Greens", cbar_kwargs={'label': 'Mangrove damage [km²]'})
         return mangroves_gridded
