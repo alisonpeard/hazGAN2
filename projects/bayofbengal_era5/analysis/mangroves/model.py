@@ -61,7 +61,7 @@ class mangroveDamageModel(object):
         """
         predictions = ds.copy()
         ds = ds.sel(field=regressors)
-        ds = ds.copy().chunk({first_dim: "1GB"})
+        ds = ds.copy().chunk({first_dim: 100})
         for var in vars_:
             predictions[f"{var}_damage"] = xr.apply_ufunc(
                 self.damage_ufunc,

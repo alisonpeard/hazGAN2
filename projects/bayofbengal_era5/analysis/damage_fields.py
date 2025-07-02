@@ -36,7 +36,7 @@ if __name__ == "__main__":
     depen = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "dependent.nc"))
     medians = train["medians"]
 
-    # extract the extreme samples
+    #  extract the extreme samples
     if config["event_subset"] is not None:
         subset = config["event_subset"]
         threshold = config["event_subset"]['value']
@@ -49,55 +49,58 @@ if __name__ == "__main__":
     nevents = train.sizes["time"]
     nextremes = len(idx)
 
+    train = train.isel(time=idx)
+    medians = medians.isel(month=MONTH)
+
     # get event sets
     train["value"] = train["anomaly"] + medians
     gener["value"] = gener["anomaly"] + medians
     indep["value"] = indep['anomaly'] + medians
     depen["value"] = depen['anomaly'] + medians
 
-    # convert dependent uniform array to a 1-d array
-    assert np.isclose(depen['uniform'].std(dim=['lat', 'lon']).max(), 0)
-    depen['uniform'] = depen['uniform'].mean(dim=['lat', 'lon'])
-
     # check for nans
     for ds in [train, gener, indep, depen]:
         assert ds.isnull().sum() == 0, "Nans found in dataset"
-        # NaNs found here! Why?
 
     # predict mangrove damages
     model = mangroveDamageModel()
     print(model)
 
-    # %%
     train_damages = model.predict(train, ["value"])
-
-
-    # %%
-    gener_damages = model.predict(gener, ["gener"])
-    indep_damages = model.predict(indep, ["indep"])
-    depen_damages = model.predict(depen, ["depen"])
-    # %%
+    gener_damages = model.predict(gener, ["value"])
+    indep_damages = model.predict(indep, ["value"])
+    depen_damages = model.predict(depen, ["value"], first_dim="rp")
 
     # rename the <>_damages to damage_prob
-    train_damages = train_damages.rename({"train_damage": "damage_prob"})
-    gener_damages = gener_damages.rename({"gener_damage": "damage_prob"})
-    indep_damages = indep_damages.rename({"indep_damage": "damage_prob"})
-    depen_damages = depen_damages.rename({"depen_damage": "damage_prob"})
+    rename_dict = {"value_damage": "damage_prob",}
+    train_damages = train_damages.rename(rename_dict)
+    gener_damages = gener_damages.rename(rename_dict)
+    indep_damages = indep_damages.rename(rename_dict)
+    depen_damages = depen_damages.rename(rename_dict)
 
     # add rate attribut to each dataset
-    train_damages.attrs["rate"] = nevents / NYRS
+    if config["event_subset"] is not None:
+        train_damages.attrs["rate"] = nextremes / NYRS
+    else:
+        train_damages.attrs["rate"] = nevents / NYRS
     gener_damages.attrs["rate"] = nextremes / NYRS
     indep_damages.attrs["rate"] = nevents / NYRS
-    depen_damages.attrs["rate"] = None
+    # depen_damages.attrs["rate"] = None
 
     # make return period maps from fake winds
-    outdir = os.makedirs(os.path.join("..", "results", "mangroves"), exist_ok=True)
-    outdir = os.makedirs(os.path.join(outdir, "damage_fields"), exist_ok=True)
+    outdir = os.path.join("..", "results", "mangroves", "damage_fields")
+    os.makedirs(outdir, exist_ok=True)
 
     train_damages.to_netcdf(os.path.join(outdir, "train.nc"))
     gener_damages.to_netcdf(os.path.join(outdir, "gener.nc"))
     indep_damages.to_netcdf(os.path.join(outdir, "indep.nc"))
     depen_damages.to_netcdf(os.path.join(outdir, "depen.nc"))
 
+    # plot somthin'
+    fig, axs = plt.subplots(1, 4, figsize=(16, 4))
+    train_damages["damage_prob"].plot(ax=axs[0])
+    gener_damages["damage_prob"].plot(ax=axs[1])
+    indep_damages["damage_prob"].plot(ax=axs[2])
+    depen_damages["damage_prob"].plot(ax=axs[3])
 
 # %%
