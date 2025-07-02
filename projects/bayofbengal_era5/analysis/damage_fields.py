@@ -16,8 +16,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from .mangroves.model import mangroveDamageModel
-# from analysis import load_samples, get_monthly_medians, λ
+from mangroves.model import mangroveDamageModel
+
+
+MONTH = 9
 
 if __name__ == "__main__":
     # load project configuration
@@ -27,23 +29,17 @@ if __name__ == "__main__":
     # load generated data
     THRESHOLD = config['event_subset']["value"]
     NYRS = config["yearn"] - config["year0"]
-    MONTH = 9
 
     train = xr.open_dataset(os.path.join("..", "results", "training", "data.nc"))
     gener = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "data.nc"))
     indep = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "independent.nc"))
     depen = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "dependent.nc"))
-    
-    # load and process monthly medians (deseaonalize)
-    medians = pd.read_csv(os.path.join("..", "results", "processing", "medians.csv"))
-    medians = medians[medians["month"] == MONTH]
-    medians = medians.set_index(["lat", "lon"])
-    medians = medians.to_xarray()
+    medians = train["medians"]
 
     # extract the extreme samples
     if config["event_subset"] is not None:
         subset = config["event_subset"]
-        threshold = config["event_subset"]['threshold']
+        threshold = config["event_subset"]['value']
         train['intensity'] = getattr(train.sel(field=subset["field"]).anomaly, subset["func"])(dim=['lon', 'lat'])
         mask = (train['intensity'] > subset["value"]).values
         idx  = np.where(mask)[0]
@@ -70,10 +66,17 @@ if __name__ == "__main__":
 
     # predict mangrove damages
     model = mangroveDamageModel()
-    train_damages = model.predict(train, ["train"])
+    print(model)
+
+    # %%
+    train_damages = model.predict(train, ["value"])
+
+
+    # %%
     gener_damages = model.predict(gener, ["gener"])
     indep_damages = model.predict(indep, ["indep"])
     depen_damages = model.predict(depen, ["depen"])
+    # %%
 
     # rename the <>_damages to damage_prob
     train_damages = train_damages.rename({"train_damage": "damage_prob"})
