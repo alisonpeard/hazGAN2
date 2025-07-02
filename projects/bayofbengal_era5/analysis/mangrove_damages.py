@@ -11,7 +11,7 @@ import yaml
 import xarray as xr
 import matplotlib.pyplot as plt
 
-from .mangroves.statistics import calculate_total_return_periods # calculate_eads
+from mangroves.statistics import calculate_total_return_periods # calculate_eads
 
 if __name__ == "__main__":
     # load project configuration
@@ -22,18 +22,18 @@ if __name__ == "__main__":
     nyrs = config["yearn"] - config["year0"]
 
     # load damage data
-    THRESHOLD = config['event_subset']['threshold']
+    THRESHOLD = config['event_subset']['value']
     train_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "train.nc"))
     gener_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "gener.nc"))
     indep_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "indep.nc"))
     depen_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "depen.nc"))
-    mangr_grid    = xr.open_dataset(os.path.join(wd, "mangrove_grid.nc"))
+    mangr_grid    = xr.open_dataset(os.path.join(wd, "mangrove_areas.nc"))
 
     # expected damage for each grid cell
-    train_damages['expected_damage'] = train_damages['damage_prob'] * mangr_grid['area']
-    gener_damages['expected_damage'] = gener_damages['damage_prob'] * mangr_grid['area']
-    indep_damages['expected_damage'] = indep_damages['damage_prob'] * mangr_grid['area']
-    depen_damages['expected_damage'] = depen_damages['damage_prob'] * mangr_grid['area']
+    train_damages['expected_damage'] = train_damages['damage_prob'] * mangr_grid['mangrove_area']
+    gener_damages['expected_damage'] = gener_damages['damage_prob'] * mangr_grid['mangrove_area']
+    indep_damages['expected_damage'] = indep_damages['damage_prob'] * mangr_grid['mangrove_area']
+    depen_damages['expected_damage'] = depen_damages['damage_prob'] * mangr_grid['mangrove_area']
 
     # make a datatree with return period variables
     def calculate_total_return_periods(
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             ) -> xr.Dataset:
         if len(damages.data_vars) > 0: # skip root node in datatree
             # aggregate to overall damages
-            npy = damages['rate'].values.item()
+            npy = damages.attrs['rate'].values.item()
             totals = damages[var].sum(dim=['lat', 'lon']).to_dataset()
             
             # calculate return periods
