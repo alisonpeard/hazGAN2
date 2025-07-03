@@ -8,8 +8,7 @@ from warnings import warn
 
 import logging
 
-from hazGAN.plotting import fields
-from hazGAN.plotting import spatial
+from src import plotting
 
 # set font to Helvetica
 # plt.rcParams['font.family'] = 'sans-serif'
@@ -65,13 +64,13 @@ if __name__ == "__main__":
     for FIELDS in [[0, 1], [0, 2], [1, 2]]:
         logging.info(f"Plotting fields {FIELDS[0]} and {FIELDS[1]}")
         # plot Smith (1990) extremal dependence
-        fig_smith = fields.plot(gener_u, train_u, fields.smith1990, fields=FIELDS, figsize=.6,
+        fig_smith = plotting.fields.plot(gener_u, train_u, plotting.fields.smith1990, fields=FIELDS, figsize=.6,
                     title="", cbar_label=r"$\hat\theta$",
                     cmap="Spectral", vmin=1, vmax=4)
         fig_smith.savefig(os.path.join(DIR0, f"smith1990_{FIELDS[0]}-{FIELDS[1]}.png"), dpi=300)
 
         # plot Pearson correlation
-        fig_pears = fields.plot(gener_u, train_u, fields.pearson, fields=FIELDS, figsize=.6,
+        fig_pears = plotting.fields.plot(gener_u, train_u, plotting.fields.pearson, fields=FIELDS, figsize=.6,
                     title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r")
 
         fig_pears.savefig(os.path.join(DIR0, f"pearson_{FIELDS[0]}-{FIELDS[1]}.png"), dpi=300)
@@ -95,12 +94,12 @@ if __name__ == "__main__":
         logging.info(f"Plotting field {FIELD}")
         
         # plot Pearson correlation
-        fig_pears = spatial.plot(gener_sample , train_sample , spatial.pearson, field=FIELD, figsize=.6,
+        fig_pears = plotting.spatial.plot(gener_sample , train_sample , plotting.spatial.pearson, field=FIELD, figsize=.6,
                     title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r")
         fig_pears.savefig(os.path.join(DIR1, f"pearson_{FIELD}.png"), dpi=300)
 
         logging.info(f"Plotting Smith (1990) field {FIELD}")
-        fig_smith = spatial.plot(gener_sample , train_sample , spatial.smith1990, field=FIELD, figsize=.6,
+        fig_smith = plotting.spatial.plot(gener_sample , train_sample , plotting.spatial.smith1990, field=FIELD, figsize=.6,
                     title="", cbar_label=r"$\hat\theta$",
                     cmap="Spectral", vmin=1, vmax=4)
         fig_smith.savefig(os.path.join(DIR1, f"smith1990_{FIELD}.png"), dpi=300)

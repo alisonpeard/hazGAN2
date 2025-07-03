@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import logging
 from warnings import warn
 
-from hazGAN.plotting import misc
+from src import plotting
 
 # set font to Helvetica
 # plt.rcParams['font.family'] = 'sans-serif'
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     gener_x += medians
 
     bar_width = 0.25
-    fig, ax = misc.saffirsimpson_barchart(gener_x, train_x, bar_width=bar_width, title="")
+    fig, ax = plotting.misc.saffirsimpson_barchart(gener_x, train_x, bar_width=bar_width, title="")
 
     if False: # load and add IBTrACS
         raise NotImplementedError("IBTrACS not implemented")

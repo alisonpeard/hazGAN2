@@ -1,6 +1,7 @@
 import os
 import yaml
 import glob
+import sys
 
 # load device configuration
 configfile: "config.yaml"
@@ -9,9 +10,14 @@ PROJECT = config.get("project", "prototype")
 DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
 WD      = os.path.join("projects", PROJECT)
+# SRC     = os.path.join(WD, "src")
+# sys.path.insert(0, WD)
 
 # assert WD exists
 assert os.path.exists(WD), f"Project directory {WD} does not exist."
+
+# set up project environment
+os.environ["SNAKEMAKE_PROJECT"] = PROJECT
 
 # set up directories on device
 RESULTS_DIR    = os.path.join(WD, "results")
