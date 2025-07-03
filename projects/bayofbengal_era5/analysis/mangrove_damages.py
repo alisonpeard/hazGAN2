@@ -11,7 +11,7 @@ import yaml
 import xarray as xr
 import matplotlib.pyplot as plt
 
-from mangroves.statistics import calculate_total_return_periods # calculate_eads
+from mangroves.statistics import calculate_total_return_periods 
 
 if __name__ == "__main__":
     # load project configuration

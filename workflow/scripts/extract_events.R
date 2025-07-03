@@ -40,10 +40,6 @@ src <- tidync(INPUT)
 
 daily  <- src |> hyper_tibble(force = TRUE)
 
-# coords <- src |> activate(lat, lon) |> hyper_tibble(force = TRUE)
-# daily  <- left_join(daily, coords, by = c("lon", "lat")) 
-# rm(coords)
-
 # negate any variables where minimum is of interest
 log_info("Negating any variables where minimum is of interest")
 daily <- daily[, c("lat", "lon", "time", FIELD_NAMES)]
@@ -54,29 +50,12 @@ for (k in seq_along(FIELDS)) {
 }
 
 # additional processing
-# daily$grid <- as.integer(daily$grid)
 daily$time <- as.Date(daily$time)
 
 # remove seasonality (sfuncs)
 log_info("Removing seasonality")
 log_info(paste0("Dataframe rows: ", nrow(daily)))
 log_info(paste0("Dataframe columns: ", ncol(daily)))
-
-# create a new data frame to store the parameters
-# params <- daily[, c("lat", "lon", "time")]
-# params$month <- months(params$time)
-# params <- params[, c("lat", "lon", "month")]
-# params <- params[!duplicated(params), ]
-
-# # extract one year from the data
-# params$year  <- year(daily$time)
-# params       <- params[params$year == min(params$year), ]
-# params$month <- months(params$time)
-# params       <- params[, c("lat", "lon", "month")]
-# params <- params |>
-#   group_by(lat, lon, month) |>
-#   slice(1) |>
-#   ungroup()
 
 # faster (hopefully)
 lats <- unique(daily$lat)
