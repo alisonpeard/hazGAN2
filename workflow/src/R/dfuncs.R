@@ -84,7 +84,6 @@ identify_events <- function(daily, rfunc) {
   metadata <- data.frame(time = times, event = events, variable = variable)
 
   # event stats
-  # Add these diagnostic lines to better understand your data structure
   events <- metadata |>
     group_by(event) |>
     mutate(
@@ -95,7 +94,7 @@ identify_events <- function(daily, rfunc) {
     group_by(event) |>
     summarise(
       variable = first(variable),
-      time = first(time),  # This should work with standard Date class
+      time = first(time),
       event.size = first(event.size)
     )
 

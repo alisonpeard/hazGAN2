@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 
 u10file = "/Users/alison/Documents/DPhil/data/era5/10m_u_component_of_wind/nc/10m_u_component_of_wind_2020.nc"
 v10file = "/Users/alison/Documents/DPhil/data/era5/10m_v_component_of_wind/nc/10m_v_component_of_wind_2020.nc"
@@ -22,11 +23,12 @@ tp = tp.rename({"valid_time": "time"})
 def relative_direction(u:xr.DataArray, v:xr.DataArray,
                        gust:xr.DataArray, *args, **kwargs) -> xr.DataArray:
     """Deviation of wind direction from prevailing direction."""
-    direction = (np.arctan2(u, v) * 180 / np.pi + 360) % 360
+    direction = (np.arctan2(u, v) * 180 / np.pi + 180) % 180
     prevailing_direction = direction.mean(dim=["time"], skipna=True)
-    relative_direction = (direction - prevailing_direction) % 360
+    relative_direction = (direction - prevailing_direction) % 360 - 180
     temp = xr.concat([relative_direction, gust], dim="dir_speed")
     return temp
+
 
 def dir_at_max_wind(temp:xr.DataArray, *args, **kwargs) -> xr.DataArray:
     """
@@ -50,10 +52,8 @@ def sum_n_hours(tp:xr.DataArray, n=720, *args, **kwargs) -> xr.DataArray:
 temp = relative_direction(u10.u10, v10.v10, gust.i10fg)
 res = temp.resample(time='1D').map(dir_at_max_wind)
 
-import matplotlib.pyplot as plt
-
 fig, axs = plt.subplots(1, 3, figsize=(15, 6))
-temp.isel(dir_speed=0, time=0).plot(cmap='twilight', ax=axs[0])
+temp.isel(dir_speed=0, time=0).plot(cmap='twilight_shifted', ax=axs[0])
 temp.isel(dir_speed=1, time=0).plot(cmap='viridis', vmin=0, vmax=30, ax=axs[1])
 res.isel(time=0).plot(cmap='twilight', ax=axs[2])
 # %%
