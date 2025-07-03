@@ -21,7 +21,6 @@ logging.basicConfig(
 logging.info("Starting data acquisition script (before main).")
 
 
-
 def main(input, output, params):
     start = time.time()
     logging.info("Starting data acquisition script.")
