@@ -59,7 +59,7 @@ gridsearch <- function(series, var, qmin = 60, qmax = 99, rmin = 1, rmax = 14) {
 identify_events <- function(daily, rfunc) {
   args    <- rfunc$args
   rfunc   <- match.fun(rfunc$func)
-  series <- aggregate(. ~ time, daily[, c("time", args)], rfunc)
+  series  <- aggregate(. ~ time, daily[, c("time", args)], rfunc)
 
   # gridsearch run lengths and thresholds
   result <- gridsearch(series, args)

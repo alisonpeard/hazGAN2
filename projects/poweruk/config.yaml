@@ -1,0 +1,47 @@
+dataset: era5
+year0: 1941
+yearn: 2023
+longitude: # geographical boundaries (15.75° x 15.75°)
+  min: -10.875
+  max: 4.875
+latitude:
+  min: 49.0
+  max: 64.75
+exclude:
+resolution:
+  lon: 64
+  lat: 64
+sfunc: additive 
+rfunc:
+  args:
+  func: load_external_cyclones
+event_subset:
+marginal_threshold: 0.95
+domain: gumbel
+kimg: 300
+fields:
+  vx:
+    args:
+      - i10fg
+    func: identity
+    hfunc: max
+    obj: max
+    distn: weibull
+  dx:
+    args:
+      - u10
+      - v10
+      - i10fg
+    func: relative_direction
+    hfunc: dir_at_max_wind
+    obj: max
+    distn: truncated_gaussian
+  r30:
+    args:
+      - tp
+    func: sum_n_hours # n=720 for 30 days
+    hfunc: sum
+    obj: max
+    distn: genpareto # exponential (not implemented yet)
+points_of_interest:
+local_crs: 27700 # https://epsg.io/27700
