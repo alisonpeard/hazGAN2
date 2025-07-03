@@ -4,13 +4,13 @@ Load ERA5 data from hourly netcdf files, resample to daily aggregates, and save 
 """
 import os
 from glob import glob
+import argparse
 import dask
 import time
 import xarray as xr
 import logging
-
-from importlib import import_module
-from py_utils import funcs
+from src import funcs
+from src import datasets
 
 
 logging.basicConfig(
@@ -26,7 +26,7 @@ def main(input, output, params):
     start = time.time()
     logging.info("Starting data acquisition script.")
     # load dataset module
-    dataset = import_module(f"py_utils.datasets.{params.dataset}")
+    dataset = getattr(datasets, params.dataset)
 
     # load and clip to area of interest
     files = []
@@ -124,7 +124,9 @@ def main(input, output, params):
 
 
 if __name__ == '__main__':
-    input = snakemake.input
+    # process snakemake
+    input  = snakemake.input
     output = snakemake.output
     params = snakemake.params
+
     main(input, output, params)

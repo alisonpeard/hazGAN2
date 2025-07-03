@@ -4,13 +4,29 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from warnings import warn
+from shapely.geometry import Point
 
 import logging
 
-from hazGAN.plotting import scatter
-from hazGAN.constants import OBSERVATION_POINTS
-from hazGAN import op2idx # in hazGAN.utils
+from src import plotting
+
+
+def op2idx(ops:dict, data:np.ndarray, extent:list):
+    """Convert observation points to indices in a 2D array."""
+    h, w = data.shape
+
+    lons = np.linspace(extent[0], extent[1], w)
+    lats = np.linspace(extent[2], extent[3], h)
+
+    coords = np.array([Point(lon, lat) for lon in lons for lat in lats])
+
+    op_idx = {}
+    for op, loc in ops.items():
+        idx = np.argmin([coord.distance(Point(loc)) for coord in coords])
+        op_idx[op] = idx
+
+    return op_idx
+
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -30,24 +46,7 @@ if __name__ == "__main__":
     XMAX = snakemake.params.xmax
     POIS = snakemake.params.pois
     CMAP = snakemake.params.cmap
-
-    # YMIN = 10.
-    # YMAX = 25.
-    # XMIN = 80.
-    # XMAX = 95.
-    # TRAIN = "/Users/alison/Local/github/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
-    # GENER = "/Users/alison/Local/github/hazGAN2/results/bayofbengal_imdaa/generated/netcdf/data.nc"
-    # DIR = "/Users/alison/Local/github/hazGAN2/results/bayofbengal_imdaa/figures/scatterplots/"
-    # DO_SUBSET   = True
-    # THRESH = {
-    #     "field": "ws",
-    #     "func": "max",
-    #     "value": 25.5,
-    # }
-    # POIS = {
-    #     "chittagong": [91.8, 22.3],
-    #     "dhaka": [90.4, 23.8],
-    # }
+    FIELD_LABELS = snakemake.params.channel_labels
 
     os.makedirs(DIR, exist_ok=True)
 
@@ -74,10 +73,13 @@ if __name__ == "__main__":
     ops = op2idx(POIS, train_x[0, ..., 0], extent=[XMIN, XMAX, YMIN, YMAX])
     pixels = [ops["chittagong"], ops["dhaka"]]
 
-    for FIELD in range(3):
-        fig = scatter.plot(gener_x, train_x, field=FIELD, pixels=pixels, s=10,
+    FIELDS = FIELD_LABELS.keys()
+
+    for i, FIELD in enumerate(FIELDS):
+        fig = plotting.scatter.plot(gener_x, train_x, field=i, pixels=pixels, s=10,
                         cmap=CMAP, xlabel="Chittagong", ylabel="Dhaka")
 
+        fig.suptitle(FIELD_LABELS[FIELD].capitalize(), y=1.05, fontsize=14, fontweight='bold')
         fig.savefig(os.path.join(DIR, f"field_{FIELD}.png"), dpi=300)
         plt.close(fig)
 
