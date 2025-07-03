@@ -48,7 +48,7 @@ checkpoint train_stylegan:
         augment="color,translation,cutout",
         kimg=KIMG
     resources:
-        gpus=2
+        gpus=1
     conda:
         GPUENV
     log:
@@ -58,7 +58,7 @@ checkpoint train_stylegan:
         source workflow/scripts/cuda_env.sh
 
         mkdir -p {output.outdir}
-        python packages/styleGAN2-DA/src/train.py \
+        python workflow/src/stylegan/train.py \
             --outdir={output.outdir} \
             --data={input.zipfile} \
             --gpus={resources.gpus} \
@@ -85,7 +85,7 @@ rule generate_stylegan:
         """
         source workflow/scripts/cuda_env.sh
 
-        python packages/styleGAN2-DA/src/generate.py \
+        python src/stylegan/generate.py \
             --outdir={output} \
             --seeds=1-{params.nimgs} \
             --trunc={params.trunc} \

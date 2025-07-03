@@ -8,8 +8,8 @@ suppressPackageStartupMessages({
   library(tidync)
 })
 
-source("workflow/r_utils/dfuncs.R")
-source("workflow/r_utils/sfuncs.R")
+source("workflow/src/R/dfuncs.R")
+source("workflow/src/R/sfuncs.R")
 
 # configure logging
 log_appender(appender_file(snakemake@log[["file"]]))
