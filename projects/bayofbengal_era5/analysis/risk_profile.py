@@ -30,7 +30,10 @@ def riskprofileplot(
 if __name__ == "__main__":
     
     wd = os.path.join("..", "results", "mangroves")
-    tree = xr.open_dataset(os.path.join(wd, "damage_scenarios.nc"))
+    # tree = xr.open_dataset(os.path.join(wd, "damage_scenarios.nc"))#
+    # tree = xr.DataTree(tree)
+
+    tree = xr.open_datatree(os.path.join(wd, "damage_scenarios.nc"))
 
     # plot parameters
     scatter_kwargs = {

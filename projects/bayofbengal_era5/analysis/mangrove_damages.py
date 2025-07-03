@@ -41,12 +41,12 @@ if __name__ == "__main__":
             ) -> xr.Dataset:
         if len(damages.data_vars) > 0: # skip root node in datatree
             # aggregate to overall damages
-            npy = damages.attrs['rate'].values.item()
+            npy = damages.attrs['rate']#.values.item()
             totals = damages[var].sum(dim=['lat', 'lon']).to_dataset()
             
             # calculate return periods
-            N = totals[var].sizes['sample']
-            rank = totals[var].rank(dim='sample')
+            N = totals[var].sizes['time']
+            rank = totals[var].rank(dim='time')
             totals['exceedence_prob'] = 1 - rank / (1 + N)
             totals['return_period'] = 1 / (npy * totals['exceedence_prob'])
             totals = totals.sortby('return_period')
@@ -56,6 +56,7 @@ if __name__ == "__main__":
     tree['ERA5'] = xr.DataTree(train_damages)
     tree['HazGAN']  = xr.DataTree(gener_damages)
     tree['Independent'] = xr.DataTree(indep_damages)
+    depen_damages = depen_damages.rename({'rp': 'return_period'})
     tree = tree.map_over_datasets(calculate_total_return_periods, 'expected_damage')
 
     tree['Dependent'] = depen_damages
