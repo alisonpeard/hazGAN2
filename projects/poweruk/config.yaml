@@ -45,3 +45,5 @@ fields:
     distn: genpareto # exponential (not implemented yet)
 points_of_interest:
 local_crs: 27700 # https://epsg.io/27700
+select:
+  - cyclones_midlands.txt

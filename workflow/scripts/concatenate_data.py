@@ -26,9 +26,14 @@ def main(input, output, params):
         }
 
         # remove any dates that are in the exclude list
-        exclude_dates = [np.datetime64(date) for date in params.exclude]
-        date_mask = np.isin(ds.time.values, exclude_dates, invert=True)
-        ds = ds.isel(time=date_mask)
+        if params.exclude:
+            exclude_dates = [np.datetime64(date) for date in params.exclude]
+            date_mask = np.isin(ds.time.values, exclude_dates, invert=True)
+            ds = ds.isel(time=date_mask)
+        if params.select:
+            select_dates = [np.datetime64(date) for date in params.select]
+            date_mask = np.isin(ds.time.values, select_dates)
+            ds = ds.isel(time=date_mask)
 
         ds.to_netcdf(output.netcdf, encoding=encoding)
 
