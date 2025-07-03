@@ -232,6 +232,7 @@ if __name__ == "__main__":
         # check another corner point
         print("\nTop-right corner:")
         print(f"Wind: {windregular[-1,-1]}, Precip: {precipregular[-1,-1]}")
+        print(f"Regressors: {regressors_2d[-1,0], regressors_2d[-1,1]}")
         print(f"Prediction: {preds[-1,-1]}")
         manual_pred = model.predict(np.array([[windregular[-1,-1], precipregular[-1,-1]]]))
         print(f"Manual prediction: {manual_pred}")
@@ -239,7 +240,6 @@ if __name__ == "__main__":
         # check another corner point
         print("\nBottom-right corner:")
         print(f"Wind: {windregular[-1,0]}, Precip: {precipregular[-1,0]}")
-        print(f"Regressors: {regressors_2d[-1,0], regressors_2d[-1,1]}")
         print(f"Prediction: {preds[-1,0]}")
         manual_pred = model.predict(np.array([[windregular[-    1,0], precipregular[-1,0]]]))
         print(f"Manual prediction: {manual_pred}")
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     LEVELS = np.arange(vmin, vmax + 6, 2.5)
 
     fig = plt.figure(figsize=(4, 3))
-    im = plt.contourf(precips, winds, preds, levels=LEVELS, cmap='viridis', origin='lower')
+    im = plt.contourf(precips, winds, preds, levels=LEVELS, cmap='YlOrRd', origin='lower')
     plt.contour(precips, winds, preds, levels=LEVELS, colors='k', origin='lower',
                 linewidths=0.05)
     plt.ylabel(r'Wind speed (ms$^{-1}$)')
