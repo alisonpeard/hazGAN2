@@ -1,4 +1,4 @@
-# %% Damage probability field samples
+# %% Damage probability field times
 import os
 import xarray as xr
 from cartopy import crs as ccrs
@@ -11,20 +11,30 @@ plt.rcParams['axes.spines.top'] = True
 plt.rcParams['axes.spines.right'] = True
 
 
+# def damagefield(
+#         tree:xr.DataTree, label:str, ds:xr.Dataset, ds_var:str, 
+#         axs:plt.Axes, rp:int=10, add_colorbar:bool=False
+#         ) -> None:
+#     ref = tree[label].to_dataset()
+#     idx = (abs(ref['return_period'] - rp)).argmin().item()
+#     rp = ref['return_period'].isel(time=idx).item()
 def damagefield(
         tree:xr.DataTree, label:str, ds:xr.Dataset, ds_var:str, 
         axs:plt.Axes, rp:int=10, add_colorbar:bool=False
         ) -> None:
     ref = tree[label].to_dataset()
     idx = (abs(ref['return_period'] - rp)).argmin().item()
-    rp = ref['return_period'].isel(sample=idx).item()
-    im1 = ds.isel(sample=idx, field=0)[ds_var].plot.contourf(
+    
+    # Use the actual dimension name of return_period
+    rp_dim = ref['return_period'].dims[0]  # Get the first (and likely only) dimension
+    rp = ref['return_period'].isel({rp_dim: idx}).item()
+    im1 = ds.isel(time=idx, field=0)[ds_var].plot.contourf(
         ax=axs[0], cmap="viridis", levels=10, add_colorbar=False, vmin=0, vmax=32
         )
-    im2 = ds.isel(sample=idx, field=1)[ds_var].plot.contourf(
+    im2 = ds.isel(time=idx, field=1)[ds_var].plot.contourf(
         ax=axs[1], cmap="PuBu", levels=10, add_colorbar=False, vmin=0, vmax=0.66
         )
-    im3 = ds.isel(sample=idx)['damage_prob'].plot.contourf(
+    im3 = ds.isel(time=idx)['damage_prob'].plot.contourf(
         ax=axs[2], cmap="YlOrRd", levels=10, add_colorbar=False, vmin=0, vmax=0.9
         )
     axs[0].set_title(f"{label}\n(1-in-{rp:.0f})")
@@ -35,13 +45,12 @@ def damagefield(
         # store the image references for later colorbar creation
         return im1, im2, im3
     
-    
 
 
 if __name__ == "__main__":
-    
     wd = os.path.join("..", "results", "mangroves")
-    tree = xr.open_dataset(os.path.join(wd, "damage_scenarios.nc"))
+    # tree = xr.open_dataset(os.path.join(wd, "damage_scenarios.nc"))
+    tree = xr.open_datatree(os.path.join(wd, "damage_scenarios.nc"))
     train_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "train.nc"))
     gener_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "gener.nc"))
     depen_damages = xr.open_dataset(os.path.join(wd, "damage_fields", "depen.nc"))
@@ -66,10 +75,11 @@ if __name__ == "__main__":
     cbar_ax2 = fig.add_subplot(gs[1, 4])
     cbar_ax3 = fig.add_subplot(gs[2, 4])
 
+
     # Call damagefield for the first three columns without colorbars
-    damagefield(tree, 'ERA5', train_damages, 'train', axs[:, 0])
-    damagefield(tree, 'Dependent', depen_damages, 'dependent', axs[:, 1])
-    damagefield(tree, 'Independent', indep_damages, 'independent', axs[:, 2])
+    damagefield(tree, 'ERA5', train_damages, 'value', axs[:, 0])
+    damagefield(tree, 'Dependent', depen_damages, 'value', axs[:, 1])
+    damagefield(tree, 'Independent', indep_damages, 'value', axs[:, 2])
 
     # Call the last column with colorbar flag set to True to get the image references
     im1, im2, im3 = damagefield(tree, 'HazGAN', gener_damages, 'fake', axs[:, 3], add_colorbar=True)
