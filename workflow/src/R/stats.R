@@ -161,7 +161,7 @@ marginal_transformer <- function(df, metadata, var, q,
       "Vector (tail): ", paste0(tail(gridcell[[var]], 30), collapse = ", "), "\n\n"
     ))
 
-    # extract maximum for each event
+    # extract maximum for each event #! should this be hfunc?
     maxima <- gridcell |>
       group_by(event) |>
       slice(which.max(get(var))) |>

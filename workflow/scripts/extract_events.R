@@ -11,6 +11,15 @@ suppressPackageStartupMessages({
 source("workflow/src/R/dfuncs.R")
 source("workflow/src/R/sfuncs.R")
 
+# if R functions are provided in params, load them into the global environment
+if (!is.null(snakemake@params[["R_funcs"]])) {
+  param_funcs <- snakemake@params[["R_funcs"]]
+  matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))
+  for (name in matching_names) {
+    assign(name, param_funcs[[name]], envir = .GlobalEnv)
+  }
+}
+
 # configure logging
 log_appender(appender_file(snakemake@log[["file"]]))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
