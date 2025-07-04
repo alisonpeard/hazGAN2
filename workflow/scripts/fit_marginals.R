@@ -2,8 +2,9 @@ suppressPackageStartupMessages({
   library(arrow, quietly = TRUE)
   library(dplyr, quietly = TRUE)
   library(logger, quietly = TRUE)
-  source("workflow/src/R/stats.R")
 })
+
+source("workflow/src/R/stats.R")
 
 # configure logging
 log_file <- snakemake@log[["file"]]
@@ -26,9 +27,11 @@ daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
 # transform marginals (hardcoded for three fields) 
-log_info("Tranforming fields...")
+log_info("Transforming fields...")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
+hfuncs  <- sapply(FIELDS, function(x) x$hfunc$func)
+hfunc_args  <- sapply(FIELDS, function(x) x$hfunc$args)
 nfields <- length(fields)
 
 field_summary <- function(i) {
@@ -49,21 +52,24 @@ field_summary <- function(i) {
 log_debug(field_summary(1))
 Q <- 0.95 # doesn't do anything
 events_field1 <- marginal_transformer(
-  daily, metadata, fields[1], Q, distn = distns[1],
+  daily, metadata, fields[1], Q,
+  hfunc = hfuncs[1], hfunc_vars = hfunc_vars[1], distn = distns[1],
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[1]))
 
 log_debug(field_summary(2))
 events_field2 <- marginal_transformer(
-  daily, metadata, fields[2], Q, distn = distns[2],
+  daily, metadata, fields[2], Q,
+  hfunc = hfuncs[2], hfunc_vars = hfunc_vars[2], distn = distns[2],
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[2]))
 
 log_debug(field_summary(3))
 events_field3 <- marginal_transformer(
-  daily, metadata, fields[3], Q, distn = distns[3],
+  daily, metadata, fields[3], Q,
+  hfunc = hfuncs[3], hfunc_vars = hfunc_vars[3], distn = distns[3], 
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))

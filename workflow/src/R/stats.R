@@ -6,6 +6,8 @@ suppressPackageStartupMessages({
     library(logger, quietly = TRUE)
 })
 
+source("workflow/src/R/hfuncs.R")
+
 `%ni%` <- Negate(`%in%`)
 
 ecdf <- function(x) {
@@ -84,11 +86,15 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
   log_error(skip_formatter(error_report))
 }
 
+
 marginal_transformer <- function(df, metadata, var, q,
+                                 hfunc = "max",
+                                 hfunc_vars = NULL,
                                  distn = "genpareto",
                                  chunksize = 128,
                                  log_file = tempfile(fileext = ".log"),
                                  log_level = INFO) {
+
   # configure logging (again)
   log_file <- as.character(log_file)
   log_appender(appender_file(log_file, append = TRUE))
@@ -161,16 +167,9 @@ marginal_transformer <- function(df, metadata, var, q,
       "Vector (tail): ", paste0(tail(gridcell[[var]], 30), collapse = ", "), "\n\n"
     ))
 
-    # extract maximum for each event #! should this be hfunc?
-    maxima <- gridcell |>
-      group_by(event) |>
-      slice(which.max(get(var))) |>
-      summarise(
-        variable = max(get(var)),
-        time = time,
-        event.rp = event.rp,
-        grid = grid
-      )
+    #hfunc <- "max"
+    hfunc <- match.fun(paste0("hfunc_", hfunc))
+    footprint <- hfunc(gridcell, var, hfunc_vars)
 
     # check maxima statistics
     log_debug(paste0(
