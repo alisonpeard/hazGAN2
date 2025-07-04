@@ -111,7 +111,8 @@ rule extract_events:
         ymax=LATITUDE['max'],
         fields=FIELDS,
         rfunc=RFUNC,
-        sfunc=SFUNC
+        sfunc=SFUNC,
+        R_funcs=RFUNCS,
     resources:
         cpus_per_task=4
     conda:
@@ -132,8 +133,7 @@ rule concatenate_data:
     output:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
     params:
-        exclude=EXCLUDE,
-        select=SELECT
+        exclude=EXCLUDE
     resources:
         cpus_per_task=4
     conda:

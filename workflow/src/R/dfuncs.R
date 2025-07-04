@@ -88,7 +88,7 @@ identify_events <- function(daily, rfunc) {
     group_by(event) |>
     mutate(
       event.size = n(),
-      max_val = max(variable)
+      max_val = max(variable) #! think this should be match.fun(hfunc)(variable)
     ) |>
     filter(variable == max_val) |>
     group_by(event) |>
