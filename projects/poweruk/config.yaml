@@ -24,7 +24,9 @@ fields:
     args:
       - i10fg
     func: identity
-    hfunc: max
+    hfunc:
+      func: max
+      args:
     obj: max
     distn: weibull
   dx:
@@ -32,15 +34,20 @@ fields:
       - u10
       - v10
       - i10fg
-    func: relative_direction
-    hfunc: dir_at_max_wind
+    func: direction
+    hfunc:
+      func: wsmax
+      args:
+        - ws
     obj: max
     distn: truncated_gaussian
   r30:
     args:
       - tp
     func: sum_n_hours # n=720 for 30 days
-    hfunc: sum
+    hfunc:
+      func: sum
+      args:
     obj: max
     distn: genpareto # exponential (not implemented yet)
 points_of_interest:

@@ -78,8 +78,8 @@ identify_events <- function(daily, rfunc) {
 
   # final declustering
   declustering <- decluster(series[, args], thresh, r = r)
-  events <- attr(declustering, "clusters")
-  times <- series$time[series[, args] > thresh]
+  events   <- attr(declustering, "clusters")
+  times    <- series$time[series[, args] > thresh]
   variable <- series[, args][series[, args] > thresh]
   metadata <- data.frame(time = times, event = events, variable = variable)
 
