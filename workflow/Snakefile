@@ -5,11 +5,12 @@ import sys
 
 # load device configuration
 configfile: "config.yaml"
-PROJECT = config.get("project", "prototype")
+PROJECT = config["project"]
 # DEVICE  = config.get("device", "local")
 DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
-WD      = os.path.join("projects", PROJECT)
+DATADIR = config["setup"][DEVICE]['datadir']
+WD      = os.path.join(DATADIR, "projects", PROJECT)
 
 # assert WD exists
 assert os.path.exists(WD), f"Project directory {WD} does not exist."
