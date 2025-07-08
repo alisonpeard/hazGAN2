@@ -6,6 +6,20 @@ suppressPackageStartupMessages({
 
 source("workflow/src/R/stats.R")
 
+
+# if R functions are provided in params
+# replace functions in the global environment
+# with those provided in the params
+# this allows for custom functions to be used
+# without modifying the source code
+if (!is.null(snakemake@params[["R_funcs"]])) {
+  param_funcs <- snakemake@params[["R_funcs"]]
+  matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))
+  for (name in matching_names) {
+    assign(name, param_funcs[[name]], envir = .GlobalEnv)
+  }
+}
+
 # configure logging
 log_file <- snakemake@log[["file"]]
 log_level <- snakemake@log[["level"]]

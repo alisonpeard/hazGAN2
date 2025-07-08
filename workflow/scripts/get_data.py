@@ -74,13 +74,15 @@ def main(input, output, params):
         logging.info(f"Processing {field}.")
         infields = config.get("args", [])
         func     = config.get("func", "identity")
-        hfunc    = config.get("hfunc", "mean")
+        hfunc    = config["hfunc"]["func"]
+        hfunc_args = config["hfunc"]["args"]
+        hfunc_kwargs = {arg: data[arg] for arg in hfunc_args} if hfunc_args else {}
 
         logging.info(f"Applying {field} = {func}{*infields,}.")
         data[field] = getattr(funcs, func)(*[data[i] for i in infields], params=theta)
 
         logging.info(f"Finished, resampling as {hfunc}({field}).")
-        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)()
+        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)(**hfunc_kwargs)
         
         logging.info(f"Finished {field}.")
     
