@@ -6,6 +6,20 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
+hfunc_wsmax <- function(gridcell, var, vars, ...){
+  var2 <- vars[1]
+  res <- gridcell |>
+    group_by(event) |>
+    slice(which.max(get(var2))) |>
+    summarise(
+      variable = get(var),
+      time = time,
+      event.rp = event.rp,
+      grid = grid
+    )
+  return(res)
+}
+
 # for dev only
 daily <- read_parquet("/Users/alison/Local/github/hazGAN2/projects/bayofbengal_era5/results/processing/daily.parquet")
 identify_events <- function(daily, rfunc) {
