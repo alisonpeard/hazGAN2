@@ -6,12 +6,25 @@ conda-cleanup-pkgs: cache
 
 # environment specs 
 setup:
-  local:
+  macbook:
     input:
       era5: "/Users/alison/Documents/DPhil/data/era5"
       imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
     geoenv: '../environments/apple-silicon/geo.yaml' # if running from .smk file
     renv: "../environments/apple-silicon/r.yaml"
+    datadir: "/Users/alison/Local/data/hazGAN2"
+    gpuenv: ""
+    rsubdir: "osx-64"
+    timecol: "time"
+    metadata:
+      description: "Analysis on Apple Silicon M2"
+  imac:
+    input:
+      era5: "/Users/alison/Documents/DPhil/data/era5"
+      imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
+    geoenv: '../environments/apple-silicon/geo.yaml' # if running from .smk file
+    renv: "../environments/apple-silicon/r.yaml"
+    datadir: "/Users/alison/Local/data/hazGAN2"
     gpuenv: ""
     rsubdir: "osx-64"
     timecol: "time"
@@ -23,6 +36,7 @@ setup:
       imdaa: "/soge-home/data/analysis/imdaa/"
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
+    datadir: "/soge-home/projects/mistral/alison/data/hazGAN2"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: 'valid_time'
@@ -35,6 +49,7 @@ setup:
       imdaa: "/soge-home/data/analysis/imdaa/"
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
+    datadir: "/soge-home/projects/mistral/alison/data/hazGAN2"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: "valid_time"
