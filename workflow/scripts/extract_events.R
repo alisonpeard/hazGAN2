@@ -11,7 +11,11 @@ suppressPackageStartupMessages({
 source("workflow/src/R/dfuncs.R")
 source("workflow/src/R/sfuncs.R")
 
-# if R functions are provided in params, load them into the global environment
+# if R functions are provided in params
+# replace functions in the global environment
+# with those provided in the params
+# this allows for custom functions to be used
+# without modifying the source code
 if (!is.null(snakemake@params[["R_funcs"]])) {
   param_funcs <- snakemake@params[["R_funcs"]]
   matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))

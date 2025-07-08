@@ -12,21 +12,6 @@ hfunc_max <- function(gridcell, var, vars){
 }
 
 
-hfunc_wsmax <- function(gridcell, var, vars, ...){
-  var2 <- vars[1]
-  res <- gridcell |>
-    group_by(event) |>
-    slice(which.max(get(var2))) |>
-    summarise(
-      variable = get(var),
-      time = time,
-      event.rp = event.rp,
-      grid = grid
-    )
-  return(res)
-}
-
-
 hfunc_sum <- function(gridcell, var, vars){
   res <- gridcell |>
     group_by(event) |>
