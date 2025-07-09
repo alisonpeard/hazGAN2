@@ -54,6 +54,8 @@ def main(input, output, params):
                                      'longitude': '500MB',
                                      'latitude': '500MB'
                                      })
+        if params.xmin < 0:
+            data = funcs.convert_360_to_180(data)
         data = dataset.clip_to_bbox(data, params.xmin, params.xmax, params.ymin, params.ymax)
         
     logging.info("\n\nData loaded.")
@@ -72,12 +74,12 @@ def main(input, output, params):
     resampled = {}
     for field, config in params.fields.items():
         logging.info(f"Processing {field}.")
-        infields = config.get("args", [])
-        func     = config.get("func", "identity")
-        hfunc    = config["hfunc"]["func"]
+        func       = config.get("func", "identity")
+        args       = config.get("args", [field])
+        hfunc      = config["hfunc"]["func"]
         hfunc_args = config["hfunc"]["args"]
-        logging.info(f"Applying {field} = {func}{*infields,}.")
-        data[field] = getattr(funcs, func)(*[data[i] for i in infields], params=theta)
+        logging.info(f"Applying {field} = {func}{*args,}.")
+        data[field] = getattr(funcs, func)(data, *args, params=theta)
         resampled[field] = data.resample(time='1D').apply(
             getattr(funcs, hfunc),
             *hfunc_args

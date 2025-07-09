@@ -16,5 +16,28 @@ def unpack(params:xr.Dataset):
   return {var: params[var] for var in params.data_vars}
 
 
-def identity(x:xr.DataArray, *args, **kwargs) -> xr.DataArray:
-    return x
+# the following functions are for deriving variables from the input data:
+def identity(x:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+    return x[arg]
+
+
+def max(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+    """
+    Calculate the maximum value of a variable.
+    """
+    return ds[arg].max(dim="time", skipna=True)
+
+
+def arg2max(ds:xr.Dataset, arg1, arg2, **kwargs) -> xr.DataArray:
+    """
+    Calculate the index of the maximum value of a variable.
+    """
+    idx_max = ds[arg2].argmax(dim="time")
+    return ds.isel(time=idx_max)[arg1]
+
+
+def mean(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+    """
+    Calculate the mean value of a variable.
+    """
+    return ds[arg].mean(dim="time", skipna=True)
