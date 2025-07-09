@@ -6,13 +6,12 @@ import sys
 # load device configuration
 configfile: "config.yaml"
 PROJECT = config["project"]
-# DEVICE  = config.get("device", "local")
 DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
 DATADIR = config["setup"][DEVICE]['datadir']
 WD      = os.path.join(DATADIR, "projects", PROJECT)
 
-# assert WD exists
+# assert project directory exists
 assert os.path.exists(WD), f"Project directory {WD} does not exist."
 
 # set up project environment
@@ -51,7 +50,7 @@ GPUENV  = config['setup'][DEVICE]['gpuenv']
 RSUBDIR = config['setup'][DEVICE]['rsubdir']
 
 # load project-specific configuration
-configfile: f"projects/{PROJECT}/config.yaml"
+configfile: f"{WD}/config.yaml"
 
 DATASET    = config["dataset"]
 INDIR      = INDIR[DATASET]
@@ -71,7 +70,7 @@ TIMECOL    = config['setup'][DEVICE]["timecol"]
 RFUNCS     = config.get("R_funcs", None)
 
 # load rules
-include: "rules/get_data.smk"
+# include: "rules/get_data.smk" # commenting this out to avoid rerun on local
 include: "rules/process_data.smk"
 include: "rules/train_stylegan.smk"
 include: "rules/process_output.smk"

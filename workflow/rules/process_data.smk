@@ -75,7 +75,8 @@ rule fit_marginals:
     output:
         events=os.path.join(PROCESSING_DIR, "events.parquet")
     params:
-        fields=FIELDS
+        fields=FIELDS,
+        R_funcs=RFUNCS
     conda:
         RENV
     log:
