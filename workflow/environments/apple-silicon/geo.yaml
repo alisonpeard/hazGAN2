@@ -24,6 +24,6 @@ dependencies:
     - seaborn
     - gdal
     - libgdal
-    - pip:
-        - -e ../../../packages/hazGAN # this works
-        - -r ../../../packages/hazGAN/requirements.txt
+    # - pip: #? is this needed still?
+        # - -e ../../../packages/hazGAN # this works
+        # - -r ../../../packages/hazGAN/requirements.txt

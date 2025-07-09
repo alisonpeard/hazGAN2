@@ -1,0 +1,3 @@
+config: ["device=imac"]
+cores: 4
+use-conda: true

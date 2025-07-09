@@ -62,9 +62,9 @@ def main(input, output, params):
     logging.info("Data summary:")
     logging.info(f"Data variables: {data.data_vars}")
     logging.info(f"Data coordinates: {data.coords}")
-    logging.info(f"Data dimensions: {data.dims}")
+    logging.info(f"Data dimensions: {data.dims}\n")
 
-    logging.info(f"Loading parameters from {input.params}.")
+    logging.info(f"\nLoading parameters from {input.params}.")
     theta = xr.open_dataset(input.params)
     theta = theta.sel(longitude=slice(params.xmin, params.xmax), latitude=slice(params.ymax, params.ymin))
 
@@ -76,15 +76,13 @@ def main(input, output, params):
         func     = config.get("func", "identity")
         hfunc    = config["hfunc"]["func"]
         hfunc_args = config["hfunc"]["args"]
-        hfunc_kwargs = {arg: data[arg] for arg in hfunc_args} if hfunc_args else {}
-
         logging.info(f"Applying {field} = {func}{*infields,}.")
         data[field] = getattr(funcs, func)(*[data[i] for i in infields], params=theta)
-
+        resampled[field] = data.resample(time='1D').apply(
+            getattr(funcs, hfunc),
+            *hfunc_args
+        )
         logging.info(f"Finished, resampling as {hfunc}({field}).")
-        resampled[field] = getattr(data[field].resample(time='1D'), hfunc)(**hfunc_kwargs)
-        
-        logging.info(f"Finished {field}.")
     
     data_resampled = xr.Dataset(resampled)
 
