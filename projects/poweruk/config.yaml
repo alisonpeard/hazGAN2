@@ -1,7 +1,7 @@
 dataset: era5
 year0: 1941
 yearn: 2023
-longitude: # geographical boundaries (15.75° x 15.75°)
+longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°)
   min: -10.875
   max: 4.875
 latitude:

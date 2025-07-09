@@ -2,6 +2,11 @@ import numpy as np
 import xarray as xr
 
 
+def convert_360_to_180(ds):
+    """Convert longitude from 0-360 to -180 to 180."""
+    ds = ds.assign_coords(longitude=(ds.longitude + 180) % 360 - 180)
+    return ds.sortby('longitude')
+
 
 def direction(u: xr.DataArray, v: xr.DataArray,
               *args, **kwargs) -> xr.DataArray:
@@ -19,32 +24,16 @@ def direction(u: xr.DataArray, v: xr.DataArray,
     return direction
 
 
-def sum_n_hours(tp:xr.DataArray, n=720, *args, **kwargs) -> xr.DataArray:
+def sum_30_days(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
     """
-    Sum precipitation over n hours.
+    Sum an hourly variable over the last 30 days.
     """
-    if tp.time.size < n:
-        raise ValueError(f"Time dimension size {tp.time.size} is less than n={n}.")
-    return tp.rolling(time=n).sum().dropna(dim="time", how="all")
+    return ds[arg].rolling(time=720).sum().dropna(dim="time", how="all")
 
 
-def max(ds_grouped:xr.Dataset, *args) -> xr.DataArray:
-    """
-    Calculate the maximum value of a variable.
-    """
-    return ds_grouped[args[0]].max(dim="time", skipna=True)
-
-
-def arg2max(ds_grouped:xr.Dataset, *args) -> xr.DataArray:
+def arg2max(ds:xr.Dataset, arg1, arg2, **kwargs) -> xr.DataArray:
     """
     Calculate the index of the maximum value of a variable.
     """
-    idx_max = ds_grouped[args[1]].argmax(dim="time")
-    return ds_grouped.isel(time=idx_max)[args[0]]
-
-
-def mean(ds_grouped:xr.Dataset, *args) -> xr.DataArray:
-    """
-    Calculate the mean value of a variable.
-    """
-    return ds_grouped[args[0]].mean(dim="time", skipna=True)
+    idx_max = ds[arg2].argmax(dim="time")
+    return ds.isel(time=idx_max)[arg1]
