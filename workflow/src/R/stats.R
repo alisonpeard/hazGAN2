@@ -89,7 +89,7 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
 
 marginal_transformer <- function(df, metadata, var, q,
                                  hfunc = "max",
-                                 hfunc_vars = NULL,
+                                 hfunc_args = NULL,
                                  distn = "genpareto",
                                  chunksize = 128,
                                  log_file = tempfile(fileext = ".log"),
@@ -167,9 +167,8 @@ marginal_transformer <- function(df, metadata, var, q,
       "Vector (tail): ", paste0(tail(gridcell[[var]], 30), collapse = ", "), "\n\n"
     ))
 
-    #hfunc <- "max"
-    hfunc <- match.fun(paste0("hfunc_", hfunc))
-    footprint <- hfunc(gridcell, var, hfunc_vars)
+    hfunc     <- match.fun(paste0("hfunc_", hfunc))
+    footprint <- hfunc(gridcell, hfunc_args) #!
 
     # check maxima statistics
     log_debug(paste0(

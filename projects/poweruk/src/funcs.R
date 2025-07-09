@@ -6,28 +6,14 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-hfunc_wsmax <- function(gridcell, var, vars, ...){
-  var2 <- vars[1]
-  res <- gridcell |>
-    group_by(event) |>
-    slice(which.max(get(var2))) |>
-    summarise(
-      variable = get(var),
-      time = time,
-      event.rp = event.rp,
-      grid = grid
-    )
-  return(res)
-}
+CYCLONE_DATES_PATH <- "../resources/cyclones_midlands.csv"
 
-# for dev only
-daily <- read_parquet("/Users/alison/Local/github/hazGAN2/projects/bayofbengal_era5/results/processing/daily.parquet")
 identify_events <- function(daily, rfunc) {
   args    <- rfunc$args
   rfunc   <- match.fun(rfunc$func)
 
   # read text file with dates from ..resources/cyclones_midlands.txt
-  event_data <- read.csv("workflow/resources/cyclones_midlands.csv")
+  event_data <- read.csv(CYCLONE_DATES_PATH)
   event_data <- event_data[event_data$wind > 0.0,]
   event_data$time <- as.Date(event_data$date)
   event_data$event <- as.numeric(factor(event_data$cyclone_id))
@@ -42,8 +28,8 @@ identify_events <- function(daily, rfunc) {
   events <- metadata |>
     group_by(event) |>
     mutate(
-      event.size = n(), #! this is giving event size 8192
-      max_val = max(variable) #! think this should be match.fun(hfunc)(variable)
+      event.size = n(),
+      max_val = max(variable) #! max wind speed (hfunc hardcoded here)
     ) |>
     filter(variable == max_val) |>
     group_by(event) |>

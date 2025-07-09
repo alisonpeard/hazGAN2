@@ -21,35 +21,39 @@ domain: gumbel
 kimg: 300
 fields:
   vx:
+    func: identity
     args:
       - i10fg
-    func: identity
     hfunc:
       func: max
-      args:
+      args: vx
     obj: max
     distn: weibull
+    title: "Maximum wind gust"
   dx:
+    func: direction
     args:
       - u10
       - v10
       - i10fg
-    func: direction
     hfunc:
-      func: wsmax
+      func: arg2max
       args:
+        - dx
         - ws
     obj: max
     distn: truncated_gaussian
+    title: "Relative direction of max wind"
   r30:
+    func: sum_n_hours # n=720 for 30 days
     args:
       - tp
-    func: sum_n_hours # n=720 for 30 days
     hfunc:
-      func: sum
-      args:
+      func: mean
+      args: r30
     obj: max
     distn: genpareto # exponential (not implemented yet)
+    title: "30-day antecedant rainfall"
 points_of_interest:
 local_crs: 27700 # https://epsg.io/27700
 rfuncs:

@@ -9,115 +9,67 @@ StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
 
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
 
+## Current status [keep updated]
+Date: 08-07-2025
+
+- **Complete:**
+    - Finished Bay of Bengal workflow ✅
+- **In progress:**
+    - Modifying workflow to take in event dates
+
 > ### 💡 Note on snakemake relative paths
 > * Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
 > * Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
 
-## Quick start (on SoGE cluster)
+## Quick start
 ```bash
-conda create -c conda-forge -c bioconda -n snakemake snakemake
+conda create -c conda-forge -c bioconda -n snakemake snakemake -y
 conda activate snakemake
 conda config --set channel_priority strict # snakemake complains otherwise
-conda install -c conda-forge conda=24.7.1
-python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM
+conda install -c conda-forge conda=24.7.1 --y
+python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using 
 
-snakemake --profile profiles/slurm -n
-snakemake --profile profiles/slurm
+# Run the workflow
+snakemake --profile profiles/local -n
+snakemake --profile profiles/local
 ```
 
-But for your mental health you should set up the conda envs on the CPU nodes interactively, using more resources.
-```bash
-srun -p Short --pty --cpus-per-task=16 --mem=32G /bin/bash
-micromamba activate snakemake
-snakemake --profile profiles/cluster test_hazgan_install # I may delete this rule
-```
-
-## Key rules
-- `get_all_data`: downloads and processes the data from the SoGE filestore
-- `process_all_data`: processes the data for training with styleGAN2
-- `make_paper_figures`: makes the figures for the paper
-
-## Current status [keep updated]
-Date: 15-05-2025
-
-- **Complete:**
-    - StyleGAN training on cluster GPU nodes
-    - StyleGAN generating new samples
-- **In progress:**
-    - process generated images
-    - make benchmark datasets
-    - plot 64 $\times$ 64 samples
-
-## Notes on repositories
-
-This repository contains two submodules:
-- [hazGAN](github.com/alisonpeard/hazGAN)
-- [styleGAN2-DA](github.com/alisonpeard/styleGAN2-DA)
-
-
-To clone the repository with the submodules, use the following command:
-```bash
-git clone --recurse-submodules git@github.com:alisonpeard/hazGAN2.git
-```
-
-> 📋 This isn't working so have just removed `.git` from both for now.
 
 ## Things to do outside of this workflow
 
-This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally. This includes:
+This workflow is just for generating event sets, to keep it clean and modular, any downstream analysis should be done externally with code in the `project/analysis` directory. This includes:
 
-- Generate a `params.nc` file for the project
+- Generating a `params.nc` file for the project
 - All extra analysis (in scripts/Jupyter notebooks)
 
-## Getting started
+
+### Running rules
+
+To run a rule on your local machine, navigate to the repository root, activate snakemake and run the rule. E.g., to 
+run all the rules in `get_data.smk` locally:
 
 ```bash
-# clone the repository
-git clone git@github.com:alisonpeard/hazGAN2.git
 cd hazGAN2
+micromamba activate snakemake
+snakemake --profile profiles/local get_all_data
 ```
 
+You may need to modify `config/config.yaml` and to point to the correct input data location and Python environment definition files (in `workflow/environments`).
 
+#### Using R environments on Apple Silicon
+
+For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment for the first time, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
 ```bash
-# login to a CPU node
-srun -p Short --pty /bin/bash
+CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
 ```
 
-To set up snakemake on your machine, enter the following in the terminal, replacing `conda` with `micromamba` or `mamba` if you prefer:
-```bash
-conda create -c conda-forge -c bioconda -n snakemake snakemake
-conda activate snakemake
-conda config --set channel_priority strict # snakemake complains otherwise
-conda install -c conda-forge conda=24.7.1
-python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using SLURM 
-python -m pip install snakemake-executor-plugin-cluster-generic # if your SLURM doesn't support accounting (e.g., sacct) # https://stackoverflow.com/questions/77929511/how-to-run-snakemake-8-on-a-slurm-cluster
-```
-
-### Running rules for the first time
+#### Running rules on the cluster
 
 When running for the first time, it is better to run snakemake from a CPU node rather than the head node, head nodes are extremely slow for creating conda environments. After that, you can run snakemake from the head node (required for SLURM). To do this, use the following command to login to a CPU node:
 
 ```bash
 snakemake --profile profiles/cluster/ my_rule --conda-create-envs-only
 ```
-
-### Running rules
-
-To run a rule on your local machine, navigate to the repository root, activate snakemake and run the rule. E.g., to 
-run all the rules in `get_data.smk` locally:
-```bash
-cd hazGAN2
-micromamba activate snakemake
-snakemake --profile profiles/local/ get_all_data
-```
-You may need to modify `config/config.yaml` and to point to the correct input data location and Python environment definition files (in `workflow/environments`).
-
-> 💭 For Apple Silicon, the R package `r-extremes` is not available on the conda `osx-arm64` subdirectory, so installation must be manually set to the `osx-64` subdirectory. If running a rule that will install the R environment for the first time, prefix the command with `CONDA_SUBDIR=osx-64`, e.g.,
-```bash
-CONDA_SUBDIR=osx-64 snakemake --profile profiles/local/ process_all_data --use-conda --cores 2
-```
-
-### Running rules on the cluster
 
 The `config.yaml` in `profiles/local/` contains snakemake command line arguments that are usually run when using the local machine. There are also profiles for running on the cluster in `profiles/cluster/`, and running on the cluster with SLURM in `profiles/slurm`. To run the rule on the cluster use the following command:
 
@@ -165,7 +117,9 @@ snakemake process_all_data --filegraph | dot -Tsvg > docs/process_all_data.svg
 # report
 snakemake process_all_data --report docs/process_all_data.html
 ```
+
 ## Modifications and extensions
+
 #### Basic
 To create a new project you need to make the following changes:
 1. `config/config.yaml`: change `project` value
@@ -328,7 +282,4 @@ To set up your own DVC file tracking, in the parent repo type `dvc init` and `dv
 - [ ] Create fallback `params` file
 - [ ] Run `get_data` rules locally for 2020 subset
     - [x] `bayofbengal`
-    - [ ] `renewablesuk`
-- [ ] Run `process_data` rules locally for 2020 subset
-    - [ ] `bayofbengal`
-    - [ ] `renewablesuk`
+    - [ ] `poweruk`uk`
