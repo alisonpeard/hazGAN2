@@ -1,6 +1,6 @@
 import os
 
-# add new relevant variables here
+# add new relevant variables here 
 long_names = {
     "u10": "10m_u_component_of_wind",
     "v10": "10m_v_component_of_wind",
@@ -15,7 +15,7 @@ long_names = {
     "sro": "surface_runoff" # accumulated
 }
 
-def get_input_file(indir, field):
+def get_input_file_pattern(indir, field):
     """
     Parse the input pattern for the given field.
     """

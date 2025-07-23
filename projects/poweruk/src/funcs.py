@@ -19,11 +19,16 @@ def direction(ds:xr.Dataset, u:str, v:str,
     - 90° = East (wind from east)  
     - 180° = South (wind from south)
     - 270° = West (wind from west)
+
+
+    See:
+    - https://confluence.ecmwf.int/pages/viewpage.action?pageId=133262398
+    - https://numpy.org/doc/2.2/reference/generated/numpy.arctan2.html
     """
-    # Convert to meteorological wind direction (where wind comes FROM) 
+    # Convert to meteorological wind direction (where wind comes FROM)
     u = ds[u]
     v = ds[v]
-    direction = (270 - np.arctan2(v, u) * 180 / np.pi) % 360
+    direction = (180 + 180 / np.pi * np.arctan2(v, u)) % 360
     return direction
 
 
