@@ -56,7 +56,7 @@ rule get_year:
         dataset=DATASET
     resources:
         cpus_per_task=4,
-        # slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err"
+        # slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err" 
     conda:
         GEOENV
     log:

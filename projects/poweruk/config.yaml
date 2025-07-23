@@ -1,6 +1,6 @@
 dataset: era5
-year0: 1941
-yearn: 2023
+year0: 2017 # 1941
+yearn: 2018 # 2023
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
   max: 4.875
@@ -14,7 +14,7 @@ resolution:
 sfunc: additive 
 rfunc:
   args:
-  func: load_external_cyclones
+  func: NULL
 event_subset:
 marginal_threshold: 0.95
 domain: gumbel

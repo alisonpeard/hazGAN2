@@ -6,8 +6,6 @@ suppressPackageStartupMessages({
 
 source("workflow/src/R/stats.R")
 
-
-
 # If R functions are provided in params
 #  replace functions in the global environment
 # with those provided in the params
@@ -46,9 +44,10 @@ metadata <- read_parquet(METADATA)
 log_info("Transforming fields...")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
-hfuncs  <- sapply(FIELDS, function(x) x$hfunc$func)
+hfuncs  <- sapply(FIELDS, function(x) match.fun(paste0("hfunc_", x$hfunc$func)))
 hfunc_args  <- sapply(FIELDS, function(x) x$hfunc$args)
 nfields <- length(fields)
+
 
 field_summary <- function(i) {
   summary_msg <- paste0(
@@ -63,6 +62,7 @@ field_summary <- function(i) {
     "Q95: ", quantile(daily[[fields[i]]], 0.95, na.rm = TRUE), "\n",
     "Q99: ", quantile(daily[[fields[i]]], 0.99, na.rm = TRUE), "\n"
   )
+  return(summary_msg)
 }
 
 # main: fit marginals and transform each field
