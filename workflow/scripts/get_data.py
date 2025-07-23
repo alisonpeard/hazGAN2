@@ -6,7 +6,6 @@ a single netcdf file in the target directory.
 import os
 import sys
 from glob import glob
-import argparse
 import dask
 import time
 import xarray as xr
@@ -21,10 +20,10 @@ VERIFY_TIME_ENCODING = True  # enable for dev only
 def log_data_summary(data):
     """Log a summary of the data."""
     logging.info("\n\nData summary:")
-    logging.info(f"Data variables: {data.data_vars}")
-    logging.info(f"Data coordinates: {data.coords}")
     logging.info(f"Data dimensions: {data.dims}")
+    logging.info(f"Data coordinates: {data.coords}")
     logging.info(f"Data size: {data.nbytes * 1e-6:.2f} MB")
+    logging.info(f"Data variables: {data.data_vars}\n")
 
 
 def main(input, output, params):
@@ -52,8 +51,8 @@ def main(input, output, params):
                 ds = ds.rename({params.timecol: "time"})
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
-            ds = ds.clip_to_bbox(
-                params.xmin, params.xmax, params.ymin, params.ymax
+            ds = dataset.clip_to_bbox(
+                ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
             return ds
 
@@ -68,6 +67,12 @@ def main(input, output, params):
                 })
     log_data_summary(data)
 
+    # select expver=1 is expver in coords
+    if "expver" in data.coords:
+        logging.info("\nSelecting expver=1 (ERA5).")
+        data = data.drop_vars('expver')
+        log_data_summary(data)
+
     logging.info(f"\nLoading parameters from {input.params}.")
     theta = xr.open_dataset(input.params)
     theta = preprocess(theta)
@@ -75,7 +80,6 @@ def main(input, output, params):
     logging.info("\nResampling data to daily aggregates.")
     resampled = {}
     for field, config in params.fields.items():
-        logging.info(f"Processing {field}.")
         func       = config["init"]["func"]
         args       = config["init"]["args"]
         hfunc      = config["hfunc"]["func"]
@@ -84,10 +88,9 @@ def main(input, output, params):
         logging.info(f"Applying {field} = {func}{*args,}.")
         data[field] = getattr(funcs, func)(data, *args, params=theta)
 
-        logging.info(f"Applying {field} = {hfunc}{*hfunc_args,}.")
+        logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
         resampled[field] = data.resample(time='1D').apply(
-            getattr(funcs, hfunc),
-            *hfunc_args
+            lambda grouped: getattr(funcs, hfunc)(grouped, *hfunc_args)
         )
     
     data_resampled = xr.Dataset(resampled)
@@ -126,7 +129,6 @@ if __name__ == '__main__':
         logging.StreamHandler(sys.stdout)
     ]
     )
-    logging.info("Starting data acquisition script (before main).")
 
     # process snakemake
     input  = snakemake.input

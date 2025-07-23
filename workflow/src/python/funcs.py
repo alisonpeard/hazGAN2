@@ -16,28 +16,24 @@ def unpack(params:xr.Dataset):
   return {var: params[var] for var in params.data_vars}
 
 
-# the following functions are for deriving variables from the input data:
-def identity(x:xr.Dataset, arg, **kwargs) -> xr.DataArray:
-    return x[arg]
+# the following `init` functions are for deriving variables from the input data:
+def identity(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
+    """Return the variable as is."""
+    return ds[arg]
 
 
 def max(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
-    """
-    Calculate the maximum value of a variable.
-    """
+    """Calculate the maximum value of a variable."""
     return ds[arg].max(dim="time", skipna=True)
 
 
 def arg2max(ds:xr.Dataset, arg1, arg2, params={}) -> xr.DataArray:
-    """
-    Calculate the index of the maximum value of a variable.
-    """
-    idx_max = ds[arg2].argmax(dim="time")
-    return ds.isel(time=idx_max)[arg1]
+    """Calculate the index of the maximum value of a variable."""
+    arg2_max = ds[arg2].max(dim="time")
+    mask = ds[arg2] == arg2_max
+    return ds[arg1].where(mask).max(dim="time")
 
 
 def mean(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
-    """
-    Calculate the mean value of a variable.
-    """
+    """Calculate the mean value of a variable."""
     return ds[arg].mean(dim="time", skipna=True)

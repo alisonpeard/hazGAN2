@@ -8,8 +8,7 @@ configfile: "config.yaml"
 PROJECT = config["project"]
 DEVICE  = config["device"]
 INDIR   = config['setup'][DEVICE]['input']
-DATADIR = config["setup"][DEVICE]['datadir']
-WD      = os.path.join(DATADIR, "projects", PROJECT)
+WD      = os.path.join("projects", PROJECT)
 
 # assert project directory exists
 assert os.path.exists(WD), f"Project directory {WD} does not exist."
@@ -70,7 +69,7 @@ TIMECOL    = config['setup'][DEVICE]["timecol"]
 RFUNCS     = config.get("R_funcs", None)
 
 # load rules
-# include: "rules/get_data.smk" # commenting this out to avoid rerun on local
+include: "rules/get_data.smk" # commenting this out to avoid rerun on local
 include: "rules/process_data.smk"
 include: "rules/train_stylegan.smk"
 include: "rules/process_output.smk"
