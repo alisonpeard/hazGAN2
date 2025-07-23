@@ -1,12 +1,12 @@
 dataset: era5
-year0: 2017 # 1941
+year0: 2004 # 1941
 yearn: 2018 # 2023
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
   max: 4.875
 latitude:
-  min: 49.0
-  max: 64.75
+  min: 49.25
+  max: 65.0
 exclude:
 resolution:
   lon: 64
@@ -33,16 +33,16 @@ fields:
   dx:
     init:
       func: direction
-      args: [u10, v10, i10fg]
+      args: [u10, v10]
     hfunc:
       func: arg2max
-      args: [dx, ws]
+      args: [dx, vx]
     obj: max
     distn: truncated_gaussian
     title: "Relative direction of max wind"
   r30:
     init:
-      func: sum_n_hours # n=720 for 30 days
+      func: sum_30_days
       args: [tp]
     hfunc:
       func: mean
