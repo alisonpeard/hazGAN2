@@ -1,3 +1,4 @@
+# add any project-specific functions you want to source / overwrite here
 # custom method for cyclone extraction from existing csv
 
 suppressPackageStartupMessages({
@@ -8,49 +9,52 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-CYCLONE_DATES_PATH <- "../resources/cyclones_midlands.csv"
+input_path <- "../resources/cyclones_midlands.csv"
 
-identify_events <- function(daily, rfunc) {
-  args    <- rfunc$args
-  rfunc   <- match.fun(rfunc$func)
+identify_events <- function(daily, rfunc = NULL) {
 
-  # read text file with dates from ..resources/cyclones_midlands.txt 
-  event_data <- read.csv(CYCLONE_DATES_PATH)
-  event_data <- event_data[event_data$wind > 0.0,]
+  # read text file with dates from ..resources/cyclones_midlands.txt
+  event_data <- read.csv(input_path)
+  event_data <- event_data[event_data$wind > 0.0, ]
   event_data$time <- as.Date(event_data$date)
+  event_data$year <- format(event_data$time, "%Y")
   event_data$event <- as.numeric(factor(event_data$cyclone_id))
 
-  metadata <- inner_join(event_data[c("time", "wind", "event")], daily, by = "time")
-  times    <- metadata[, time]
-  metadata$variable <- metadata[, args]
-  variables <- metadata$variable
+  # assign event ids to daily data
+  metadata <- left_join(
+    daily,
+    event_data[c("time", "wind", "event")],
+    by = "time"
+  )
+
+  # clean up metadata
+  metadata$variable <- metadata[, "wind"]
   metadata <- metadata[, c("time", "event", "variable")]
 
-  # event stats
+  # extract event statistics
   events <- metadata |>
     group_by(event) |>
     mutate(
       event.size = n(),
-      max_val = max(variable) #! max wind speed (hfunc hardcoded here)
     ) |>
-    filter(variable == max_val) |>
-    group_by(event) |>
-    summarise(
-      variable = first(variable),
-      time = first(time),
-      event.size = first(event.size)
-    )
+    slice(which.max(variable)) |>
+    ungroup() |>
+    select(event, variable, time, event.size)
 
-  # Ljung-Box again
+  # Ljung-Box
   p <- Box.test(c(events$variable), type = "Ljung")$p.value
-  cat(paste0("Final Ljung-Box p-value: ", round(p, 4), '\n'))
+  cat(paste0(
+    "Correlation between event max wind speeds (Ljung-Box p-value): ",
+    round(p, 4),
+    "\n"
+  ))
 
-  # event frequency
+  # get event frequency
   m <- nrow(events)
   nyears <- length(unique(event_data$year))
   lambda <- m / nyears
   metadata$lambda <- lambda
-  cat(paste0("Number of events: ", m, '\n'))
+  cat(paste0("Number of events: ", m, "\n"))
 
   # assign return periods
   survival_prob <- 1 - (
@@ -63,7 +67,7 @@ identify_events <- function(daily, rfunc) {
   metadata <- left_join(metadata,
                         events[c("event", "event.rp", "event.size")],
                         by = c("event"))
-  metadata <- metadata |> rename_with(~ args, variable)
+  metadata <- metadata |> rename(wind = variable)
 
   return(metadata)
 }

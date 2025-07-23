@@ -6,8 +6,6 @@ suppressPackageStartupMessages({
   library(logger, quietly = TRUE)
 })
 
-source("workflow/src/R/hfuncs.R")
-
 `%ni%` <- Negate(`%in%`)
 
 ecdf <- function(x) {
@@ -32,7 +30,7 @@ scdf <- function(train, params, cdf){
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
   loc <- params$thresh
-  calculator <- function(x){
+  calculator <- function(x) {
     u <- ecdf(train)(x)
     pthresh <- ecdf(train)(loc)
     tail_mask <- x > loc
@@ -90,7 +88,7 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
   log_error(skip_formatter(error_report))
 }
 
-
+# this is the main function
 marginal_transformer <- function(df, metadata, var, q,
                                  hfunc = "max",
                                  hfunc_args = NULL,
@@ -174,7 +172,6 @@ marginal_transformer <- function(df, metadata, var, q,
       "\n\n"
     ))
 
-    hfunc     <- match.fun(paste0("hfunc_", hfunc))
     footprint <- hfunc(gridcell, hfunc_args)
 
     # check maxima statistics

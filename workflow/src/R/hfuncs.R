@@ -1,25 +1,24 @@
-hfunc_max <- function(gridcell, args){
+library(dplyr)
+# Expected gridcell columns: event, event.rp, time, grid
+
+hfunc_max <- function(gridcell, args) {
   res <- gridcell |>
     group_by(event) |>
     slice(which.max(get(args[1]))) |>
-    summarise(
-      variable = first(get(args[1])),
-      time = first(time),
-      event.rp = first(event.rp),
-      grid = first(grid),
-      .groups = "drop"
-    )
+    ungroup() |>
+    select(event, get(args[1]), time, event.rp, grid)
   return(res)
 }
 
 
-hfunc_sum <- function(gridcell, args){
+hfunc_sum <- function(gridcell, args) {
+  stopifnot(c("event", "event.rp", "time", "grid") %in% names(gridcell))
   res <- gridcell |>
     group_by(event) |>
     summarise(
       variable = sum(get(args[1])),
       time = first(time),
-      event.rp = first(event.rp),
+      event.rp = max(event.rp),
       grid = first(grid),
       .groups = "drop"
     )
@@ -27,16 +26,12 @@ hfunc_sum <- function(gridcell, args){
 }
 
 
-hfunc_arg2max <- function(gridcell, args){
+hfunc_arg2max <- function(gridcell, args) {
+  stopifnot(c("event", "event.rp", "time", "grid") %in% names(gridcell))
   res <- gridcell |>
     group_by(event) |>
     slice(which.max(get(args[2]))) |>
-    summarise(
-      variable = get(args[1]),
-      time = first(time),
-      event.rp = first(event.rp),
-      grid = first(grid),
-      .groups = "drop"
-    )
+    ungroup() |>
+    select(event, get(args[1]), time, event.rp, grid)
   return(res)
 }
