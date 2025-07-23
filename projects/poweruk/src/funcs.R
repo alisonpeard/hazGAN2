@@ -1,3 +1,5 @@
+# custom method for cyclone extraction from existing csv
+
 suppressPackageStartupMessages({
   library(extRemes)
   library(arrow)
@@ -12,7 +14,7 @@ identify_events <- function(daily, rfunc) {
   args    <- rfunc$args
   rfunc   <- match.fun(rfunc$func)
 
-  # read text file with dates from ..resources/cyclones_midlands.txt
+  # read text file with dates from ..resources/cyclones_midlands.txt 
   event_data <- read.csv(CYCLONE_DATES_PATH)
   event_data <- event_data[event_data$wind > 0.0,]
   event_data$time <- as.Date(event_data$date)

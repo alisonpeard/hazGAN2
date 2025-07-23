@@ -7,11 +7,13 @@ suppressPackageStartupMessages({
 source("workflow/src/R/stats.R")
 
 
-# if R functions are provided in params
-# replace functions in the global environment
+
+# If R functions are provided in params
+#  replace functions in the global environment
 # with those provided in the params
 # this allows for custom functions to be used
-# without modifying the source code
+# without modifying the source code.
+
 if (!is.null(snakemake@params[["R_funcs"]])) {
   param_funcs <- snakemake@params[["R_funcs"]]
   matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))
@@ -40,7 +42,7 @@ Q        <- snakemake@params[["q"]]
 daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
-# transform marginals (hardcoded for three fields) 
+# get functions and args for resampling time
 log_info("Transforming fields...")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
@@ -63,8 +65,9 @@ field_summary <- function(i) {
   )
 }
 
+# main: fit marginals and transform each field
 log_debug(field_summary(1))
-Q <- 0.95 # doesn't do anything
+
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
   hfunc = hfuncs[1], hfunc_vars = hfunc_vars[1], distn = distns[1],
@@ -73,6 +76,7 @@ events_field1 <- marginal_transformer(
 log_info(paste0("Finished fitting: ", fields[1]))
 
 log_debug(field_summary(2))
+
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q,
   hfunc = hfuncs[2], hfunc_vars = hfunc_vars[2], distn = distns[2],
@@ -81,6 +85,7 @@ events_field2 <- marginal_transformer(
 log_info(paste0("Finished fitting: ", fields[2]))
 
 log_debug(field_summary(3))
+
 events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q,
   hfunc = hfuncs[3], hfunc_vars = hfunc_vars[3], distn = distns[3], 
@@ -90,7 +95,7 @@ log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))
 
 # combine fields
 renamer <- function(df, var) {
- df <- df |>
+  df <- df |>
     rename_with(~ paste0(., ".", var),
                 -c("lat", "lon", "event", "event.rp", "variable"))
   df <- df |> rename_with(~ var, "variable")
@@ -98,6 +103,7 @@ renamer <- function(df, var) {
 }
 
 log_success("fit_marginals.R - Done. Putting it all together...")
+
 events_field1 <- renamer(events_field1, fields[1])
 events_field2 <- renamer(events_field2, fields[2])
 events_field3 <- renamer(events_field3, fields[3])
@@ -113,4 +119,6 @@ log_info("fit_marginals.R - Saving results...")
 write_parquet(events, OUTPUT)
 
 nevents <- length(unique(events$event))
-log_success(paste0("fit_marginals.R - Finished! ", nevents, " events processed."))
+log_success(paste0(
+  "fit_marginals.R - Finished! ", nevents, " events processed."
+))

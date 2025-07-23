@@ -15,17 +15,19 @@ long_names = {
     "sro": "surface_runoff" # accumulated
 }
 
-def parse_input_pattern(indir, field):
+def get_input_file(indir, field):
     """
     Parse the input pattern for the given field.
     """
     return os.path.join(indir, long_names[field], 'nc', '*.nc')
+
 
 def filter_files(files, year):
     """
     Filter the files for the given year.
     """
     return [f for f in files if str(year) in f]
+
 
 def clip_to_bbox(ds, xmin, xmax, ymin, ymax):
     """

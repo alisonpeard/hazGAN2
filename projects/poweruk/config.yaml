@@ -1,7 +1,7 @@
 dataset: era5
 year0: 1941
 yearn: 2023
-longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°)
+longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
   max: 4.875
 latitude:
@@ -21,36 +21,32 @@ domain: gumbel
 kimg: 300
 fields:
   vx:
-    func: identity
-    args:
-      - i10fg
+    init:
+      func: identity
+      args: [i10fg]
     hfunc:
       func: max
-      args: vx
+      args: [vx]
     obj: max
     distn: weibull
     title: "Maximum wind gust"
   dx:
-    func: direction
-    args:
-      - u10
-      - v10
-      - i10fg
+    init:
+      func: direction
+      args: [u10, v10, i10fg]
     hfunc:
       func: arg2max
-      args:
-        - dx
-        - ws
+      args: [dx, ws]
     obj: max
     distn: truncated_gaussian
     title: "Relative direction of max wind"
   r30:
-    func: sum_n_hours # n=720 for 30 days
-    args:
-      - tp
+    init:
+      func: sum_n_hours # n=720 for 30 days
+      args: [tp]
     hfunc:
       func: mean
-      args: r30
+      args: [r30]
     obj: max
     distn: genpareto # exponential (not implemented yet)
     title: "30-day antecedant rainfall"
