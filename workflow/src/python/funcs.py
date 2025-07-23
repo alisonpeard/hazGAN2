@@ -21,14 +21,14 @@ def identity(x:xr.Dataset, arg, **kwargs) -> xr.DataArray:
     return x[arg]
 
 
-def max(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+def max(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
     """
     Calculate the maximum value of a variable.
     """
     return ds[arg].max(dim="time", skipna=True)
 
 
-def arg2max(ds:xr.Dataset, arg1, arg2, **kwargs) -> xr.DataArray:
+def arg2max(ds:xr.Dataset, arg1, arg2, params={}) -> xr.DataArray:
     """
     Calculate the index of the maximum value of a variable.
     """
@@ -36,7 +36,7 @@ def arg2max(ds:xr.Dataset, arg1, arg2, **kwargs) -> xr.DataArray:
     return ds.isel(time=idx_max)[arg1]
 
 
-def mean(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+def mean(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
     """
     Calculate the mean value of a variable.
     """

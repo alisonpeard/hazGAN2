@@ -8,8 +8,9 @@ def convert_360_to_180(ds):
     return ds.sortby('longitude')
 
 
-def direction(u: xr.DataArray, v: xr.DataArray,
-              *args, **kwargs) -> xr.DataArray:
+def direction(ds:xr.Dataset, u:str, v:str,
+              params={}
+              ) -> xr.DataArray:
     """
     Calculate meteorological wind direction from ERA5 u and v components.
     
@@ -19,21 +20,15 @@ def direction(u: xr.DataArray, v: xr.DataArray,
     - 180° = South (wind from south)
     - 270° = West (wind from west)
     """
-    # Convert to meteorological wind direction (where wind comes FROM)
+    # Convert to meteorological wind direction (where wind comes FROM) 
+    u = ds[u]
+    v = ds[v]
     direction = (270 - np.arctan2(v, u) * 180 / np.pi) % 360
     return direction
 
 
-def sum_30_days(ds:xr.Dataset, arg, **kwargs) -> xr.DataArray:
+def sum_30_days(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
     """
     Sum an hourly variable over the last 30 days.
     """
     return ds[arg].rolling(time=720).sum().dropna(dim="time", how="all")
-
-
-def arg2max(ds:xr.Dataset, arg1, arg2, **kwargs) -> xr.DataArray:
-    """
-    Calculate the index of the maximum value of a variable.
-    """
-    idx_max = ds[arg2].argmax(dim="time")
-    return ds.isel(time=idx_max)[arg1]

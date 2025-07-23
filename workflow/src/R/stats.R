@@ -1,9 +1,9 @@
 suppressPackageStartupMessages({
-    library(dplyr, quietly = TRUE)
-    library(future, quietly = TRUE)
-    library(furrr, quietly = TRUE)
-    library(lubridate, quietly = TRUE)
-    library(logger, quietly = TRUE)
+  library(dplyr, quietly = TRUE)
+  library(future, quietly = TRUE)
+  library(furrr, quietly = TRUE)
+  library(lubridate, quietly = TRUE)
+  library(logger, quietly = TRUE)
 })
 
 source("workflow/src/R/hfuncs.R")
@@ -51,7 +51,9 @@ load_distn <- function(distn) {
 
   # check it exists
   if (!file.exists(module)) {
-    stop(paste("stats.R::load_distn - Module for distribution not found:", module))
+    stop(paste(
+      "stats.R::load_distn - Module for distribution not found:", module
+    ))
   }
 
   env <- new.env()
@@ -63,6 +65,7 @@ load_distn <- function(distn) {
   ))
 }
 
+
 format_stack_trace <- function(calls, max_depth = 10) {
   calls <- tail(calls, max_depth)
   formatted <- character(length(calls))
@@ -71,6 +74,7 @@ format_stack_trace <- function(calls, max_depth = 10) {
   }
   paste(formatted, collapse = "\n  ")
 }
+
 
 log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
   msg <- conditionMessage(error)
@@ -82,7 +86,7 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
     "===========================\n",
     "WARN: ", msg, "\n"
   )
-  
+
   log_error(skip_formatter(error_report))
 }
 
@@ -95,19 +99,19 @@ marginal_transformer <- function(df, metadata, var, q,
                                  log_file = tempfile(fileext = ".log"),
                                  log_level = INFO) {
 
-  # configure logging (again)
+  # reconfigure logging
   log_file <- as.character(log_file)
   log_appender(appender_file(log_file, append = TRUE))
   log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
   log_threshold(log_level)
 
-  # load functions for supplied distribution
+  # load functions for specified extremal distribution
   distn <- load_distn(distn)
 
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
 
-  #! make a grid for easy chunking
+  # make a grid for easy chunking
   log_info("Creating grid for chunking")
   df$grid <- paste(df$lat, df$lon, sep = "_")
   df$grid <- as.integer(factor(df$grid))
@@ -132,7 +136,7 @@ marginal_transformer <- function(df, metadata, var, q,
   }
   rm(df)
 
-  # setup multiprocessing, test with `plan(sequential)`
+  # setup multiprocessing
   ncores <- max(1, min(availableCores(), nchunks))
   plan(multisession, workers = ncores)
   log_debug(paste0("stats.R::marginal_transformer - Available cores: ", availableCores()))
@@ -164,31 +168,40 @@ marginal_transformer <- function(df, metadata, var, q,
       "Q99: ", quantile(gridcell[[var]], 0.99, na.rm = TRUE), "\n",
       "Median: ", median(gridcell[[var]], na.rm = TRUE), "\n",
       "SD: ", sd(gridcell[[var]], na.rm = TRUE), "\n\n",
-      "Vector (tail): ", paste0(tail(gridcell[[var]], 30), collapse = ", "), "\n\n"
+      "Vector (tail): ", paste0(tail(
+        gridcell[[var]], 30
+      ), collapse = ", "),
+      "\n\n"
     ))
 
     hfunc     <- match.fun(paste0("hfunc_", hfunc))
-    footprint <- hfunc(gridcell, hfunc_args) #!
+    footprint <- hfunc(gridcell, hfunc_args)
 
     # check maxima statistics
     log_debug(paste0(
-      "stats.R::fit_gridcell - Grouped (maxima) statistics\n",
+      "stats.R::fit_gridcell - Grouped (footprint) statistics\n",
       "==============================\n",
-      "N: ", nrow(maxima), "\n",
-      "Min: ", min(maxima$variable, na.rm = TRUE), "\n",
-      "Max: ", max(maxima$variable, na.rm = TRUE), "\n",
-      "Mean: ", mean(maxima$variable, na.rm = TRUE), "\n",
-      "Q70: ", quantile(maxima$variable, 0.7, na.rm = TRUE), "\n",
-      "Q95: ", quantile(maxima$variable, 0.95, na.rm = TRUE), "\n",
-      "Q99: ", quantile(maxima$variable, 0.99, na.rm = TRUE), "\n",
-      "Median: ", median(maxima$variable, na.rm = TRUE), "\n",
-      "SD: ", sd(maxima$variable, na.rm = TRUE), "\n\n",
-      "Vector (tail): ", paste0(tail(maxima$variable, 30), collapse = ", "), "\n\n"
+      "N: ", nrow(footprint), "\n",
+      "Min: ", min(footprint$variable, na.rm = TRUE), "\n",
+      "Max: ", max(footprint$variable, na.rm = TRUE), "\n",
+      "Mean: ", mean(footprint$variable, na.rm = TRUE), "\n",
+      "Q70: ", quantile(footprint$variable, 0.7, na.rm = TRUE), "\n",
+      "Q95: ", quantile(footprint$variable, 0.95, na.rm = TRUE), "\n",
+      "Q99: ", quantile(footprint$variable, 0.99, na.rm = TRUE), "\n",
+      "Median: ", median(footprint$variable, na.rm = TRUE), "\n",
+      "SD: ", sd(footprint$variable, na.rm = TRUE), "\n\n",
+      "Vector (tail): ", paste0(tail(
+        footprint$variable, 30
+      ), collapse = ", "),
+      "\n\n"
     ))
 
-    # Check for empty maxima early
-    if (nrow(maxima) == 0) {
-      log_warn(paste0("stats.R::fit_gridcell - Empty maxima dataframe for grid cell ", grid_i))
+    # Check for no footprints early
+    if (nrow(footprint) == 0) {
+      log_warn(paste0(
+        "stats.R::fit_gridcell - Empty footprint dataframe for grid cell ",
+        grid_i
+      ))
       # Create a 1-row dummy frame with all required columns
       return(data.frame(
         event = NA, variable = NA, time = NA, event.rp = NA,
@@ -198,10 +211,10 @@ marginal_transformer <- function(df, metadata, var, q,
     }
 
     # omit test years from fitting functions
-    if (exists("TEST.YEARS")) {
-      train <- maxima[year(maxima$time) %ni% TEST.YEARS,]
+    if (exists("TEST_YEARS")) {
+      train <- footprint[year(footprint$time) %ni% TEST_YEARS, ]
     } else {
-      train <- maxima
+      train <- footprint
     }
 
     # main fitting functions happen here
