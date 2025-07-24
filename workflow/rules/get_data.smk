@@ -1,7 +1,5 @@
 """
-Get ERA5 data from SoGE cluster. Run from repository root.
-
-NOTE: add GCS bucket methods too.
+Get ERA5 data from the SoGE cluster. Run from repository root.
 
 # environment set up
 >>> micromamba create -c conda-forge -c bioconda -n snakemake snakemake
@@ -13,6 +11,8 @@ install snakemake-executor-plugin-slurm
 >>> micromamba activate snakemake
 >>> snakemake --profile profiles/slurm/ --executor slurm get_data --use-conda --jobs 20
 """
+
+
 def get_param_file():
     """Get a parameter file for the project, or a grid file for the dataset."""
     if os.path.exists(os.path.join(RESOURCES_DIR, "params.nc")):
@@ -25,7 +25,9 @@ def get_param_file():
 
 
 rule get_all_years:
-    """Rule to process all years for the project.
+    """
+    Process all input years of input data for the project.
+
     >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 40
     """
     input:
@@ -54,7 +56,7 @@ rule get_year:
         ymax=config["latitude"]["max"],
         timecol=TIMECOL,
         fields=FIELDS,
-        dataset=DATASET
+        dataset=DATASET,
         antecedent_buffer_days=config.get("antecedent_buffer_days", None)
     resources:
         cpus_per_task=4,
