@@ -1,21 +1,30 @@
 """Test the get_data.py results for the year 2020."""
 # %%
 import os
+import glob
 import yaml
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import cmocean.cm as cmo
 
 if __name__ == "__main__":
 
     with open(os.path.join("..", "..", "config.yaml"), "r") as stream:
         config = yaml.safe_load(stream)
 
-    ds_path = os.path.join("..", "..", "results", "processing", "input", "2017.nc")
-    ds = xr.open_dataset(ds_path)
+    ds_files = glob.glob(os.path.join("..", "..", "results", "processing", "input", "*.nc"))
+    print(f"Found {len(ds_files)} files in the input directory.")
 
+    # %%
+    # ds_path = os.path.join("..", "..", "results", "processing", "input", "2017.nc")
+    ds = xr.open_mfdataset(ds_files)
+
+    if "expver" in ds.coords:
+        ds = ds.sel(expver=1)
+    # %%
     # for plotting
     ds["u"] = - ds.vx * np.sin(ds.dx)
     ds["v"] = - ds.vx * np.cos(ds.dx)
@@ -29,8 +38,8 @@ if __name__ == "__main__":
         fig, axs = plt.subplots(1, 2, subplot_kw={"projection": ccrs.PlateCarree()},
                                 figsize=(20, 8))
         
-        ds.isel(time=t).vx.plot(ax=axs[0], cmap="Spectral_r", cbar_kwargs={"label": "max gust speed (m/s)", "shrink":0.8})
-        ds.isel(time=t).r30.plot(ax=axs[1], cmap="PuBu", cbar_kwargs={"label": "30-day rainfall (m)", "shrink":0.8})
+        ds.isel(time=t).vx.plot(ax=axs[0], cmap=cmo.speed, cbar_kwargs={"label": "max gust speed (m/s)", "shrink":0.8})
+        ds.isel(time=t).r30.plot(ax=axs[1], cmap=cmo.rain, cbar_kwargs={"label": "30-day rainfall (m)", "shrink":0.8})
 
         resample = ds.isel(time=t,longitude=slice(None, None, 7), latitude=slice(None, None, 7))
         streamlines = resample.plot.streamplot(x='longitude', y='latitude', u='u', v='v', 
