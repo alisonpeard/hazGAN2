@@ -39,7 +39,7 @@ def main(input, output, params):
         for arg in args:
             input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
             arg_files = glob(input_file_pattern)
-            arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer=params.antecedent_buffer_days)
+            arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer_days=params.antecedent_buffer_days)
             input_files.update(arg_files)
 
     for i, file in enumerate(input_files):
@@ -56,13 +56,14 @@ def main(input, output, params):
             if params.timecol in ds.coords and params.timecol != "time":
                 ds = ds.rename({params.timecol: "time"})
             if params.antecedent_buffer_days:
-                buffer = np.timedelta64(params.antecedent_buffer_days, 'D')
-                ds = ds.sortby("time")
-                t0 = np.datetime64(f"{params.year}-01-01")
-                tn = np.datetime64(f"{params.year}-12-31")
-                t0 -= buffer
-                ds = ds.sel(time=slice(t0, tn))
-                logging.info(f"Clipped data to time range: {t0} to {tn}.")
+                if "time" in ds.coords:
+                    buffer = np.timedelta64(params.antecedent_buffer_days, 'D')
+                    ds = ds.sortby("time")
+                    t0 = np.datetime64(f"{params.year}-01-01")
+                    tn = np.datetime64(f"{params.year}-12-31")
+                    t0 -= buffer
+                    ds = ds.sel(time=slice(t0, tn))
+                    logging.info(f"Clipped data to time range: {t0} to {tn}.")
             return ds
 
         data = xr.open_mfdataset(
