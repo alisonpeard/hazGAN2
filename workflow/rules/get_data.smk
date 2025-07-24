@@ -55,6 +55,7 @@ rule get_year:
         timecol=TIMECOL,
         fields=FIELDS,
         dataset=DATASET
+        antecedent_buffer_days=config.get("antecedent_buffer_days", None)
     resources:
         cpus_per_task=4,
         # slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err" 

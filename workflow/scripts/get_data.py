@@ -4,6 +4,7 @@ Load gridded data from hourly netcdf files, resample to daily aggregates, and sa
 a single netcdf file in the target directory.
 """
 import os
+import numpy as np
 import sys
 from glob import glob
 import dask
@@ -38,7 +39,7 @@ def main(input, output, params):
         for arg in args:
             input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
             arg_files = glob(input_file_pattern)
-            arg_files = dataset.filter_files(arg_files, params.year)
+            arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer=params.antecedent_buffer_days)
             input_files.update(arg_files)
 
     for i, file in enumerate(input_files):
@@ -47,13 +48,21 @@ def main(input, output, params):
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
-            if params.timecol in ds.coords and params.timecol != "time":
-                ds = ds.rename({params.timecol: "time"})
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
             ds = dataset.clip_to_bbox(
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
+            if params.timecol in ds.coords and params.timecol != "time":
+                ds = ds.rename({params.timecol: "time"})
+            if params.antecedent_buffer_days:
+                buffer = np.timedelta64(params.antecedent_buffer_days, 'D')
+                ds = ds.sortby("time")
+                t0 = np.datetime64(f"{params.year}-01-01")
+                tn = np.datetime64(f"{params.year}-12-31")
+                t0 -= buffer
+                ds = ds.sel(time=slice(t0, tn))
+                logging.info(f"Clipped data to time range: {t0} to {tn}.")
             return ds
 
         data = xr.open_mfdataset(
