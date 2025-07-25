@@ -16,15 +16,6 @@ assert os.path.exists(WD), f"Project directory {WD} does not exist."
 # set up project environment
 os.environ["SNAKEMAKE_PROJECT"] = PROJECT
 
-# load the dates to select / exclude
-if config.get("rfuncs", None) is not None:
-    rfuncs = config["rfuncs"]
-    RFUNCS = os.path.join(WD, rfuncs)
-else:
-    RFUNCS = None
-
-EXCLUDE = config.get("exclude", None)
-
 # set up directories on device
 RESULTS_DIR    = os.path.join(WD, "results")
 RESOURCES_DIR  = os.path.join(WD, "resources")
@@ -66,7 +57,11 @@ MTHRESH    = config["marginal_threshold"]
 YEARS      = list(range(YEAR0, YEARN))
 KIMG       = config["kimg"]
 TIMECOL    = config['setup'][DEVICE]["timecol"]
-RFUNCS     = config.get("R_funcs", None)
+RFUNCS     = config["rfuncs_dir"]
+RFUNCS     = os.path.join(WD, RFUNCS) if RFUNCS else None
+
+# load the dates to select / exclude
+EXCLUDE = config.get("exclude", None)
 
 # load rules
 include: "rules/get_data.smk" # commenting this out to avoid rerun on local
