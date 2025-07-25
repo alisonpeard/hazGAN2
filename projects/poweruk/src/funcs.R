@@ -9,10 +9,9 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-input_path <- "../resources/cyclones_midlands.csv"
+input_path <- "projects/poweruk/resources/cyclones_midlands.csv"
 
 identify_events <- function(daily, rfunc = NULL) {
-
   # read text file with dates from ..resources/cyclones_midlands.txt
   event_data <- read.csv(input_path)
   event_data <- event_data[event_data$wind > 0.0, ]
@@ -26,10 +25,14 @@ identify_events <- function(daily, rfunc = NULL) {
     event_data[c("time", "wind", "event")],
     by = "time"
   )
+  if (is.null(metadata$event)) {
+    stop("No events found in the data")
+  }
 
   # clean up metadata
-  metadata$variable <- metadata[, "wind"]
+  metadata <- rename(metadata, variable = "wind")
   metadata <- metadata[, c("time", "event", "variable")]
+  print(head(metadata))
 
   # extract event statistics
   events <- metadata |>

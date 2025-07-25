@@ -96,6 +96,9 @@ rule extract_events:
         rfunc: str
             Any function that can be fed into aggregate(). Standard
             or defined in utils.R.
+        R_funcs: 
+    
+    >>> snakemake --profile profiles/cluster projects/poweruk/results/processing/event_metadata.parquet
     """
     input:
         netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
@@ -113,7 +116,7 @@ rule extract_events:
         fields=FIELDS,
         rfunc=RFUNC,
         sfunc=SFUNC,
-        R_funcs=RFUNCS,
+        R_funcs=RFUNCS
     resources:
         cpus_per_task=4
     conda:
@@ -146,7 +149,9 @@ rule concatenate_data:
 
 
 rule resample_year:
-    """Resample the data to the desired resolution."""
+    """Resample the data to the desired resolution.
+    >>> snakemake --profile profiles/cluster/ projects/poweruk/results/processing/resampled/2017.nc
+    """
     input:
         netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     output:

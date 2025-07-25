@@ -10,24 +10,20 @@ suppressPackageStartupMessages({
 
 source("workflow/src/R/dfuncs.R")
 source("workflow/src/R/sfuncs.R")
+source("workflow/src/R/rfuncs.R")
 
-# if R functions are provided in params
-# replace functions in the global environment
-# with those provided in the params
-# this allows for custom functions to be used
-# without modifying the source code
 if (!is.null(snakemake@params[["R_funcs"]])) {
-  param_funcs <- snakemake@params[["R_funcs"]]
-  matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))
-  for (name in matching_names) {
-    assign(name, param_funcs[[name]], envir = .GlobalEnv)
-  }
+  # overwrite with any custom functions defined in project/src/funcs.R
+  rfunc_file <- snakemake@params[["R_funcs"]]
+  source(rfunc_file)
 }
 
 # configure logging
 log_appender(appender_file(snakemake@log[["file"]]))
+log_appender(appender_stdout(lines = 1))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
+
 
 # load snakemake config
 log_info("Loading snakemake config...")
@@ -95,7 +91,7 @@ for (k in seq_along(FIELD_NAMES)) {
 }
 
 # ====== 2.EXTRACT EVENTS ======================================================
-log_info("Extracting events") # (dfuncs)
+log_info("Extracting events")
 metadata <- identify_events(daily, RFUNC)
 
 # ====== 3.SAVE RESULTS ========================================================

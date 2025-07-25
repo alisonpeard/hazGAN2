@@ -1,5 +1,5 @@
 dataset: era5
-year0: 2004
+year0: 2017 # 2004
 yearn: 2018
 antecedent_buffer_days: 30
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
@@ -15,7 +15,9 @@ resolution:
 sfunc: additive 
 rfunc:
   args:
-  func: NULL
+  func: dummy
+  desc: using custom func defined in src/funcs.R
+rfuncs_dir: src/funcs.R
 event_subset:
 marginal_threshold: 0.95
 domain: gumbel
@@ -28,6 +30,8 @@ fields:
     hfunc:
       func: max
       args: [vx]
+    resample:
+      func: average
     obj: max
     distn: weibull
     title: "Maximum wind gust"
@@ -38,6 +42,8 @@ fields:
     hfunc:
       func: arg2max
       args: [dx, vx]
+    resample:
+      func: average
     obj: max
     distn: genpareto # extremes in both directions matter... workshop this
     title: "Relative direction of max wind"
@@ -48,10 +54,10 @@ fields:
     hfunc:
       func: mean
       args: [r30]
+    resample:
+      func: average
     obj: max
     distn: genpareto # exponential (not implemented yet)
     title: "30-day antecedant rainfall"
 points_of_interest:
 local_crs: 27700 # https://epsg.io/27700
-rfuncs:
-  - src/funcs.R
