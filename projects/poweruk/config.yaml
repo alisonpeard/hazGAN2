@@ -1,13 +1,13 @@
 dataset: era5
-year0: 2017 # 2004
+year0: 2004
 yearn: 2018
 antecedent_buffer_days: 30
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
-  max: 4.875
+  max: 5.125
 latitude:
-  min: 49.25
-  max: 65.0
+  min: 49.0
+  max: 64.75
 exclude:
 resolution:
   lon: 64
