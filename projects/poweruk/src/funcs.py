@@ -34,12 +34,14 @@ def direction(ds:xr.Dataset, u:str, v:str,
 
 def sum_30_days(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
     """
-    Sum an hourly variable over the last 30 days.
+    Sum an hourly variable over the last 30 days. Remove NaNs.
     """
-    ds = ds.sortby("time")
     t0 = ds["time"].min().data
     tn = ds["time"].max().data
     t30 = t0 + np.timedelta64(30, 'D')
-    r30 = ds[arg].rolling(time=720).sum().dropna(dim="time", how="all")
+    ds = ds.sortby("time")
+
+    r30 = ds[arg].rolling(time=720).sum()
     r30 = r30.sel(time=slice(t30, tn))
+
     return r30

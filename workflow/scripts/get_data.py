@@ -20,16 +20,17 @@ VERIFY_TIME_ENCODING = True  # enable for dev only
 
 def log_data_summary(data):
     """Log a summary of the data."""
-    logging.info("\n\nData summary:")
-    logging.info(f"Data dimensions: {data.dims}")
-    logging.info(f"Data coordinates: {data.coords}")
-    logging.info(f"Data size: {data.nbytes * 1e-6:.2f} MB")
-    logging.info(f"Data variables: {data.data_vars}\n")
+    text = f"Data summary:\n\n"
+    text += f"Dimensions: {data.dims}\n"
+    text += f"Coordinates: {data.coords}\n"
+    text += f"Size: {data.nbytes * 1e-6:.2f} MB\n"
+    text += f"Variables: {data.data_vars}\n\n"
+    logging.info(text)
 
 
 def main(input, output, params):
     """Load data variables and process to daily aggregates."""
-    logging.info("Starting data acquisition script.")
+    logging.info("Starting data acquisition script.\n")
     start = time.time()
     dataset = getattr(datasets, params.dataset)
 
@@ -55,15 +56,9 @@ def main(input, output, params):
             )
             if params.timecol in ds.coords and params.timecol != "time":
                 ds = ds.rename({params.timecol: "time"})
-            if params.antecedent_buffer_days:
-                if "time" in ds.coords:
-                    buffer = np.timedelta64(params.antecedent_buffer_days, 'D')
-                    ds = ds.sortby("time")
-                    t0 = np.datetime64(f"{params.year}-01-01")
-                    tn = np.datetime64(f"{params.year}-12-31")
-                    t0 -= buffer
-                    ds = ds.sel(time=slice(t0, tn))
-                    logging.info(f"Clipped data to time range: {t0} to {tn}.")
+
+            ds = dataset.preprocess(ds)
+
             return ds
 
         data = xr.open_mfdataset(
@@ -75,19 +70,35 @@ def main(input, output, params):
                 'longitude': '500MB',
                 'latitude': '500MB'
                 })
+    
+    logging.info("Computing data variables...")
     log_data_summary(data)
 
-    # select expver=1 is expver in coords
-    if "expver" in data.coords:
-        logging.info("\nSelecting expver=1 (ERA5).")
-        data = data.drop_vars('expver')
-        log_data_summary(data)
+    if params.antecedent_buffer_days:
+        t0 = data["time"].min().data
+        tn = data["time"].max().data
 
-    logging.info(f"\nLoading parameters from {input.params}.")
+        logging.info(f"Data time range: {t0} to {tn}.")
+
+        buffer = np.timedelta64(params.antecedent_buffer_days+1, 'D')
+        data = data.sortby("time")
+        t0 = np.datetime64(f"{params.year}-01-01")
+        tn = np.datetime64(f"{params.year}-12-31")
+        t0 -= buffer
+        data = data.sel(time=slice(t0, tn))
+        
+        logging.info(f"Clipped data to time range: {t0} to {tn}.")
+        
+        t0 = data["time"].min().data
+        tn = data["time"].max().data
+
+        logging.info(f"Data time range: {t0} to {tn}.")
+
+    logging.info(f"Loading parameters from {input.params}.\n")
     theta = xr.open_dataset(input.params)
     theta = preprocess(theta)
 
-    logging.info("\nResampling data to daily aggregates.")
+    logging.info("Resampling data to daily aggregates.\n")
     resampled = {}
     for field, config in params.fields.items():
         func       = config["init"]["func"]
@@ -104,6 +115,17 @@ def main(input, output, params):
         )
     
     data_resampled = xr.Dataset(resampled)
+    data_resampled = data_resampled.chunk({
+        'time': 30,
+        'latitude': -1, 
+        'longitude': -1
+    })
+
+    if params.antecedent_buffer_days:
+        t0 = np.datetime64(f"{params.year}-01-01")
+        tn = np.datetime64(f"{params.year}-12-31")
+        data_resampled = data_resampled.sel(time=slice(t0, tn))
+
     log_data_summary(data_resampled)
 
     # data export settings
@@ -111,9 +133,9 @@ def main(input, output, params):
     encoding = {var: compression for var in data_resampled.data_vars}
 
     # save data to netcdf
-    logging.info(f"\n\nSaving data to {output.netcdf}")
-    data_resampled.to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
-    logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB")
+    logging.info(f"Saving data to {output.netcdf}\n")
+    data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+    logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
 
     data.close()
     data_resampled.close()
