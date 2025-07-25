@@ -24,6 +24,7 @@ import xarray as xr
 import cmocean.cm as cmo
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from windrose import WindroseAxes
 import matplotlib.pyplot as plt
 
 
