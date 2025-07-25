@@ -116,8 +116,8 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    # %% visualise average over all time
-    ds_mean = ds.mean(dim="time")
+    # %% visualise median over all time
+    ds_mean = ds.median(dim="time")
     fig, axs = plt.subplots(1, 2, subplot_kw={"projection": ccrs.PlateCarree()},
                             figsize=(14, 6), sharex=True, sharey=True)
     ds_mean.vx.plot.contourf(ax=axs[0], cmap=cmo.speed, levels=50, cbar_kwargs={"label": "max gust speed (m/s)", "shrink": 0.6})

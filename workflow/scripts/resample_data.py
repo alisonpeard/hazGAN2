@@ -44,7 +44,7 @@ if __name__ == "__main__":
     resampled_datasets = []
     for field, methods in FIELDS.items():
         # sample field
-        method = methods["hfunc"]
+        method = methods["resample"]["func"]
         tmpfile = OUTPUT.replace('.nc', f'_{field}.nc')
 
         command = f'gdalwarp -t_srs EPSG:4326 -ts {RESX} {RESY} -r {method} -overwrite -of netCDF NETCDF:"{INPUT}":{field} {tmpfile}'
