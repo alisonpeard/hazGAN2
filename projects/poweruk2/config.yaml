@@ -41,11 +41,11 @@ fields:
       args: [v10]
     hfunc:
       func: l2norm_argmax
-      args: [dx, vx]
+      args: [v10, u10]
     resample:
       func: max
     obj: max
-    distn: weibull # extremes in both directions matter... workshop this
+    distn: weibull
     title: "Maximum northward component of 10 m wind"
   r30:
     init:
