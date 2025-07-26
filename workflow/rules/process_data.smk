@@ -54,7 +54,8 @@ rule make_training_data:
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
-        fields=FIELDS
+        fields=FIELDS,
+        marginals=MARGINALS
     conda:
         GEOENV
     log:

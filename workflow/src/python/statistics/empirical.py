@@ -4,7 +4,6 @@ from scipy.stats import genpareto
 from scipy.stats import weibull_min as weibull
 
 # %%
-# the following functions are simple wrappers for the classes below
 def ecdf(x:np.ndarray, *args, **kwargs) -> callable:
     """Simple wrapper to mimic R ecdf."""
     return Empirical(x).forward
@@ -15,19 +14,34 @@ def quantile(x:np.ndarray, *args, **kwargs) -> callable:
     return Empirical(x).inverse
 
 
-def semiparametric_cdf(x, params, distn="genpareto", *args, **kwargs) -> callable:
+def semiparametric_cdf(x, params, distn="genpareto", two_tailed=False, *args, **kwargs) -> callable:
     """Semi-parametric CDF."""
-    loc, scale, shape = params
-    return SemiParametric(x, loc, scale, shape, distn=distn).forward
+    if not two_tailed:
+        assert len(params) == 3, "Semi-parametric CDF requires 3 parameters."
+        loc, scale, shape = params
+        return SemiParametric(x, loc, scale, shape, distn=distn).forward
+    else:
+        assert len(params) == 6, "Two-tailed semi-parametric CDF requires 6 parameters."
+        raise NotImplementedError(
+            "Two-tailed semi-parametric CDF not implemented yet."
+        )
 
 
-def semiparametric_quantile(u, params, distn="genpareto", *args, **kwargs) -> callable:
+def semiparametric_quantile(u, params, distn="genpareto", two_tailed=False, *args, **kwargs) -> callable:
     """Semi-parametric quantile."""
-    loc, scale, shape = params
-    return SemiParametric(u, loc, scale, shape, distn=distn).inverse
+    if not two_tailed:
+        assert len(params) == 3, "Semi-parametric quantile requires 3 parameters."
+        loc, scale, shape = params
+        return SemiParametric(u, loc, scale, shape, distn=distn).inverse
+    else:
+        assert len(params) == 6, "Two-tailed semi-parametric quantile requires 6 parameters."
+        loc_upper, scale_upper, shape_upper = params[:3]
+        loc_lower, scale_lower, shape_lower = params[3:]
+        raise NotImplementedError(
+            "Two-tailed semi-parametric quantile not implemented yet."
+        )
 
 
-# class definitions
 class Empirical(object):
     """Empirical distribution object.
     
@@ -111,8 +125,6 @@ class SemiParametric(Empirical):
         self.scale = scale
         self.shape = shape
 
-        if distn == "weibull":
-            warn("Weibull inverse transform hasn't been checked yet.")
         self.distn = globals().get(distn)
 
         self.ecdf = super()._ecdf()
@@ -195,6 +207,142 @@ class SemiParametric(Empirical):
 
         return x
     
+
+class TwoTailedSemiParametric(Empirical):
+    """Two-tailed semi-empirical GPD distribution object."""
+    def __init__(self, x,
+                 loc_upper=0, scale_upper=1, shape_upper=1,
+                 loc_lower=0, scale_lower=1, shape_lower=1,
+                 distn="genpareto",
+                 alpha=0, beta=0) -> None:
+        super().__init__(x, alpha, beta)
+
+        self.loc_upper = loc_upper
+        self.scale_upper = scale_upper
+        self.shape_upper = shape_upper
+        self.loc_lower = loc_lower
+        self.scale_lower = scale_lower
+        self.shape_lower = shape_lower
+
+        self.distn = globals().get(distn)
+
+        self.ecdf = super()._ecdf()
+        self.quantile = super()._quantile()
+
+        self.forward = self._semicdf
+        self.inverse = self._semiquantile
+
+
+    def _semicdf(self, x) -> np.ndarray:
+        r"""(1.3) H&T for $\xi \leq 0$ and upper tail."""
+        # empirical base
+        u = self.ecdf(x)
+
+        if np.isfinite(self.loc_upper):
+            # parametric tail
+            loc_u = self.ecdf(self.loc_upper)
+            tail_mask = x > self.loc_upper
+            tail_x = x[tail_mask]
+
+            tail_fit = self.distn.cdf(
+                tail_x, self.shape_upper, loc=self.loc_upper, scale=self.scale_upper
+                )
+            tail_u = 1 - (1 - loc_u) * (1 - tail_fit)
+            u[tail_mask] = tail_u
+
+            try:
+                assert np.isfinite(u).all(), "Non-finite values in CDF."
+                assert not np.isnan(u).any(), "NaN values in CDF."
+
+                if self.shape < 0:
+                    assert (u <= 1).all(), "CDF values above 1."
+                    assert (u > 0).all(), "CDF values ≤ 0."
+                else:
+                    assert (u >= 0).all(), "CDF values below 0."
+                    assert (u < 1).all(), "CDF values ≥ 1."
+            
+            except AssertionError as e:
+                print(e)
+                print("x: ", min(x), max(x))
+                print("u: ", min(u), max(u))
+                print("loc: ", self.loc)
+                print("scale: ", self.scale)
+                print("shape: ", self.shape)
+                raise e
+            
+        if np.isfinite(self.loc_lower):
+            # parametric tail
+            loc_u = self.ecdf(self.loc_lower)
+            tail_mask = x < self.loc_lower
+            tail_x = -x[tail_mask]
+
+            tail_fit = self.distn.cdf(
+                tail_x, self.shape_lower, loc=self.loc_lower, scale=self.scale_lower
+                )
+            
+            tail_u = loc_u * (1 - tail_fit)
+            u[tail_mask] = tail_u
+
+            try:
+                assert np.isfinite(u).all(), "Non-finite values in CDF."
+                assert not np.isnan(u).any(), "NaN values in CDF."
+
+                if self.shape < 0:
+                    assert (u <= 1).all(), "CDF values above 1."
+                    assert (u > 0).all(), "CDF values ≤ 0."
+                else:
+                    assert (u >= 0).all(), "CDF values below 0."
+                    assert (u < 1).all(), "CDF values ≥ 1."
+            
+            except AssertionError as e:
+                print(e)
+                print("x: ", min(x), max(x))
+                print("u: ", min(u), max(u))
+                print("loc: ", self.loc)
+                print("scale: ", self.scale)
+                print("shape: ", self.shape)
+                raise e
+
+        return u
+
+
+    def _semiquantile(self, u) -> np.ndarray:
+        # empirical base
+        x = self.quantile(u)
+
+        # check parameters are not NaN
+        if np.isfinite(self.loc):
+            # parametric tail
+            loc_u = self.ecdf(self.loc)
+            tail_mask = u > loc_u
+            tail_u = u[tail_mask]
+
+            tail_u = 1 - (tail_u / loc_u)
+            tail_x = self.distn.ppf(
+                tail_u, self.shape_lower, loc=self.loc_lower, scale=self.scale_lower
+                )
+
+            x[tail_mask] = tail_x
+
+            try:
+                assert np.isfinite(x).all(), "Non-finite values in quantile function."
+                assert not np.isnan(x).any(), "NaN values in quantile function."
+
+            except AssertionError as e:
+                # debugging statements
+                print("u: ", min(u), max(u))
+                print("x: ", min(x), max(x))
+                print("loc: ", self.loc)
+                print("scale: ", self.scale)
+                print("shape: ", self.shape)
+                print("(1 - loc_u).min(): ", (1 - loc_u).min())
+                print("tail_fit min: ", min(tail_x))
+                print("tail_fit max: ", max(tail_x))
+                print("multiplicative constant: ", 1 - ((1 - tail_u) / (1 - loc_u)))
+                raise e
+
+        return x
+
 
 class GenPareto(SemiParametric):
     def __init__(self, x, loc=0, scale=1, shape=1, alpha=0, beta=0) -> None:

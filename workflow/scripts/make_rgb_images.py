@@ -9,6 +9,7 @@ import zipfile
 import numpy as np
 import logging
 
+import src.python.statistics as stats
 
 def apply_colormap(grayscale_array, colormap_name='Spectral_r'):
     normalized = grayscale_array.astype(float) / 255
@@ -16,6 +17,7 @@ def apply_colormap(grayscale_array, colormap_name='Spectral_r'):
     colored = colormap(normalized)
     rgb_uint8 = np.uint8(colored[..., :3] * 255)
     return rgb_uint8
+
 
 if __name__ == "__main__":
     # TODO: 1. make extreme extraction optional
@@ -38,7 +40,6 @@ if __name__ == "__main__":
     # load data
     ds = xr.open_dataset(DATA)
     assert ds.uniform.shape[1:] == (RESX, RESY, 3), f"Unexpected shape: {ds.uniform.shape}"
-
 
     # Make a more extreme dataset
     if DO_SUBSET:
@@ -63,10 +64,10 @@ if __name__ == "__main__":
 
     assert array.shape[1:] == (RESX, RESY, 3), f"Unexpected shape: {array.shape}"
 
-    # rescale to (0, 1) if data is Gumbel distributed
-    if DOMAIN == "gumbel":
+    # rescale to (0, 1) if domain is not uniform
+    if DOMAIN is not None:
         array = np.clip(array, EPS, 1-EPS) # Avoid log(0)
-        array = -np.log(-np.log(array))
+        array = getattr(stats, DOMAIN)(array)
         array_min = np.min(array, axis=(0, 1, 2), keepdims=True)
         array_max = np.max(array, axis=(0, 1, 2), keepdims=True)
         n = len(array)

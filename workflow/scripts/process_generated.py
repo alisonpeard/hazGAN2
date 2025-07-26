@@ -9,7 +9,8 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-from src.python.statistics import gumbel, inv_gumbel, invPIT
+# from src.python.statistics import gumbel, inv_yumbel, invPIT
+import src.python.statistics as stats
 
 if __name__ == "__main__":
     # configure logging
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     THRESH      = snakemake.params.event_subset
     FIELDS      = snakemake.params.fields
     OUTPUT      = snakemake.output.netcdf
+    DOMAIN   = snakemake.params.domain
 
     TRAIN_DIR   = snakemake.input.training_dir
     OUT_TRAIN   = snakemake.output.train
@@ -62,18 +64,21 @@ if __name__ == "__main__":
     image_range  = image_maxima - image_minima
     logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
 
-    # rescale images to Gumbel scale
-    images_g = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    images_u = inv_gumbel(images_g)    # np.exp(-np.exp(-images_g))
+    transform = getattr(stats, DOMAIN)
+    inv_transform = getattr(stats, f"inv_{DOMAIN}")
+
+    # rescale images to marginals scale
+    images_y = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    images_u = transform(images_y)    # np.exp(-np.exp(-images_y))
 
     # flip back y-axis (latitude)
-    images_g = np.flip(images_g, axis=1) # flip y-axis (latitude)
+    images_y = np.flip(images_y, axis=1) # flip y-axis (latitude)
     images_u = np.flip(images_u, axis=1) # flip y-axis (latitude)
 
     # rescale train in same way
-    compare_g = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    compare_u = inv_gumbel(compare_g) # np.exp(-np.exp(-train_g))
-    compare_g = np.flip(compare_g, axis=1) # flip y-axis (latitude)
+    compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    compare_u = inv_transform(compare_y) # np.exp(-np.exp(-train_y))
+    compare_y = np.flip(compare_y, axis=1) # flip y-axis (latitude)
     compare_u = np.flip(compare_u, axis=1) # flip y-axis (latitude)
 
     #!! TODO: finish here !
@@ -92,7 +97,7 @@ if __name__ == "__main__":
     train   = train.sortby("intensity", ascending=False)
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
-    train_g = gumbel(train_u)
+    train_y = transform(train_u)
     params  = train["params"].values
     logging.info(f"Loaded anomaly training data of shape {train_x.shape}.")
     logging.info(f"Loaded uniform traingin data of shape {train_u.shape}.")
@@ -111,14 +116,15 @@ if __name__ == "__main__":
 
     # transform images to original scale using invPIT
     distns = [field['distn'] for field in FIELDS.values()]
-    images_x = invPIT(images_u, train_x, params, distns=distns)
-    compare_x = invPIT(compare_u, train_x, params, distns=distns)
+    two_tailed = [field['two_tailed'] for field in FIELDS.values()]
+    images_x = stats.invPIT(images_u, train_x, params, distns=distns, two_tailed=two_tailed)
+    compare_x = stats.invPIT(compare_u, train_x, params, distns=distns, two_tailed=two_tailed)
 
     # save to NetCDF
     data = xr.Dataset(
         {
             "anomaly": (("time", "lat", "lon", "field"), images_x),
-            "gumbel": (("time", "lat", "lon", "field"), images_g),
+            "gumbel": (("time", "lat", "lon", "field"), images_y),
             "uniform": (("time", "lat", "lon", "field"), images_u),
             "params": (("lat", "lon", "param", "field"), params),
         },
@@ -139,12 +145,12 @@ if __name__ == "__main__":
     compare_data = xr.Dataset(
         {
             "anomaly": (("time", "lat", "lon", "field"), compare_x),
-            "gumbel": (("time", "lat", "lon", "field"), compare_g),
+            "gumbel": (("time", "lat", "lon", "field"), compare_y),
             "uniform": (("time", "lat", "lon", "field"), compare_u),
         },
         coords={
             "field": list(FIELDS.keys()),
-            "time": (("time"), np.arange(compare_g.shape[0])),
+            "time": (("time"), np.arange(compare_y.shape[0])),
             "lat": (("lat"), train["lat"].values),
             "lon": (("lon"), train["lon"].values),
         },

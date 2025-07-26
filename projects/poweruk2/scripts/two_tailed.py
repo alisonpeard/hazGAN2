@@ -38,7 +38,7 @@ if __name__ == "__main__":
     ax.hist(y, **hist_kws, label="Laplace", color="orange", alpha=0.5);
     ax.hist(y0, **hist_kws, label="Gumbel", color="red", alpha=0.5);
     ax.hist(y1, **hist_kws, label="Gumbel (negative)", color="yellow", alpha=0.5);
-    # ax.hist(y3, **hist_kws, label="Gumbel (difference)", color="brown", alpha=0.5);
+
     ax = axs[0, 2]
     ax.hist(y, **hist_kws, label="Laplace", color="orange", alpha=0.5);
     ax.hist(y0, **hist_kws, label="Gumbel", color="red", alpha=0.5);
