@@ -34,6 +34,7 @@ fields:
       func: max
     obj: max
     distn: weibull
+    two_tailed: True
     title: "Maximum eastward component of 10 m wind"
   v10:
     init:
@@ -46,6 +47,7 @@ fields:
       func: max
     obj: max
     distn: weibull
+    two_tailed: True
     title: "Maximum northward component of 10 m wind"
   r30:
     init:
@@ -58,6 +60,7 @@ fields:
       func: average
     obj: max
     distn: genpareto # exponential (not implemented yet)
+    two_tailed: False
     title: "30-day antecedant rainfall"
 points_of_interest:
 local_crs: 27700 # https://epsg.io/27700

@@ -117,13 +117,61 @@ if __name__ == "__main__":
     # TODO: add checks here of lifetime max / total
     logging.warning("Lifetime max / total not checked")
     
-    gpd_params = ([f"thresh_{var}" for var in FIELDS] + [f"scale_{var}" for var in FIELDS] + [f"shape_{var}" for var in FIELDS])
-    gdf_params = (gdf[[*gpd_params, "lon", "lat"]].groupby(["lat", "lon"]).mean().reset_index())
-    thresh = np.array(gdf_params[[f"thresh_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    scale = np.array(gdf_params[[f"scale_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    shape = np.array(gdf_params[[f"shape_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-    params = np.stack([thresh, scale, shape], axis=-2)
-    logging.info("Parameters shape: {}".format(params.shape))
+    if False: # old
+        gpd_params = ([f"thresh_{var}" for var in FIELDS] + [f"scale_{var}" for var in FIELDS] + [f"shape_{var}" for var in FIELDS])
+        gdf_params = (gdf[[*gpd_params, "lon", "lat"]].groupby(["lat", "lon"]).mean().reset_index())
+        thresh = np.array(gdf_params[[f"thresh_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
+        scale = np.array(gdf_params[[f"scale_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
+        shape = np.array(gdf_params[[f"shape_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
+        params = np.stack([thresh, scale, shape], axis=-2)
+        logging.info("Parameters shape: {}".format(params.shape))
+
+
+    # %% dev
+    import pandas as pd
+    import numpy as np
+
+    param_cols = [
+        "thresh_u10_lower", "thresh_u10_upper", "thresh_r30", "thresh_v10",
+        "scale_u10_lower", "scale_u10_upper", "scale_r30", "scale_v10",
+        "shape_u10_lower", "shape_u10_upper", "shape_r30", "shape_v10"
+        ]
+    
+    FIELDS = ["u10", "v10", "r30"]
+
+    param_prefixes = ["thresh_", "scale_", "shape_"]
+    param_suffixes = ["", "_lower", "_upper"]
+
+
+    # make params H x W x 6 x K of np.nan
+    ny, nx = 64, 64
+    nfields = len(FIELDS)
+    params = np.full((ny, nx, 6, nfields), np.nan, dtype=np.float32)
+
+
+    gdf = np.random.random((ny*nx, len(param_cols) + 2))
+    gdf = pd.DataFrame(gdf, columns=["lat", "lon"] + param_cols)
+
+    for k, field in enumerate(FIELDS):
+        for i, suffix in enumerate(param_suffixes):
+            for j, prefix in enumerate(param_prefixes):
+                param_col = f"{prefix}{field}{suffix}"
+                print(f"{i=}, {j=}, {param_col=}, {param_col in gdf.columns=}")
+                if param_col in gdf.columns:
+
+                    gdf_param = gdf[[param_col] + ["lat", "lon"]]
+                    gdf_param = gdf_param.groupby(["lat", "lon"]).mean().reset_index()
+                    param = gdf_param[param_col].values.reshape([ny, nx])
+
+                    
+                    _i = 3 * [0, 1, 0][i]
+                    print(f"{_i=}, {_i+j=}, {params.shape=}")
+                    params[:, :, j + _i, k] = param
+
+    params
+
+
+    # %%
 
     # make an xarray dataset for training
     ds = xr.Dataset({'uniform': (['time', 'lat', 'lon', 'field'], U1),
@@ -155,3 +203,5 @@ if __name__ == "__main__":
     logging.info("Saved to {}".format(OUTPUT))
 
     
+# %%
+# %%

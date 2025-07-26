@@ -42,6 +42,7 @@ if __name__ == "__main__":
     data   = xr.open_dataset(DATA)
     params = data["params"].values
     distns = [field["distn"] for field in FIELDS.values()]
+    two_tailed = [field.get("two_tailed", False) for field in FIELDS.values()]
 
     nyears  = YEARN - YEAR0
     h, w, c = RESY, RESX, 3
@@ -57,7 +58,7 @@ if __name__ == "__main__":
 
     # make totally independent samples (sample from base distribution)
     independent_u = np.random.uniform(1e-6, 1-1e-6, size=(nevents, h, w, c))
-    independent_x = statistics.invPIT(independent_u, x, params, distns=distns) # bottleneck
+    independent_x = statistics.invPIT(independent_u, x, params, distns=distns, two_tailed=two_tailed) # bottleneck
 
     independent_ds = xr.Dataset(
         data_vars={
@@ -82,7 +83,7 @@ if __name__ == "__main__":
     dependent_u   = 1 - dependent_survival
     dependent_u   = np.repeat(dependent_u, h*w*c, axis=0)
     dependent_u   = dependent_u.reshape(nrps, h, w, c)
-    dependent_x   = statistics.invPIT(dependent_u, x, params, distns=distns)
+    dependent_x   = statistics.invPIT(dependent_u, x, params, distns=distns, two_tailed=two_tailed)
 
     dependent_ds = xr.Dataset(
         data_vars={
@@ -99,7 +100,6 @@ if __name__ == "__main__":
         },
     )
     logging.info(f"Finished dependent dataset")
-
     logging.info(f"Dependent dataset shape: {dependent_ds.anomaly.shape}")
     logging.info(f"Independent dataset shape: {independent_ds.anomaly.shape}")
 

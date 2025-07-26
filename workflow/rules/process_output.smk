@@ -17,7 +17,8 @@ rule process_generated:
         resy=RESOLUTION['lat'],
         do_subset=True,
         event_subset=config['event_subset'],
-        fields=FIELDS
+        fields=FIELDS,
+        domain=config["domain"]
     conda:
         GEOENV
     log:

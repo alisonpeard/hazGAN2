@@ -39,3 +39,13 @@ def gumbel(uniform):
 def inv_gumbel(x):
     """Gumbel(0, 1) -> uniform"""
     return np.exp(-np.exp(-x))
+
+
+def laplace(uniform, mu=0, b=1):
+    """uniform -> Laplace(mu, b)"""
+    return mu + b * np.sign(uniform - 0.5) * np.log(1 - 2 * np.abs(uniform - 0.5))
+
+
+def inv_laplace(x, mu=0, b=1):
+    """Laplace(mu, b) -> uniform"""
+    return 0.5 + (np.sign(x - mu) * np.log(np.abs(x - mu) / b)) / (2 * np.log(2))

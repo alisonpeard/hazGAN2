@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import xarray as xr
+import logging
 
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import scipy.stats
-import logging
 
 if __name__ == "__main__":
     EVENTS  = snakemake.input.events
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         axs[3].set_title("ξ")
 
         for ax in axs[:-1].ravel():
-            # ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+            ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
             ax.set_xlabel("Longitude")
             ax.set_ylabel("Latitude")
 
