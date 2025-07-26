@@ -1,0 +1,63 @@
+dataset: era5
+year0: 2004
+yearn: 2018
+antecedent_buffer_days: 30
+longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
+  min: -10.875
+  max: 5.125
+latitude:
+  min: 49.0
+  max: 64.75
+exclude:
+resolution:
+  lon: 64
+  lat: 64
+sfunc: additive 
+rfunc:
+  args:
+  func: dummy
+  desc: using custom func defined in src/funcs.R
+rfuncs_dir: src/funcs.R
+event_subset:
+marginal_threshold: 0.95
+domain: gumbel
+kimg: 300
+fields:
+  u10:
+    init:
+      func: identity
+      args: [u10]
+    hfunc:
+      func: l2norm_argmax
+      args: [u10, v10]
+    resample:
+      func: max
+    obj: max
+    distn: weibull
+    title: "Maximum eastward component of 10 m wind"
+  v10:
+    init:
+      func: identity
+      args: [v10]
+    hfunc:
+      func: l2norm_argmax
+      args: [dx, vx]
+    resample:
+      func: max
+    obj: max
+    distn: weibull # extremes in both directions matter... workshop this
+    title: "Maximum northward component of 10 m wind"
+  r30:
+    init:
+      func: sum_30_days
+      args: [tp]
+    hfunc:
+      func: mean
+      args: [r30]
+    resample:
+      func: average
+    obj: max
+    distn: genpareto # exponential (not implemented yet)
+    title: "30-day antecedant rainfall"
+points_of_interest:
+local_crs: 27700 # https://epsg.io/27700
