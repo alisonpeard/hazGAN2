@@ -1,6 +1,7 @@
 """Examine the output of extract_events.R"""
 # %%
 import os
+import numpy as np
 import pandas as pd
 import xarray as xr
 import seaborn as sns
@@ -10,32 +11,45 @@ wd = os.path.join("..", "..", "results", "processing")
 resources_dir = os.path.join("..", "..", "resources")
 data_all = "data_all.nc"
 medians  = "medians.parquet"
-metadata = "metadata.parquet"
+metadata = "event_metadata.parquet"
 daily    = "daily.parquet"
 storms   = "cyclones_midlands.csv"
 
+
 if __name__ == "__main__":
-    # first: validate data_all file
     data_all = xr.open_dataset(os.path.join(wd, data_all))
     storms = pd.read_csv(os.path.join(resources_dir, storms))
     metadata = pd.read_parquet(os.path.join(wd, metadata))
     medians = pd.read_parquet(os.path.join(wd, medians))
     daily_out = pd.read_parquet(os.path.join(wd, daily))
 
+    # %% test 1: validate deseasonalisation
     daily = data_all.to_dataframe()
     daily = daily.reset_index()
     daily["time"] = pd.to_datetime(daily["time"])
     daily["month"] = daily["time"].dt.month
 
-    if True:
-        # deseasonalise
-        medians = daily[["lat", "lon", "month", "vx", "dx", "r30"]].groupby(["lat", "lon", "month"])
-        medians = medians.median().reset_index()
+    medians = daily[["lat", "lon", "month", "vx", "dx", "r30"]].groupby(["lat", "lon", "month"])
+    medians = medians.median()
+    daily = daily.set_index(["lat", "lon", "month"])
+    daily["vx"] -= medians["vx"]
+    daily["dx"] -= medians["dx"]
+    daily["r30"] -= medians["r30"]
+    daily = daily.reset_index().drop(columns=["month"])
 
-        medians_map = pd.merge(daily, medians, on=["lat", "lon", "month"], how="left",
-                        suffixes=("_x", ""))[["vx", "dx", "r30"]]
-        
-        daily[["vx", "dx", "r30"]] -= medians_map[["vx", "dx", "r30"]]
+    daily_out["lon"] = daily_out["lon"].astype(float)
+    daily_out["lat"] = daily_out["lat"].astype(float)
+    daily_out["time"] = daily_out["time"].astype("datetime64[ns]")
+    daily = daily.sort_values(by=["lat", "lon", "time"]).reset_index(drop=True)
+    daily_out = daily_out.sort_values(by=["lat", "lon", "time"]).reset_index(drop=True)
+    daily_out["r30"] = daily_out["r30"].astype(np.float32)
+
+
+    pd.testing.assert_frame_equal(
+        daily, daily_out, atol=1e-6
+        )
+
+    del daily_out
 
     # %% visualise the distributions of the anomalies
     hist_kws = {"color": "lightgrey", "linewidth": 0.5, "edgecolor": "k",
@@ -47,7 +61,7 @@ if __name__ == "__main__":
     daily.r30.plot.hist(**hist_kws, xlabel="seasonal anomaly r30 (m)", ylabel="Density", ax=axs[2])
     plt.tight_layout()
     
-    # %% match to the storms dates
+    # %% test 2: validate storm matching
     storms["time"] = pd.to_datetime(storms["date"])
     storms = storms[storms["wind"] > 0].copy()
     storms["event"] = pd.factorize(storms["cyclone_id"])[0]
