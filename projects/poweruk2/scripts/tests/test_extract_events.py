@@ -17,69 +17,40 @@ storms   = "cyclones_midlands.csv"
 
 
 if __name__ == "__main__":
-    # load the data
     data_all = xr.open_dataset(os.path.join(wd, data_all))
     storms = pd.read_csv(os.path.join(resources_dir, storms))
     metadata = pd.read_parquet(os.path.join(wd, metadata))
-    medians_out = pd.read_parquet(os.path.join(wd, medians))
+    medians = pd.read_parquet(os.path.join(wd, medians))
     daily_out = pd.read_parquet(os.path.join(wd, daily))
 
-    # %% test 1: validate deseasonalisation
-    daily = data_all.to_dataframe().reset_index()
-
+    # test 1: validate deseasonalisation
+    daily = data_all.to_dataframe()
+    daily = daily.reset_index()
     daily["time"] = pd.to_datetime(daily["time"])
     daily["month"] = daily["time"].dt.month
 
     medians = daily[["lat", "lon", "month", "vx", "dx", "r30"]]
     medians = medians.groupby(["lat", "lon", "month"])
-
-    from calendar import month_name
-
-    medians_test = medians.median().reset_index()
-    medians_test["month"] = medians_test["month"].apply(lambda x: month_name[x])
-
-    medians_out["lat"] = medians_out["lat"].astype(float)
-    medians_out["lon"] = medians_out["lon"].astype(float)
-    medians_out["vx"] = medians_out["vx"].astype(np.float32)
-    medians_out["dx"] = medians_out["dx"].astype(np.float32)
-    medians_out["r30"] = medians_out["r30"].astype(np.float32)
-
-    medians_test["vx"] = medians_test["vx"].astype(np.float32)
-    medians_test["dx"] = medians_test["dx"].astype(np.float32)
-    medians_test["r30"] = medians_test["r30"].astype(np.float32)
-
-    medians_test = medians_test.sort_values(by=["lat", "lon", "month"]).reset_index(drop=True)
-    medians_out = medians_out.sort_values(by=["lat", "lon", "month"]).reset_index(drop=True)
-
-    pd.testing.assert_frame_equal(
-        medians_test, medians_out, atol=1e-6
-    )
-    del medians_test
-
-    medians = medians.transform("median")
-    
-    daily["vx"]  -= medians["vx"]
-    daily["dx"]  -= medians["dx"]
+    medians = medians.median()
+    daily = daily.set_index(["lat", "lon", "month"])
+    daily["vx"] -= medians["vx"]
+    daily["dx"] -= medians["dx"]
     daily["r30"] -= medians["r30"]
+    daily = daily.reset_index().drop(columns=["month"])
 
-    del daily["month"]
-
-    # make sure same format as reference
-    daily_out["lon"]  = daily_out["lon"].astype(float)
-    daily_out["lat"]  = daily_out["lat"].astype(float)
+    daily_out["lon"] = daily_out["lon"].astype(float)
+    daily_out["lat"] = daily_out["lat"].astype(float)
     daily_out["time"] = daily_out["time"].astype("datetime64[ns]")
-    daily_out["r30"]  = daily_out["r30"].astype(np.float32)
+    daily = daily.sort_values(by=["lat", "lon", "time"]).reset_index(drop=True)
+    daily_out = daily_out.sort_values(by=["lat", "lon", "time"]).reset_index(drop=True)
+    daily_out["r30"] = daily_out["r30"].astype(np.float32)
 
-    columns = ["lat", "lon", "time", "vx", "dx", "r30"]
-    sortby = ["lat", "lon", "time"]
-
-    daily = daily[columns].sort_values(by=sortby).reset_index(drop=True)
-    daily_out = daily_out[columns].sort_values(by=sortby).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(
         daily, daily_out, atol=1e-6
         )
 
+    del daily_out
 
     # %% visualise the distributions of the anomalies
     hist_kws = {"color": "lightgrey", "linewidth": 0.5, "edgecolor": "k",
