@@ -1,5 +1,5 @@
 # Global config file
-project: poweruk
+project: poweruk2
 conda-cleanup-envs: true
 conda-cleanup-pkgs: cache
 
