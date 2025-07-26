@@ -15,11 +15,10 @@ def direction(ds:xr.Dataset, u:str, v:str,
     Calculate meteorological wind direction from ERA5 u and v components.
     
     Returns direction wind is coming FROM in degrees:
-    - 0° = North (wind from north)
-    - 90° = East (wind from east)  
-    - 180° = South (wind from south)
-    - 270° = West (wind from west)
-
+    - 0° = northerly (wind from north)
+    - 90° = easterly (wind from east)  
+    - 180° = southerly (wind from south)
+    - 270° = westerly (wind from west)
 
     See:
     - https://confluence.ecmwf.int/pages/viewpage.action?pageId=133262398

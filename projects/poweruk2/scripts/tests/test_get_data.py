@@ -27,26 +27,9 @@ import cartopy.feature as cfeature
 from windrose import WindroseAxes
 import matplotlib.pyplot as plt
 
+import utils
 
 SUBSET = ["*", "17"][0]
-
-def handle_expver(ds):
-    for coord in ["expver", "number"]:
-        if coord in ds.dims:
-            ds = ds.sel({coord: ds[coord][0]})
-        if coord in ds.coords:
-            ds = ds.reset_coords(coord, drop=True)
-    return ds
-
-
-def check_missing_days(ds):
-    all_days = np.arange(ds.time.min().values, ds.time.max().values + np.timedelta64(1, 'D'), dtype='datetime64[D]')
-    missing_days = np.setdiff1d(all_days, ds.time.values)
-    if len(missing_days) > 0:
-        print(f"Missing days: {len(missing_days)}")
-        print(missing_days)
-    else:
-        print("No missing days found.")
 
 
 if __name__ == "__main__":
@@ -58,12 +41,12 @@ if __name__ == "__main__":
     print(f"Found {len(ds_files)} files in the input directory.")
 
     ds = xr.open_mfdataset(ds_files)
-    ds["from_u"] = - ds.vx * np.sin(ds.dx) # https://confluence.ecmwf.int/pages/viewpage.action?pageId=133262398
-    ds["from_v"] = - ds.vx * np.cos(ds.dx)
-    ds["to_u"] = - ds.from_u
-    ds["to_v"] = - ds.from_v
     ds = ds.sortby(["latitude", "longitude"])
-    check_missing_days(ds)
+    utils.check_missing_days(ds)
+
+    ds = utils.handle_expver(ds)
+    ds = utils.derive_variables(ds)
+
 
     # %% histograms of overall distributions
     fig, axs = plt.subplots(1, 3, figsize=(10, 5))
@@ -75,7 +58,7 @@ if __name__ == "__main__":
     axs[0].set_xlabel("Wind speed (vx) [m/s]")
 
     ds.r30.plot.hist(ax=axs[1], **hist_kws)
-    axs[1].set_xlabel("30-day rainfall (r3) [m]")
+    axs[1].set_xlabel("30-day rainfall (r30) [m]")
 
     ds.dx.plot.hist(ax=axs[2], **hist_kws)
     axs[2].set_xlabel("Wind direction (dx) [degrees]")
@@ -95,7 +78,7 @@ if __name__ == "__main__":
         ds.isel(time=t).r30.plot(ax=axs[1], cmap=cmo.rain, cbar_kwargs={"label": "30-day rainfall (m)", "shrink": 0.6})
 
         resample = ds.isel(time=t, longitude=slice(None, None, 7), latitude=slice(None, None, 7))
-        resample.plot.streamplot(x='longitude', y='latitude', u='to_u', v='to_v', 
+        resample.plot.streamplot(x='longitude', y='latitude', u='u10', v='v10', 
                                     transform=ccrs.PlateCarree(), color="k", ax=axs[0], density=1.5,
                                     linewidth=0.5, arrowstyle='->', arrowsize=1.25
                                     )
@@ -123,7 +106,7 @@ if __name__ == "__main__":
     ds_mean.vx.plot.contourf(ax=axs[0], cmap=cmo.speed, levels=50, cbar_kwargs={"label": "max gust speed (m/s)", "shrink": 0.6})
     ds_mean.r30.plot.contourf(ax=axs[1], cmap=cmo.rain, levels=50, cbar_kwargs={"label": "30-day rainfall (m)", "shrink": 0.6})
     resample = ds_mean.isel(longitude=slice(None, None, 7), latitude=slice(None, None, 7))
-    streamlines = resample.plot.streamplot(x='longitude', y='latitude', u='to_u', v='to_v', 
+    streamlines = resample.plot.streamplot(x='longitude', y='latitude', u='u10', v='v10', 
                                 transform=ccrs.PlateCarree(), color="k", ax=axs[0], density=1.5,
                                 linewidth=0.5, arrowstyle='->', arrowsize=1.25
                                 )
@@ -138,7 +121,7 @@ if __name__ == "__main__":
 
     axs[0].set_title("ERA5 wind speed and direction")
     axs[1].set_title("ERA5 30-day rainfall")
-    fig.suptitle("ERA5 data averaged over all time", fontsize=16)
+    fig.suptitle("ERA5 data median over all time", fontsize=16)
     plt.tight_layout()
     plt.show()
 
