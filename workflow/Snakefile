@@ -64,7 +64,8 @@ RFUNCS     = os.path.join(WD, RFUNCS) if RFUNCS else None
 EXCLUDE = config.get("exclude", None)
 
 # load rules
-include: "rules/get_data.smk" # commenting this out to avoid rerun on local
+# NOTE: comment rule files out to avoid reruns
+# include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/train_stylegan.smk"
 include: "rules/process_output.smk"
