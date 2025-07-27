@@ -5,19 +5,18 @@ suppressPackageStartupMessages({
 })
 
 source("workflow/src/R/stats.R")
+source("workflow/src/R/hfuncs.R")
 
 # If R functions are provided in params
 #  replace functions in the global environment
 # with those provided in the params
 # this allows for custom functions to be used
-# without modifying the source code.
+# without modifying the workflow source code.
 
 if (!is.null(snakemake@params[["R_funcs"]])) {
-  param_funcs <- snakemake@params[["R_funcs"]]
-  matching_names <- intersect(names(param_funcs), ls(.GlobalEnv))
-  for (name in matching_names) {
-    assign(name, param_funcs[[name]], envir = .GlobalEnv)
-  }
+  # overwrite with any custom functions defined in project/src/funcs.R
+  rfunc_file <- snakemake@params[["R_funcs"]]
+  source(rfunc_file)
 }
 
 # configure logging
@@ -71,7 +70,7 @@ log_debug(field_summary(1))
 
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
-  hfunc = hfuncs[1], hfunc_vars = hfunc_vars[1],
+  hfunc = hfuncs[1], hfunc_args = hfunc_args[1],
   distn = distns[1], two_tailed = two_tailed[1],
   log_file = log_file, log_level = log_level
 )
@@ -81,7 +80,7 @@ log_debug(field_summary(2))
 
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q,
-  hfunc = hfuncs[2], hfunc_vars = hfunc_vars[2],
+  hfunc = hfuncs[2], hfunc_args = hfunc_args[2],
   distn = distns[2], two_tailed = two_tailed[2],
   log_file = log_file, log_level = log_level
 )
@@ -91,7 +90,7 @@ log_debug(field_summary(3))
 
 events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q,
-  hfunc = hfuncs[3], hfunc_vars = hfunc_vars[3],
+  hfunc = hfuncs[3], hfunc_args = hfunc_args[3],
   distn = distns[3], two_tailed = two_tailed[3],
   log_file = log_file, log_level = log_level
 )

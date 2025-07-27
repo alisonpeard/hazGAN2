@@ -55,7 +55,7 @@ rule make_training_data:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
         fields=FIELDS,
-        marginals=MARGINALS
+        domain=config["domain"]
     conda:
         GEOENV
     log:
@@ -69,6 +69,7 @@ rule fit_marginals:
     
     Usage:
     >>> snakemake --profile profiles/local/ fit_marginals --use-conda --cores 2
+    >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
