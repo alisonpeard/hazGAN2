@@ -56,12 +56,13 @@ hfunc_l2norm_argmax <- function(gridcell, args) {
   l2norm <- function(u, v) {
     return(sqrt(u^2 + v^2))
   }
+
   gridcell$l2norm <- l2norm(gridcell[[args[1]]], gridcell[[args[2]]])
 
   res <- gridcell |>
     group_by(event) |>
     slice(which.max(l2norm)) |>
     ungroup() |>
-    select(event, get(args[1]), time, event.rp, grid)
+    select(event, args[1], time, event.rp, grid)
   return(res)
 }

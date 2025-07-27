@@ -139,12 +139,16 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
 fit_gridcell <- function(
   grid_i, df, metadata,
   distn, two_tailed,
-  hfunc, hfun_args,
+  hfunc, hfunc_args,
   log_file, log_level
   ) {
   # fit marginals using POT methods
   library(logger)
   log_appender(appender_file(log_file, append = TRUE))
+  # log_appender(appender_tee(
+  #   appender_file(log_file, append = TRUE),
+  #   appender_console(lines = 1)
+  # ))
   log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
   log_threshold(log_level)
 
@@ -157,6 +161,7 @@ fit_gridcell <- function(
   )
 
   footprint <- hfunc(gridcell, hfunc_args)
+  footprint$variable <- footprint[[hfunc_args[1]]]
 
   # Check for no footprints early
   if (nrow(footprint) == 0) {
@@ -180,7 +185,7 @@ fit_gridcell <- function(
   }
 
   # main fitting functions happen here
-  maxima <- tryCatch({
+  footprint <- tryCatch({
     # choose a threshold and fit parameters
     fit    <- distn$threshold_selector(train$variable)
     params <- fit$params
@@ -193,9 +198,9 @@ fit_gridcell <- function(
       )
 
     # add parameters and p-values to dataframe
-    maxima          <- maxima |> mutate(!!!params)
-    maxima$p_upper  <- pval
-    maxima$pk_upper <- pk
+    footprint          <- footprint |> mutate(!!!params)
+    footprint$p_upper  <- pval
+    footprint$pk_upper <- pk
 
     if (two_tailed) {
       # fit lower tail parameters
@@ -210,42 +215,42 @@ fit_gridcell <- function(
       )
 
       # add lower tail parameters and p-values to dataframe
-      maxima <- maxima |> mutate(!!!params_lower)
-      maxima$p_lower  <- pval_lower
-      maxima$pk_lower <- pk_lower
+      footprint <- footprint |> mutate(!!!params_lower)
+      footprint$p_lower  <- pval_lower
+      footprint$pk_lower <- pk_lower
     } else {
       # if not two-tailed, set lower tail params to NA
-      maxima$thresh_lower <- NA
-      maxima$scale_lower  <- NA
-      maxima$shape_lower  <- NA
-      maxima$p_lower      <- NA
-      maxima$pk_lower     <- NA
+      footprint$thresh_lower <- NA
+      footprint$scale_lower  <- NA
+      footprint$shape_lower  <- NA
+      footprint$p_lower      <- NA
+      footprint$pk_lower     <- NA
     }
 
     # transform variable to uniform
-    maxima$scdf <- scdf(
+    footprint$scdf <- scdf(
       train$variable, params, cdf = distn$cdf, two_tailed = two_tailed
-    )(maxima$variable)
+    )(footprint$variable)
 
-    maxima$ecdf <- ecdf(train$variable)(maxima$variable)
-    maxima
+    footprint$ecdf <- ecdf(train$variable)(footprint$variable)
+    footprint
   }, error = function(e) {
     # highest level error handling
     log_fit_gridcell_error(grid_i, e)
 
     # fallback to empirical fits
-    maxima$thresh <- Inf
-    maxima$scale  <- NA
-    maxima$shape  <- NA
-    maxima$p      <- 0
-    maxima$pk     <- 0
-    maxima$ecdf <- ecdf(train$variable)(maxima$variable)
-    maxima$scdf <- maxima$ecdf
-    maxima
+    footprint$thresh <- Inf
+    footprint$scale  <- NA
+    footprint$shape  <- NA
+    footprint$p      <- 0
+    footprint$pk     <- 0
+    footprint$ecdf <- ecdf(train$variable)(footprint$variable)
+    footprint$scdf <- footprint$ecdf
+    footprint
   })
 
   # validate exceedences are independent
-  excesses <- maxima$variable[maxima$variable > maxima$thresh]
+  excesses <- footprint$variable[footprint$variable > footprint$thresh]
   nexcesses <- length(excesses)
   if (nexcesses < 30) {
     log_warn(paste0(
@@ -281,8 +286,8 @@ fit_gridcell <- function(
     }
   }
 
-  maxima$box.test <- p_box
-  return(maxima)
+  footprint$box.test <- p_box
+  return(footprint)
 }
 
 
@@ -332,6 +337,12 @@ marginal_transformer <- function(df, metadata, var, q,
   }
   rm(df)
 
+  # Save metadata to file
+  metadata <- metadata[, c("time", "event", "event.rp")]
+  metadata_file <- tempfile(fileext = ".rds")
+  saveRDS(metadata, metadata_file)
+  rm(metadata)
+
   # setup multiprocessing
   ncores <- max(1, min(availableCores(), nchunks))
   plan(multisession, workers = ncores)
@@ -339,18 +350,13 @@ marginal_transformer <- function(df, metadata, var, q,
   log_debug(paste0("stats.R::marginal_transformer - Number of chunks: ", nchunks))
   log_debug(paste0("stats.R::marginal_transformer - Using ", ncores, " cores"))
 
-  # wrapper for fit_gridcell()
   fit_gridchunk <- function(i) {
-    # Reconfigure logging in workers
-    library(logger)
-    log_file <- as.character(log_file)
-    log_appender(appender_file(log_file, append = TRUE))
-    log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-    log_threshold(log_level)
-    log_info(paste0("stats.R::fit_gridchunk - Fitting gridchunk ", i))
+    library(dplyr)
+    library(lubridate)
 
-    # load data chunk from RDS
     df <- readRDS(tmps[[i]])
+    metadata <- readRDS(metadata_file)
+
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
       fit_gridcell(
@@ -364,16 +370,38 @@ marginal_transformer <- function(df, metadata, var, q,
   }
 
   # fit gridcells with multiprocessing
-  transformed <- future_map_dfr(
-    .x = seq_along(tmps),
-    .f = fit_gridchunk,
-    .options = furrr_options(
-      seed = TRUE,
-      scheduling = 1
-    )
-  )
-
-  unlink(tmps)
+  tryCatch({
+    transformed <- future_map_dfr(
+        .x = seq_along(tmps),
+        .f = fit_gridchunk,
+        .options = furrr_options(
+          seed = TRUE,
+          scheduling = 1,
+          globals = list(
+            tmps = tmps,
+            metadata_file = metadata_file,
+            gridchunks = gridchunks,
+            fit_gridcell = fit_gridcell,
+            distn = distn,
+            two_tailed = two_tailed,
+            hfunc = hfunc,
+            hfunc_args = hfunc_args,
+            log_file = log_file,
+            log_level = log_level,
+            log_fit_gridcell_error = log_fit_gridcell_error,
+            ecdf = ecdf,
+            scdf = scdf
+          )
+        )
+      )
+  }, error = function(e) {
+    log_error(paste("Error in parallel processing:", conditionMessage(e)))
+    stop(e)
+  }, finally = {
+    log_info("Cleaning up temporary files")
+    unlink(tmps)
+    unlink(metadata_file)
+  })
 
   # map gridcell back to lat/lon
   log_info("Mapping gridcell back to lat/lon")
