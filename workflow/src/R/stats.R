@@ -136,7 +136,156 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
 }
 
 
-# this is the main function
+fit_gridcell <- function(
+  grid_i, df, metadata,
+  distn, two_tailed,
+  hfunc, hfun_args,
+  log_file, log_level
+  ) {
+  # fit marginals using POT methods
+  library(logger)
+  log_appender(appender_file(log_file, append = TRUE))
+  log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
+  log_threshold(log_level)
+
+  # extract marginal
+  gridcell <- df[df$grid == grid_i, ]
+  gridcell <- left_join(
+    gridcell,
+    metadata[, c("time", "event", "event.rp")],
+    by = c("time" = "time")
+  )
+
+  footprint <- hfunc(gridcell, hfunc_args)
+
+  # Check for no footprints early
+  if (nrow(footprint) == 0) {
+    log_warn(paste0(
+      "stats.R::fit_gridcell - Empty footprint dataframe for grid cell ",
+      grid_i
+    ))
+    # Create a 1-row dummy frame with all required columns
+    return(data.frame(
+      event = NA, variable = NA, time = NA, event.rp = NA,
+      grid = grid_i, thresh = NA, scale = NA, shape = NA,
+      p = 0, pk = 0, ecdf = NA, scdf = NA, box.test = 0
+    ))
+  }
+
+  # omit test years from fitting functions
+  if (exists("TEST_YEARS")) {
+    train <- footprint[year(footprint$time) %ni% TEST_YEARS, ]
+  } else {
+    train <- footprint
+  }
+
+  # main fitting functions happen here
+  maxima <- tryCatch({
+    # choose a threshold and fit parameters
+    fit    <- distn$threshold_selector(train$variable)
+    params <- fit$params
+    pval   <- fit$p.value
+    pk     <- fit$pk
+
+    # append "_upper" suffix to params
+      params <- setNames(
+          params, paste0(names(params), "_upper")
+      )
+
+    # add parameters and p-values to dataframe
+    maxima          <- maxima |> mutate(!!!params)
+    maxima$p_upper  <- pval
+    maxima$pk_upper <- pk
+
+    if (two_tailed) {
+      # fit lower tail parameters
+      fit_lower <- distn$threshold_selector(-train$variable)
+      params_lower <- fit_lower$params
+      pval_lower   <- fit_lower$p.value
+      pk_lower     <- fit_lower$pk
+
+      # append "_lower" suffix to params
+      params_lower <- setNames(
+        params_lower, paste0(names(params_lower), "_lower")
+      )
+
+      # add lower tail parameters and p-values to dataframe
+      maxima <- maxima |> mutate(!!!params_lower)
+      maxima$p_lower  <- pval_lower
+      maxima$pk_lower <- pk_lower
+    } else {
+      # if not two-tailed, set lower tail params to NA
+      maxima$thresh_lower <- NA
+      maxima$scale_lower  <- NA
+      maxima$shape_lower  <- NA
+      maxima$p_lower      <- NA
+      maxima$pk_lower     <- NA
+    }
+
+    # transform variable to uniform
+    maxima$scdf <- scdf(
+      train$variable, params, cdf = distn$cdf, two_tailed = two_tailed
+    )(maxima$variable)
+
+    maxima$ecdf <- ecdf(train$variable)(maxima$variable)
+    maxima
+  }, error = function(e) {
+    # highest level error handling
+    log_fit_gridcell_error(grid_i, e)
+
+    # fallback to empirical fits
+    maxima$thresh <- Inf
+    maxima$scale  <- NA
+    maxima$shape  <- NA
+    maxima$p      <- 0
+    maxima$pk     <- 0
+    maxima$ecdf <- ecdf(train$variable)(maxima$variable)
+    maxima$scdf <- maxima$ecdf
+    maxima
+  })
+
+  # validate exceedences are independent
+  excesses <- maxima$variable[maxima$variable > maxima$thresh]
+  nexcesses <- length(excesses)
+  if (nexcesses < 30) {
+    log_warn(paste0(
+      "stats.R::fit_gridcell - ",
+      "Only ", nexcesses,
+      " exceedences in gridcell ",
+      grid_i, ". ",
+      "Skipping Ljung-Box test."
+    ))
+    p_box <- 0
+  } else {
+    # Box test H0: independent exceedences
+    p_box <- Box.test(excesses)[["p.value"]]
+
+    if (is.na(p_box)) {
+      log_warn(paste0(
+        "stats.R::fit_gridcell - ",
+        "Ljung-Box test returned NA for gridcell ",
+        grid_i, ". Value: ", round(p_box, 4)
+      ))
+    } else if (p_box < 0.1) {
+      log_warn(paste0(
+        "stats.R::fit_gridcell - ",
+        "p-value ≤ 10% for H0: independent exceedences in ",
+        grid_i, ". Value: ", round(p_box, 4)
+      ))
+    } else {
+      log_info(paste0(
+        "stats.R::fit_gridcell - ",
+        "p-value > 10% for H0: independent exceedences in ",
+        grid_i, ". Value: ", round(p_box, 4)
+      ))
+    }
+  }
+
+  maxima$box.test <- p_box
+  return(maxima)
+}
+
+
 marginal_transformer <- function(df, metadata, var, q,
                                  hfunc = "max",
                                  hfunc_args = NULL,
@@ -190,145 +339,6 @@ marginal_transformer <- function(df, metadata, var, q,
   log_debug(paste0("stats.R::marginal_transformer - Number of chunks: ", nchunks))
   log_debug(paste0("stats.R::marginal_transformer - Using ", ncores, " cores"))
 
-  # fit marginals using POT methods
-  fit_gridcell <- function(grid_i, df) {
-    # extract marginal
-    gridcell <- df[df$grid == grid_i, ]
-    gridcell <- left_join(
-      gridcell,
-      metadata[, c("time", "event", "event.rp")],
-      by = c("time" = "time")
-    )
-
-    footprint <- hfunc(gridcell, hfunc_args)
-
-    # Check for no footprints early
-    if (nrow(footprint) == 0) {
-      log_warn(paste0(
-        "stats.R::fit_gridcell - Empty footprint dataframe for grid cell ",
-        grid_i
-      ))
-      # Create a 1-row dummy frame with all required columns
-      return(data.frame(
-        event = NA, variable = NA, time = NA, event.rp = NA,
-        grid = grid_i, thresh = NA, scale = NA, shape = NA,
-        p = 0, pk = 0, ecdf = NA, scdf = NA, box.test = 0
-      ))
-    }
-
-    # omit test years from fitting functions
-    if (exists("TEST_YEARS")) {
-      train <- footprint[year(footprint$time) %ni% TEST_YEARS, ]
-    } else {
-      train <- footprint
-    }
-
-    # main fitting functions happen here
-    maxima <- tryCatch({
-      # choose a threshold and fit parameters
-      fit    <- distn$threshold_selector(train$variable)
-      params <- fit$params
-      pval   <- fit$p.value
-      pk     <- fit$pk
-
-      # append "_upper" suffix to params
-        params <- setNames(
-            params, paste0(names(params), "_upper")
-        )
-
-      # add parameters and p-values to dataframe
-      maxima          <- maxima |> mutate(!!!params)
-      maxima$p_upper  <- pval
-      maxima$pk_upper <- pk
-
-      if (two_tailed) {
-        # fit lower tail parameters
-        fit_lower <- distn$threshold_selector(-train$variable)
-        params_lower <- fit_lower$params
-        pval_lower   <- fit_lower$p.value
-        pk_lower     <- fit_lower$pk
-
-        # append "_lower" suffix to params
-        params_lower <- setNames(
-          params_lower, paste0(names(params_lower), "_lower")
-        )
-
-        # add lower tail parameters and p-values to dataframe
-        maxima <- maxima |> mutate(!!!params_lower)
-        maxima$p_lower  <- pval_lower
-        maxima$pk_lower <- pk_lower
-      } else {
-        # if not two-tailed, set lower tail params to NA
-        maxima$thresh_lower <- NA
-        maxima$scale_lower  <- NA
-        maxima$shape_lower  <- NA
-        maxima$p_lower      <- NA
-        maxima$pk_lower     <- NA
-      }
-
-      # transform variable to uniform
-      maxima$scdf <- scdf(
-        train$variable, params, cdf = distn$cdf, two_tailed = two_tailed
-      )(maxima$variable)
-
-      maxima$ecdf <- ecdf(train$variable)(maxima$variable)
-      maxima
-    }, error = function(e) {
-      # highest level error handling
-      log_fit_gridcell_error(grid_i, e)
-
-      # fallback to empirical fits
-      maxima$thresh <- Inf
-      maxima$scale  <- NA
-      maxima$shape  <- NA
-      maxima$p      <- 0
-      maxima$pk     <- 0
-      maxima$ecdf <- ecdf(train$variable)(maxima$variable)
-      maxima$scdf <- maxima$ecdf
-      maxima
-    })
-
-    # validate exceedences are independent
-    excesses <- maxima$variable[maxima$variable > maxima$thresh]
-    nexcesses <- length(excesses)
-    if (nexcesses < 30) {
-      log_warn(paste0(
-        "stats.R::fit_gridcell - ",
-        "Only ", nexcesses,
-        " exceedences in gridcell ",
-        grid_i, ". ",
-        "Skipping Ljung-Box test."
-      ))
-      p_box <- 0
-    } else {
-      # Box test H0: independent exceedences
-      p_box <- Box.test(excesses)[["p.value"]]
-
-      if (is.na(p_box)) {
-        log_warn(paste0(
-          "stats.R::fit_gridcell - ",
-          "Ljung-Box test returned NA for gridcell ",
-          grid_i, ". Value: ", round(p_box, 4)
-        ))
-      } else if (p_box < 0.1) {
-        log_warn(paste0(
-          "stats.R::fit_gridcell - ",
-          "p-value ≤ 10% for H0: independent exceedences in ",
-          grid_i, ". Value: ", round(p_box, 4)
-        ))
-      } else {
-        log_info(paste0(
-          "stats.R::fit_gridcell - ",
-          "p-value > 10% for H0: independent exceedences in ",
-          grid_i, ". Value: ", round(p_box, 4)
-        ))
-      }
-    }
-
-    maxima$box.test <- p_box
-    return(maxima)
-  }
-
   # wrapper for fit_gridcell()
   fit_gridchunk <- function(i) {
     # Reconfigure logging in workers
@@ -343,7 +353,12 @@ marginal_transformer <- function(df, metadata, var, q,
     df <- readRDS(tmps[[i]])
     gridchunk <- gridchunks[[i]]
     maxima <- lapply(gridchunk, function(grid_i) {
-      fit_gridcell(grid_i, df)
+      fit_gridcell(
+        grid_i, df, metadata,
+        distn, two_tailed,
+        hfunc, hfunc_args,
+        log_file, log_level
+        )
     })
     bind_rows(maxima)
   }
