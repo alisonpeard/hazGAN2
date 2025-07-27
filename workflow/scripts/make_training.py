@@ -8,30 +8,24 @@ TODO: This script is bloated, it can be made way more concise.
 """
 # %%
 import os
+import sys
+import logging
 os.environ["USE_PYGEOS"] = "0"
+
 import numpy as np
 import pandas as pd
-# from shapely.geometry import Point
-import geopandas as gpd
 import xarray as xr
-import logging
-
+import geopandas as gpd
 from calendar import month_name
 
-if __name__ == "__main__":
-    # configure logging
-    logging.basicConfig(
-        filename=snakemake.log.file,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    
+
+def main(input, output, params):
     # load parameters
-    EVENTS   = snakemake.input.events
-    METADATA = snakemake.input.metadata
-    MEDIANS  = snakemake.input.medians
-    OUTPUT   = snakemake.output.data
-    FIELDS = [key for key in snakemake.params.fields.keys()]
+    EVENTS   = input.events
+    METADATA = input.metadata
+    MEDIANS  = input.medians
+    OUTPUT   = output.data
+    FIELDS = [key for key in params.fields.keys()]
 
     # load monthly medians
     medians = pd.read_parquet(MEDIANS)
@@ -125,53 +119,42 @@ if __name__ == "__main__":
         shape = np.array(gdf_params[[f"shape_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
         params = np.stack([thresh, scale, shape], axis=-2)
         logging.info("Parameters shape: {}".format(params.shape))
+    else:
+        # import pandas as pd
+        # import numpy as np
+        # param_cols = [
+        #     "thresh_u10_lower", "thresh_u10_upper", "thresh_r30", "thresh_v10",
+        #     "scale_u10_lower", "scale_u10_upper", "scale_r30", "scale_v10",
+        #     "shape_u10_lower", "shape_u10_upper", "shape_r30", "shape_v10"
+        #     ]
+        # FIELDS = ["u10", "v10", "r30"]
+        # make params H x W x 6 x K of np.nan
+        # ny, nx = 64, 64
+        # nfields = len(FIELDS)
+        # gdf = np.random.random((ny*nx, len(param_cols) + 2))
+        # gdf = pd.DataFrame(gdf, columns=["lat", "lon"] + param_cols)
 
+        param_prefixes = ["thresh_", "scale_", "shape_"]
+        param_suffixes = ["", "_lower", "_upper"]
 
-    # %% dev
-    import pandas as pd
-    import numpy as np
+        params = np.full((ny, nx, 6, nfields), np.nan, dtype=np.float32)
 
-    param_cols = [
-        "thresh_u10_lower", "thresh_u10_upper", "thresh_r30", "thresh_v10",
-        "scale_u10_lower", "scale_u10_upper", "scale_r30", "scale_v10",
-        "shape_u10_lower", "shape_u10_upper", "shape_r30", "shape_v10"
-        ]
-    
-    FIELDS = ["u10", "v10", "r30"]
+        for k, field in enumerate(FIELDS):
+            for i, suffix in enumerate(param_suffixes):
+                for j, prefix in enumerate(param_prefixes):
+                    param_col = f"{prefix}{field}{suffix}"
+                    logging.info(f"{i=}, {j=}, {param_col=}, {param_col in gdf.columns=}")
+                    if param_col in gdf.columns:
 
-    param_prefixes = ["thresh_", "scale_", "shape_"]
-    param_suffixes = ["", "_lower", "_upper"]
+                        gdf_param = gdf[[param_col] + ["lat", "lon"]]
+                        gdf_param = gdf_param.groupby(["lat", "lon"]).mean().reset_index()
+                        param = gdf_param[param_col].values.reshape([ny, nx])
 
+                        
+                        _i = 3 * [0, 1, 0][i]
+                        print(f"{_i=}, {_i+j=}, {params.shape=}")
+                        params[:, :, j + _i, k] = param
 
-    # make params H x W x 6 x K of np.nan
-    ny, nx = 64, 64
-    nfields = len(FIELDS)
-    params = np.full((ny, nx, 6, nfields), np.nan, dtype=np.float32)
-
-
-    gdf = np.random.random((ny*nx, len(param_cols) + 2))
-    gdf = pd.DataFrame(gdf, columns=["lat", "lon"] + param_cols)
-
-    for k, field in enumerate(FIELDS):
-        for i, suffix in enumerate(param_suffixes):
-            for j, prefix in enumerate(param_prefixes):
-                param_col = f"{prefix}{field}{suffix}"
-                print(f"{i=}, {j=}, {param_col=}, {param_col in gdf.columns=}")
-                if param_col in gdf.columns:
-
-                    gdf_param = gdf[[param_col] + ["lat", "lon"]]
-                    gdf_param = gdf_param.groupby(["lat", "lon"]).mean().reset_index()
-                    param = gdf_param[param_col].values.reshape([ny, nx])
-
-                    
-                    _i = 3 * [0, 1, 0][i]
-                    print(f"{_i=}, {_i+j=}, {params.shape=}")
-                    params[:, :, j + _i, k] = param
-
-    params
-
-
-    # %%
 
     # make an xarray dataset for training
     ds = xr.Dataset({'uniform': (['time', 'lat', 'lon', 'field'], U1),
@@ -187,7 +170,10 @@ if __name__ == "__main__":
                             'lon': (['lon'], lon),
                             'time': times,
                             'field': FIELDS,
-                            'param': ['loc', 'scale', 'shape'],
+                            'param': [
+                                "loc_upper", "scale_upper", "shape_upper",
+                                "loc_lower", "scale_lower", "shape_lower"
+                                ],
                             'month': medians["month"].unique()
                     },
                     attrs={'CRS': 'EPSG:4326',
@@ -197,11 +183,25 @@ if __name__ == "__main__":
     assert ds.uniform.shape[1:] == (ny, nx, nfields), f"Unexpected shape: {ds.uniform.shape=}"
     logging.info(f"Shape of dataset: {ds.uniform.shape=}")
     print(f"Shape of dataset: {ds.uniform.shape=}")
+
     # save
     logging.info("Finished! Saving to netcdf...")
     ds.to_netcdf(OUTPUT)
     logging.info("Saved to {}".format(OUTPUT))
 
-    
-# %%
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+        logging.FileHandler(snakemake.log.file),
+        logging.StreamHandler(sys.stdout)
+    ]
+    )
+
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
+    main(input, output, params)
 # %%

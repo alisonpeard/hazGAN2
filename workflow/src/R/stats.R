@@ -6,7 +6,9 @@ suppressPackageStartupMessages({
   library(logger, quietly = TRUE)
 })
 
+
 `%ni%` <- Negate(`%in%`)
+
 
 ecdf <- function(x) {
   # modified to Weibull plotting positions
@@ -26,10 +28,22 @@ ecdf <- function(x) {
   rval
 }
 
-scdf <- function(train, params, cdf){
+
+scdf <- function(train, params, cdf, two_tailed = FALSE) {
+    # wrapper for scdf_one_tail and scdf_two_tailed
+    if (two_tailed) {
+        return(scdf_two_tailed(train, params, cdf))
+    } else {
+        return(scdf_one_tail(train, params, cdf))
+    }
+}
+
+
+scdf_one_tail <- function(train, params, cdf){
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
-  loc <- params$thresh
+  params_upper <- params[names(params) %in% c("thresh_upper", "scale_upper", "shape_upper")]
+  loc <- params$thresh_upper
   calculator <- function(x) {
     u <- ecdf(train)(x)
     pthresh <- ecdf(train)(loc)
@@ -42,6 +56,39 @@ scdf <- function(train, params, cdf){
   }
   return(calculator)
 }
+
+
+scdf_two_tailed <- function(train, params, cdf) {
+  # Using excesses and setting loc=0
+  # This is for flexibility with cdf choice
+  params_upper <- params[names(params) %in% c("thresh_upper", "scale_upper", "shape_upper")]
+  params_lower <- params[names(params) %in% c("thresh_lower", "scale_lower", "shape_lower")]
+
+  loc_upper <- params$thresh_upper
+  loc_lower <- params$thresh_lower
+
+  calculator <- function(x) {
+    u <- ecdf(train)(x)
+
+    pthresh_upper <- ecdf(train)(loc_upper)
+    mask_upper <- x > loc_upper
+    x_upper <- x[mask_upper]
+    exceedances_upper <- x_upper - mask_upper
+    u_upper <- 1 - (1 - pthresh) * (1 - cdf(exceedances_upper, params_upper))
+    u[mask_upper] <- u_upper
+
+    pthresh_lower <- ecdf(train)(loc_lower)
+    mask_lower <- x <= loc_lower
+    x_lower <- x[mask_lower]
+    exceedances_lower <- loc_lower - x_lower
+    u_lower <- pthresh_lower * (1 - cdf(exceedances_lower, params_lower))
+    u[mask_lower] <- u_lower
+
+    return(u)
+  }
+  return(calculator)
+}
+
 
 load_distn <- function(distn) {
   # find appropriate function definition file
@@ -88,11 +135,13 @@ log_fit_gridcell_error <- function(grid_i, error, max_frames = 10) {
   log_error(skip_formatter(error_report))
 }
 
+
 # this is the main function
 marginal_transformer <- function(df, metadata, var, q,
                                  hfunc = "max",
                                  hfunc_args = NULL,
                                  distn = "genpareto",
+                                 two_tailed = FALSE,
                                  chunksize = 128,
                                  log_file = tempfile(fileext = ".log"),
                                  log_level = INFO) {
@@ -151,47 +200,7 @@ marginal_transformer <- function(df, metadata, var, q,
       by = c("time" = "time")
     )
 
-    # check gridcell statistics
-    log_debug(paste0(
-      "stats.R::fit_gridcell - Gridcell statistics\n",
-      "==============================\n",
-      "Gridcell: ", grid_i, "\n",
-      "Variable: ", var, "\n",
-      "N: ", nrow(gridcell), "\n",
-      "Min: ", min(gridcell[[var]], na.rm = TRUE), "\n",
-      "Max: ", max(gridcell[[var]], na.rm = TRUE), "\n",
-      "Mean: ", mean(gridcell[[var]], na.rm = TRUE), "\n",
-      "Q70: ", quantile(gridcell[[var]], 0.7, na.rm = TRUE), "\n",
-      "Q95: ", quantile(gridcell[[var]], 0.95, na.rm = TRUE), "\n",
-      "Q99: ", quantile(gridcell[[var]], 0.99, na.rm = TRUE), "\n",
-      "Median: ", median(gridcell[[var]], na.rm = TRUE), "\n",
-      "SD: ", sd(gridcell[[var]], na.rm = TRUE), "\n\n",
-      "Vector (tail): ", paste0(tail(
-        gridcell[[var]], 30
-      ), collapse = ", "),
-      "\n\n"
-    ))
-
     footprint <- hfunc(gridcell, hfunc_args)
-
-    # check maxima statistics
-    log_debug(paste0(
-      "stats.R::fit_gridcell - Grouped (footprint) statistics\n",
-      "==============================\n",
-      "N: ", nrow(footprint), "\n",
-      "Min: ", min(footprint$variable, na.rm = TRUE), "\n",
-      "Max: ", max(footprint$variable, na.rm = TRUE), "\n",
-      "Mean: ", mean(footprint$variable, na.rm = TRUE), "\n",
-      "Q70: ", quantile(footprint$variable, 0.7, na.rm = TRUE), "\n",
-      "Q95: ", quantile(footprint$variable, 0.95, na.rm = TRUE), "\n",
-      "Q99: ", quantile(footprint$variable, 0.99, na.rm = TRUE), "\n",
-      "Median: ", median(footprint$variable, na.rm = TRUE), "\n",
-      "SD: ", sd(footprint$variable, na.rm = TRUE), "\n\n",
-      "Vector (tail): ", paste0(tail(
-        footprint$variable, 30
-      ), collapse = ", "),
-      "\n\n"
-    ))
 
     # Check for no footprints early
     if (nrow(footprint) == 0) {
@@ -222,15 +231,46 @@ marginal_transformer <- function(df, metadata, var, q,
       pval   <- fit$p.value
       pk     <- fit$pk
 
+      # append "_upper" suffix to params
+        params <- setNames(
+            params, paste0(names(params), "_upper")
+        )
+
       # add parameters and p-values to dataframe
-      maxima    <- maxima |> mutate(!!!params)
-      maxima$p  <- pval
-      maxima$pk <- pk
+      maxima          <- maxima |> mutate(!!!params)
+      maxima$p_upper  <- pval
+      maxima$pk_upper <- pk
+
+      if (two_tailed) {
+        # fit lower tail parameters
+        fit_lower <- distn$threshold_selector(-train$variable)
+        params_lower <- fit_lower$params
+        pval_lower   <- fit_lower$p.value
+        pk_lower     <- fit_lower$pk
+
+        # append "_lower" suffix to params
+        params_lower <- setNames(
+          params_lower, paste0(names(params_lower), "_lower")
+        )
+
+        # add lower tail parameters and p-values to dataframe
+        maxima <- maxima |> mutate(!!!params_lower)
+        maxima$p_lower  <- pval_lower
+        maxima$pk_lower <- pk_lower
+      } else {
+        # if not two-tailed, set lower tail params to NA
+        maxima$thresh_lower <- NA
+        maxima$scale_lower  <- NA
+        maxima$shape_lower  <- NA
+        maxima$p_lower      <- NA
+        maxima$pk_lower     <- NA
+      }
 
       # transform variable to uniform
       maxima$scdf <- scdf(
-        train$variable, params, cdf = distn$cdf
+        train$variable, params, cdf = distn$cdf, two_tailed = two_tailed
       )(maxima$variable)
+
       maxima$ecdf <- ecdf(train$variable)(maxima$variable)
       maxima
     }, error = function(e) {
@@ -330,8 +370,10 @@ marginal_transformer <- function(df, metadata, var, q,
 
   # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
-              "lat", "lon", "thresh", "scale", "shape",
-              "pk", "ecdf", "scdf", "box.test")
+              "lat", "lon",
+              "thresh_upper", "scale_upper", "shape_upper", "p_upper", "pk_upper",
+              "thresh_lower", "scale_lower", "shape_lower", "p_lower", "pk_lower",
+              "ecdf", "scdf", "box.test")
 
   transformed <- transformed[, fields]
   return(transformed)
