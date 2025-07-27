@@ -25,6 +25,20 @@ hfunc_sum <- function(gridcell, args) {
   return(res)
 }
 
+hfunc_mean <- function(gridcell, args) {
+  stopifnot(c("event", "event.rp", "time", "grid") %in% names(gridcell))
+  res <- gridcell |>
+    group_by(event) |>
+    summarise(
+      variable = mean(get(args[1])),
+      time = first(time),
+      event.rp = max(event.rp),
+      grid = first(grid),
+      .groups = "drop"
+    )
+  return(res)
+}
+
 
 hfunc_arg2max <- function(gridcell, args) {
   stopifnot(c("event", "event.rp", "time", "grid") %in% names(gridcell))
