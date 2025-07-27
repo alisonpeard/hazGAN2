@@ -14,23 +14,39 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import scipy.stats
 
+
+TAIL = "upper" # temporarily hardcoded, should be a parameter
+
+
 if __name__ == "__main__":
-    EVENTS  = snakemake.input.events
-    FIGa = snakemake.output.figa
-    FIGb = snakemake.output.figb
-    FIGc = snakemake.output.figc
-    FIELDS  = snakemake.params.fields
-    PCRIT   = snakemake.params.pcrit
-    CMAP    = snakemake.params.cmap
-
-    FIGURES = [FIGa, FIGb, FIGc]
-
     # set up logging
     logging.basicConfig(
         filename=snakemake.log.file,
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
+
+def main(input, output, params):
+    EVENTS  = input.events
+    FIGa = output.figa
+    FIGb = output.figb
+    FIGc = output.figc
+    FIELDS  = params.fields
+    PCRIT   = params.pcrit
+    CMAP    = params.cmap
+    FIGURES = [FIGa, FIGb, FIGc]
+
+    def pk(var, tail=TAIL):
+        return pk(var)
+
+    def thresh(var, tail=TAIL):
+        return thresh(var)
+
+    def scale(var, tail=TAIL):
+        return scale(var)
+
+    def shape(var, tail=TAIL):
+        return shape(var)
 
     # load GPD-fitted data   
     df = pd.read_parquet(EVENTS)
@@ -45,25 +61,25 @@ if __name__ == "__main__":
 
     # log statistics (max, min) for each (variable, parameter)
     for var in FIELDS.keys():
-        logging.info(f"Statistics for {var}:")
-        logging.info(f"pk_{var}: {gdf[f'pk_{var}'].min()} - {gdf[f'pk_{var}'].max()}")
-        logging.info(f"thresh_{var}: {gdf[f'thresh_{var}'].min()} - {gdf[f'thresh_{var}'].max()}")
-        logging.info(f"scale_{var}: {gdf[f'scale_{var}'].min()} - {gdf[f'scale_{var}'].max()}")
-        logging.info(f"shape_{var}: {gdf[f'shape_{var}'].min()} - {gdf[f'shape_{var}'].max()}")
+        logging.info(f"Statistics for {var}_{TAIL}:")
+        logging.info(f"{pk(var)}: {gdf[f'{pk(var)}'].min()} - {gdf[f'{pk(var)}'].max()}")
+        logging.info(f"{thresh(var)}: {gdf[f'{thresh(var)}'].min()} - {gdf[f'{thresh(var)}'].max()}")
+        logging.info(f"{scale(var)}: {gdf[f'{scale(var)}'].min()} - {gdf[f'{scale(var)}'].max()}")
+        logging.info(f"{shape(var)}: {gdf[f'{shape(var)}'].min()} - {gdf[f'{shape(var)}'].max()}")
 
     # set values to be floats
     for var in FIELDS.keys():
-        logging.info(f"Filling nans for {var} with 0")
-        gdf[f"pk_{var}"] = gdf[f"pk_{var}"].fillna(0)
-        gdf[f"thresh_{var}"] = gdf[f"thresh_{var}"].fillna(0)
-        gdf[f"scale_{var}"] = gdf[f"scale_{var}"].fillna(0)
-        gdf[f"shape_{var}"] = gdf[f"shape_{var}"].fillna(0)
+        logging.info(f"Filling nans for {var}_{TAIL} with 0")
+        gdf[pk(var)] = gdf[pk(var)].fillna(0)
+        gdf[thresh(var)] = gdf[thresh(var)].fillna(0)
+        gdf[scale(var)] = gdf[scale(var)].fillna(0)
+        gdf[shape(var)] = gdf[shape(var)].fillna(0)
 
-        logging.info(f"Converting {var} to float")
-        gdf[f"pk_{var}"] = gdf[f"pk_{var}"].astype(float)
-        gdf[f"thresh_{var}"] = gdf[f"thresh_{var}"].astype(float)
-        gdf[f"scale_{var}"] = gdf[f"scale_{var}"].astype(float)
-        gdf[f"shape_{var}"] = gdf[f"shape_{var}"].astype(float)
+        logging.info(f"Converting {var}_{TAIL} to float")
+        gdf[pk(var)] = gdf[pk(var)].astype(float)
+        gdf[thresh(var)] = gdf[thresh(var)].astype(float)
+        gdf[scale(var)] = gdf[scale(var)].astype(float)
+        gdf[shape(var)] = gdf[shape(var)].astype(float)
 
     # turn it into an xarray dataset
     ds = gdf.set_index(['lat', 'lon', 'event']).to_xarray().isel(event=0)
@@ -99,10 +115,10 @@ if __name__ == "__main__":
         try:
             # make cbars horizontal
             cbar_kwargs = {"label": None, "shrink": 0.9, "orientation": "horizontal", "pad": 0.05}
-            ds[f"pk_{var}"].plot(ax=axs[0], cmap=p_cmap, vmin=PCRIT, cbar_kwargs=cbar_kwargs, vmax=1)
-            ds[f"thresh_{var}"].plot(ax=axs[1], cmap=cmap, cbar_kwargs=cbar_kwargs)
-            ds[f"scale_{var}"].plot(ax=axs[2], cmap=cmap, cbar_kwargs=cbar_kwargs)
-            ds[f"shape_{var}"].plot(ax=axs[3], cmap=cmap, cbar_kwargs=cbar_kwargs) #, vmin=-0.81, vmax=0.28)
+            ds[pk(var)].plot(ax=axs[0], cmap=p_cmap, vmin=PCRIT, cbar_kwargs=cbar_kwargs, vmax=1)
+            ds[thresh(var)].plot(ax=axs[1], cmap=cmap, cbar_kwargs=cbar_kwargs)
+            ds[scale(var)].plot(ax=axs[2], cmap=cmap, cbar_kwargs=cbar_kwargs)
+            ds[shape(var)].plot(ax=axs[3], cmap=cmap, cbar_kwargs=cbar_kwargs) #, vmin=-0.81, vmax=0.28)
 
             for ax in[axs[0], axs[1], axs[2], axs[3]]:
                 ax.add_feature(cfeature.COASTLINE, linewidth=0.5, color="k")
@@ -113,11 +129,11 @@ if __name__ == "__main__":
                 gl.bottom_labels = False
 
             # plot some densities
-            shapes_all = gdf[f'shape_{var}'].values
+            shapes_all = gdf[f'{shape(var)}'].values
             percentiles = np.linspace(0.01, 0.99, 10)
-            shapes =  gdf[f'shape_{var}'].quantile(percentiles)
-            loc    = gdf[f'thresh_{var}'].mean()
-            scale  = gdf[f'scale_{var}'].mean()
+            shapes =  gdf[f'{shape(var)}'].quantile(percentiles)
+            loc    = gdf[f'{thresh(var)}'].mean()
+            scale  = gdf[f'{scale(var)}'].mean()
 
             vmin = min(shapes_all)
             vmax = max(shapes_all)
@@ -142,7 +158,7 @@ if __name__ == "__main__":
                 ax4.yaxis.set_label_position("right")
         
         except Exception as e:
-            logging.error(f"Error plotting {var}: {e}")
+            logging.error(f"Error plotting {var}_{TAIL}: {e}")
             continue
 
         # # add colorbar for shape
