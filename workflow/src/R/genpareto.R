@@ -8,9 +8,9 @@ Must include functions:
 - threshold_selector(var:vector) -> list(params:list, p.value:float, pk:float)
 "
 suppressPackageStartupMessages({
-    library(eva, quietly = TRUE)
-    library(goftest, quietly = TRUE)
-    library(evd, quietly = TRUE)
+  library(eva, quietly = TRUE)
+  library(goftest, quietly = TRUE)
+  library(evd, quietly = TRUE)
 })
 
 cdf <- function(q, params) {
