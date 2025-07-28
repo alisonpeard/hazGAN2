@@ -4,6 +4,8 @@ suppressPackageStartupMessages({
   library(logger, quietly = TRUE)
 })
 
+print("fit_marginals.R - Starting...")
+
 source("workflow/src/R/stats.R")
 source("workflow/src/R/hfuncs.R")
 
@@ -18,6 +20,7 @@ if (!is.null(snakemake@params[["R_funcs"]])) {
   rfunc_file <- snakemake@params[["R_funcs"]]
   source(rfunc_file)
 }
+print("Loaded custom R functions")
 
 # configure logging
 log_file <- snakemake@log[["file"]]
@@ -36,11 +39,13 @@ FIELDS   <- snakemake@params[["fields"]]
 Q        <- snakemake@params[["q"]]
 
 # load input data
+print("Loading input data...")
 daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
 # get functions and args for resampling time
 log_info("Transforming fields...")
+print("Extracting field configs")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
 two_tailed <- sapply(FIELDS, function(x) x$two_tailed)
@@ -66,6 +71,7 @@ field_summary <- function(i) {
 }
 
 # main: fit marginals and transform each field
+print("Fitting marginals for field 1...")
 log_debug(field_summary(1))
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
@@ -75,6 +81,7 @@ events_field1 <- marginal_transformer(
 )
 log_info(paste0("Finished fitting: ", fields[1]))
 
+print("Fitting marginals for field 2...")
 log_debug(field_summary(2))
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q,
@@ -84,6 +91,8 @@ events_field2 <- marginal_transformer(
 )
 log_info(paste0("Finished fitting: ", fields[2]))
 
+
+print("Fitting marginals for field 3...")
 log_debug(field_summary(3))
 events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q,
