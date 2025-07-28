@@ -1,4 +1,7 @@
-library(dplyr)
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(logger)
+})
 # Expected gridcell columns: event, event.rp, time, grid
 
 hfunc_max <- function(gridcell, args) {
@@ -6,7 +9,8 @@ hfunc_max <- function(gridcell, args) {
     group_by(event) |>
     slice(which.max(get(args[1]))) |>
     ungroup() |>
-    select(event, get(args[1]), time, event.rp, grid)
+    select(event, args[1], time, event.rp, grid) |>
+    rename(variable = !!args[1])
   return(res)
 }
 
@@ -46,13 +50,14 @@ hfunc_arg2max <- function(gridcell, args) {
     group_by(event) |>
     slice(which.max(get(args[2]))) |>
     ungroup() |>
-    select(event, get(args[1]), time, event.rp, grid)
+    select(event, args[1], time, event.rp, grid) |>
+    rename(variable = !!args[1])
   return(res)
 }
 
 hfunc_l2norm_argmax <- function(gridcell, args) {
   stopifnot(c("event", "event.rp", "time", "grid") %in% names(gridcell))
-  
+
   l2norm <- function(u, v) {
     return(sqrt(u^2 + v^2))
   }
@@ -63,6 +68,7 @@ hfunc_l2norm_argmax <- function(gridcell, args) {
     group_by(event) |>
     slice(which.max(l2norm)) |>
     ungroup() |>
-    select(event, args[1], time, event.rp, grid)
+    select(event, args[1], time, event.rp, grid) |>
+    rename(variable = !!args[1])
   return(res)
 }
