@@ -18,14 +18,6 @@ import scipy.stats
 TAIL = "upper" # temporarily hardcoded, should be a parameter
 
 
-if __name__ == "__main__":
-    # set up logging
-    logging.basicConfig(
-        filename=snakemake.log.file,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-
 def main(input, output, params):
     EVENTS  = input.events
     FIGa = output.figa
@@ -36,17 +28,19 @@ def main(input, output, params):
     CMAP    = params.cmap
     FIGURES = [FIGa, FIGb, FIGc]
 
+
     def pk(var, tail=TAIL):
-        return pk(var)
+        return f"pk_{tail}_{var}"
 
     def thresh(var, tail=TAIL):
-        return thresh(var)
+        return f"thresh_{tail}_{var}"
 
     def scale(var, tail=TAIL):
-        return scale(var)
+        return f"scale_{tail}_{var}"
 
     def shape(var, tail=TAIL):
-        return shape(var)
+        return f"shape_{tail}_{var}"
+
 
     # load GPD-fitted data   
     df = pd.read_parquet(EVENTS)
@@ -82,23 +76,21 @@ def main(input, output, params):
         gdf[shape(var)] = gdf[shape(var)].astype(float)
 
     # turn it into an xarray dataset
+    logging.info("Converting GeoDataFrame to xarray Dataset")
     ds = gdf.set_index(['lat', 'lon', 'event']).to_xarray().isel(event=0)
 
-    print(f"Latitude dimensions: {gdf['lat'].nunique()=}")
-    print(f"Longitude dimensions: {gdf['lon'].nunique()=}")
     logging.info(f"Latitude dimensions: {gdf['lat'].nunique()=}")
     logging.info(f"Longitude dimensions: {gdf['lon'].nunique()=}")
 
     n = 0
     for var, info in FIELDS.items():
+        logging.info(f"Plotting {var}_{TAIL}")
         fig, axs = plt.subplots(1, 4, figsize=(14, 3), sharex=True, sharey=True,
         subplot_kw={'projection': ccrs.PlateCarree()}
         )
 
         # [left, bottom, width, height]
-        # ax4 = fig.add_axes([0.825, 0.1, 0.1, 0.8])
         ax4 = fig.add_axes([0.675, 0.25, 0.15, 0.55])
-        # ax4 = fig.add_axes([0.8, 0, 0.2, 1])
         plt.subplots_adjust(right=0.65) 
 
         cmap = CMAP
@@ -111,15 +103,24 @@ def main(input, output, params):
         else:
             scipy_distn = info["distn"]
         dist = getattr(scipy.stats, scipy_distn)
+        logging.info(f"Using distribution: {scipy_distn}")
+        logging.info(f"Loaded distribution: {dist}")
 
         try:
             # make cbars horizontal
             cbar_kwargs = {"label": None, "shrink": 0.9, "orientation": "horizontal", "pad": 0.05}
+            logging.info(f"Plotting {var}_{TAIL}")
+            logging.info(f"Plotting {pk(var)}")
             ds[pk(var)].plot(ax=axs[0], cmap=p_cmap, vmin=PCRIT, cbar_kwargs=cbar_kwargs, vmax=1)
+            logging.info(f"Plotting {thresh(var)}")
             ds[thresh(var)].plot(ax=axs[1], cmap=cmap, cbar_kwargs=cbar_kwargs)
+            logging.info(f"Plotting {scale(var)}")
             ds[scale(var)].plot(ax=axs[2], cmap=cmap, cbar_kwargs=cbar_kwargs)
+            logging.info(f"Plotting {shape(var)}")
             ds[shape(var)].plot(ax=axs[3], cmap=cmap, cbar_kwargs=cbar_kwargs) #, vmin=-0.81, vmax=0.28)
+            logging.info("Plotting complete")
 
+            logging.info("Adding geo-features")
             for ax in[axs[0], axs[1], axs[2], axs[3]]:
                 ax.add_feature(cfeature.COASTLINE, linewidth=0.5, color="k")
                 gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='white', alpha=0.1)
@@ -129,11 +130,10 @@ def main(input, output, params):
                 gl.bottom_labels = False
 
             # plot some densities
-            shapes_all = gdf[f'{shape(var)}'].values
+            logging.info(f"Plotting densities for {var}_{TAIL}")
+            shapes_all = gdf[shape(var)].values
             percentiles = np.linspace(0.01, 0.99, 10)
             shapes =  gdf[f'{shape(var)}'].quantile(percentiles)
-            loc    = gdf[f'{thresh(var)}'].mean()
-            scale  = gdf[f'{scale(var)}'].mean()
 
             vmin = min(shapes_all)
             vmax = max(shapes_all)
@@ -141,11 +141,11 @@ def main(input, output, params):
             colors = [plt.get_cmap(cmap)(norm(value)) for value in shapes]
         
             # plot the density for three sample grid points
-            for i, shape in enumerate(shapes):
+            for i, shape_i in enumerate(shapes):
                 u = np.linspace(0.95, 0.999, 100)
-                x = dist.ppf(u, shape) #, loc=loc, scale=scale)
-                y = dist.pdf(x, shape) #, loc=loc, scale=scale)
-                ax4.plot(x, y, label=f"ξ={shape:.2f}", color=colors[i])
+                x = dist.ppf(u, shape_i)
+                y = dist.pdf(x, shape_i)
+                ax4.plot(x, y, label=f"ξ={shape_i:.2f}", color=colors[i])
 
                 # axis cleanup
                 def percentage_formatter(x, pos):
@@ -156,6 +156,8 @@ def main(input, output, params):
                 ax4.yaxis.set_major_formatter(percentage_formatter)
                 ax4.tick_params(direction='in')
                 ax4.yaxis.set_label_position("right")
+            
+            plt.close(fig)
         
         except Exception as e:
             logging.error(f"Error plotting {var}_{TAIL}: {e}")
@@ -187,4 +189,19 @@ def main(input, output, params):
 
         # plt.tight_layout()
         fig.savefig(FIGURES[n], bbox_inches="tight", dpi=300)
+        logging.info(f"Saved figure {FIGURES[n]} for {var}_{TAIL}")
         n += 1
+
+
+if __name__ == "__main__":
+    # set up logging
+    logging.basicConfig(
+        filename=snakemake.log.file,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
+    main(input, output, params)
