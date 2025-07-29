@@ -499,7 +499,8 @@ marginal_transformer <- function(df, metadata, var, q,
           log_level = log_level,
           log_fit_gridcell_error = log_fit_gridcell_error,
           ecdf = ecdf,
-          scdf = scdf
+          scdf = scdf,
+          ljung_box = ljung_box
         )
       )
     )
