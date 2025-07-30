@@ -46,7 +46,10 @@ checkpoint make_rgb_images:
 
 
 rule make_training_data:
-    """Convert dataframe to training netCDF."""
+    """Convert dataframe to training netCDF.
+    
+    >>> snakemake --profile profiles/slurm make_training_data
+    """
     input:
         events=os.path.join(PROCESSING_DIR, "events.parquet"),
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
