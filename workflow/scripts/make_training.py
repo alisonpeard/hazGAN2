@@ -75,6 +75,8 @@ def main(input, output, params):
     ny      = gdf["lat"].nunique()
     T       = gdf["event"].nunique()
 
+    assert nfields * nx * ny * T == gdf.shape[0], f"Unexpected shape: {gdf.shape=} {nfields=}, {nx=}, {ny=}, {T=}"
+
     # process monthly medians
     medians["month_id"] = medians["month"].map(lambda x: list(month_name).index(x))
     medians = medians.sort_values(["month_id", "lat", "lon"], ascending=[True, True, True])
@@ -85,6 +87,7 @@ def main(input, output, params):
     lat  = gdf["lat"].unique()
     lon  = gdf["lon"].unique()
     X    = gdf[FIELDS].values.reshape([T, ny, nx, nfields])
+    #! ValueError: cannot reshape array of size 18259968 into shape (1485,64,64,3)
     D    = gdf[[f"day_of_{FIELDS[0]}"]].values.reshape([T, ny, nx])
     U0   = gdf[[f"ecdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
     U1   = gdf[[f"scdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])

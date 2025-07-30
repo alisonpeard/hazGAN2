@@ -346,12 +346,23 @@ fit_gridcell <- function(
       "stats::fit_gridcell - Empty footprint dataframe for grid cell ",
       grid_i
     ))
-    # Create a 1-row dummy frame with all required columns
-    # will be filtered out later
+    # Create a dummy frame
+    unique_events <- gridcell |>
+      select(event, event.rp, lat, lon) |>
+      distinct()
     return(data.frame(
-      event = NA, variable = NA, time = NA, event.rp = NA,
-      grid = grid_i, thresh = NA, scale = NA, shape = NA,
-      p = 0, pk = 0, ecdf = NA, scdf = NA, box.test = 0
+      event = unique_events$event,
+      variable = NA,  # No meaningful variable value since hfunc failed
+      time = NA,      # No meaningful time since hfunc failed  
+      event.rp = unique_events$event.rp,
+      lat = unique_events$lat,
+      lon = unique_events$lon,
+      grid = grid_i,
+      thresh_upper = NA, scale_upper = NA, shape_upper = NA,
+      p_upper = 0, pk_upper = 0, box.test.upper = 0,
+      thresh_lower = NA, scale_lower = NA, shape_lower = NA,
+      p_lower = 0, pk_lower = 0, box.test.lower = 0,
+      ecdf = NA, scdf = NA
     ))
   }
 
