@@ -9,7 +9,7 @@ setup:
     input:
       era5: "/Users/alison/Documents/DPhil/data/era5"
       imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
-    geoenv: '../environments/apple-silicon/geo.yaml' # if running from .smk file
+    geoenv: '../environments/apple-silicon/geo.yaml'
     renv: "../environments/apple-silicon/r.yaml"
     datadir: "/Users/alison/Local/data/hazGAN2"
     gpuenv: ""
@@ -21,7 +21,7 @@ setup:
     input:
       era5: "/Users/alison/Documents/DPhil/data/era5"
       imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
-    geoenv: '../environments/apple-silicon/geo.yaml' # if running from .smk file
+    geoenv: '../environments/apple-silicon/geo.yaml'
     renv: "../environments/apple-silicon/r.yaml"
     datadir: "/Users/alison/Local/data/hazGAN2"
     gpuenv: ""

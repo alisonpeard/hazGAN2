@@ -9,7 +9,7 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-input_path <- "projects/poweruk/resources/cyclones_midlands.csv"
+input_path <- "projects/poweruk2/resources/cyclones_midlands.csv"
 
 identify_events <- function(daily, rfunc = NULL) {
   # read text file with dates from ..resources/cyclones_midlands.txt
@@ -21,8 +21,8 @@ identify_events <- function(daily, rfunc = NULL) {
 
   # assign event ids to daily data
   metadata <- left_join(
-    daily,
     event_data[c("time", "wind", "event")],
+    daily,
     by = "time"
   )
   if (is.null(metadata$event)) {
