@@ -60,9 +60,7 @@ rule make_training_data:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
         fields=FIELDS,
-        domain=config["domain"],
-        year0=config["year0"],
-        yearn=config["yearn"]
+        domain=config["domain"]
     conda:
         GEOENV
     log:
