@@ -1,6 +1,6 @@
 dataset: era5
 year0: 2004
-yearn: 2018 # 2019
+yearn: 2019
 antecedent_buffer_days: 30
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
@@ -12,7 +12,7 @@ exclude:
 resolution:
   lon: 64
   lat: 64
-sfunc: additive # autumn
+sfunc: additive # or spring, summer, autumn, winter
 rfunc:
   args:
   func: dummy
