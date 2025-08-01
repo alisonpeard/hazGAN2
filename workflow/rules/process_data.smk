@@ -13,6 +13,8 @@ event footprints for training GAN.
 >>> snakemake --profile profiles/cluster/ --use-conda process_all_data
 >>> snakemake --profile profiles/slurm/ --executor slurm --use-conda process_all_data
 """
+
+
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
@@ -22,7 +24,7 @@ rule process_all_data:
 checkpoint make_rgb_images:
     """Make PNGs of the training data.
     
-    >>> snakemake --profile profiles/cluster/ --use-conda make_rgb_images
+    >>> snakemake --profile profiles/slurm make_rgb_images
     """
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
@@ -32,7 +34,7 @@ checkpoint make_rgb_images:
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
         event_subset=config['event_subset'],
-        do_subset=True, # TODO: do this better
+        do_subset=False,
         eps = 1e-6,
         domain = config["domain"],
         resx = RESOLUTION['lon'],
@@ -51,14 +53,16 @@ rule make_training_data:
     >>> snakemake --profile profiles/slurm make_training_data
     """
     input:
-        events=os.path.join(PROCESSING_DIR, "events.parquet"),
+        events=os.path.join(PROCESSING_DIR, "fitted.parquet"),
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
         medians=os.path.join(PROCESSING_DIR, "medians.parquet")
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
     params:
         fields=FIELDS,
-        domain=config["domain"]
+        domain=config["domain"],
+        year0=config["year0"],
+        yearn=config["yearn"]
     conda:
         GEOENV
     log:
@@ -78,7 +82,7 @@ rule fit_marginals:
         metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
         daily=os.path.join(PROCESSING_DIR, "daily.parquet")
     output:
-        events=os.path.join(PROCESSING_DIR, "events.parquet")
+        events=os.path.join(PROCESSING_DIR, "fitted.parquet")
     params:
         fields=FIELDS,
         R_funcs=RFUNCS

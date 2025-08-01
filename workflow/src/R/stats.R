@@ -96,8 +96,6 @@ scdf <- function(train, params, cdf) {
     names(params) %in% c("thresh_lower", "scale_lower", "shape_lower")
   ]
 
-  log_debug(paste0("params_upper: ", params$thresh_upper[1:5], collapse = ", "))
-
   # rename without "_upper" or "_lower"
   params_upper <- setNames(
     params_upper, c("thresh", "scale", "shape")
@@ -124,10 +122,6 @@ scdf <- function(train, params, cdf) {
       exceedances_upper <- x_upper - loc_upper
       pthresh_upper <- ecdf(train)(loc_upper)
       u_upper <- 1 - (1 - pthresh_upper)
-
-      log_debug(paste0("length(exceedances_upper): ", length(exceedances_upper)))
-      log_debug(paste0("length(params_upper): ", length(params_upper)))
-      log_debug(paste0("names(params_upper): ", paste(names(params_upper), collapse = ", ")))
 
       u_upper <- u_upper * (1 - cdf(exceedances_upper, params_upper))
       u[mask_upper] <- u_upper
@@ -283,7 +277,6 @@ fit_tails <- function(
     footprint$pk_lower <- NA
   }
 
-
   # semiparametric CDF
   # if (upper_result$success || lower_result$success) {
   upper_params <- c("thresh_upper", "scale_upper", "shape_upper")
@@ -293,9 +286,6 @@ fit_tails <- function(
     footprint[upper_params],
     footprint[lower_params]
   )
-
-  log_debug(paste0("names(params): ", paste(names(params), collapse = ", ")))
-  log_debug(paste0("dim(params): ", dim(params)))
 
   log_info("Calculating semiparametric CDF")
   footprint$scdf <- scdf(
@@ -319,11 +309,6 @@ fit_gridcell <- function(
   # ! bug in here or before here
   # fit marginals using POT methods
   setup_logger(log_file, log_level)
-  log_debug(paste0("Fitting grid cell: ", grid_i))
-
-  log_debug(paste0(
-    "Df var length (i): ", length(df[[hfunc_args[1]]])
-  ))
 
   # extract marginal
   gridcell <- df[df$grid == grid_i, ]
@@ -332,13 +317,8 @@ fit_gridcell <- function(
     metadata[, c("time", "event", "event.rp")],
     by = c("time" = "time")
   )
-  log_debug(paste0(
-    "Gridcell length (i): ", length(gridcell[[hfunc_args[1]]])
-  ))
 
   footprint <- hfunc(gridcell, hfunc_args)
-
-  log_debug(paste0("Footprint length (ii): ", length(footprint$variable)))
 
   # Check for no footprints early
   if (nrow(footprint) == 0) {
@@ -369,7 +349,6 @@ fit_gridcell <- function(
   train <- footprint # legacy from previous train/test split
 
   # main fitting functions happen here
-  log_debug("debug point B")
   log_debug(paste0("Train length: ", length(train$variable))) #! 0
   log_debug(paste0("Train max: ", max(train$variable, na.rm = TRUE))) #! -Inf
   log_debug(paste0("Train min: ", min(train$variable, na.rm = TRUE))) #! Inf
@@ -399,11 +378,10 @@ marginal_transformer <- function(df, metadata, var, q,
                                  log_file = tempfile(fileext = ".log"),
                                  log_level = INFO) {
   log_info(paste0("Starting marginals transformation for ", var))
-  log_debug("Debug point A")
-  log_debug(paste0("Length var: ", length(df[[var]]))) #! 20946944
-  log_debug(paste0("Threshold: ", q)) #! NULL
-  log_debug(paste0("Max variable: ", max(df[[var]], na.rm = TRUE))) #! 0.4
-  log_debug(paste0("Min variable: ", min(df[[var]], na.rm = TRUE))) #! -0.4
+  log_debug(paste0("df has ", nrow(df), " rows."))
+  log_debug(paste0("Threshold: ", q))
+  log_debug(paste0("Max variable: ", max(df[[var]], na.rm = TRUE)))
+  log_debug(paste0("Min variable: ", min(df[[var]], na.rm = TRUE)))
   log_debug(paste0("Mean variable: ", mean(df[[var]], na.rm = TRUE)))
 
   # load functions for specified extremal distribution
@@ -429,6 +407,21 @@ marginal_transformer <- function(df, metadata, var, q,
   )
   gridchunks <- unname(gridchunks)
   nchunks <- length(gridchunks)
+  log_debug(paste0("Chunksize: ", chunksize))
+
+  # check no coordinates are lost
+  gridchunk_sum <- 0
+  for (chunk in gridchunks) {
+    gridchunk_sum <- gridchunk_sum + length(  chunk)
+  }
+  if (gridchunk_sum != length(gridcells)) {
+    stop(paste0(
+      "stats::marginal_transformer - ",
+      "Chunking lost some grid cells. ",
+      "Expected: ", length(gridcells), ", got: ", gridchunk_sum
+    ))
+  }
+  rm(gridchunk_sum)
 
   # DRY RUN: only using single gridchunk!
   if (DRY_RUN) {
@@ -455,8 +448,7 @@ marginal_transformer <- function(df, metadata, var, q,
   ncores <- max(1, min(availableCores(), nchunks))
   plan(multisession, workers = ncores)
   log_debug(paste0("Available cores: ", availableCores()))
-  log_debug(paste0("Number of chunks: ", nchunks))
-  log_debug(paste0("Using ", ncores, " cores"))
+  log_debug(paste0("Number of chunks: ", nchunks, " and cores: ", ncores))
 
   fit_gridchunk <- function(i) {
 
@@ -470,13 +462,14 @@ marginal_transformer <- function(df, metadata, var, q,
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
     log_threshold(log_level)
 
-    log_debug(paste0("Processing grid chunk ", i, " of ", nchunks))
+    log_debug(paste0("Processing grid chunk ", i, "/", nchunks))
 
-    df <- readRDS(tmps[[i]])
+    df <- readRDS(tmps[[i]]) # load subset of df for grid chunk
     meta <- readRDS(metadata_file)
 
     gridchunk <- gridchunks[[i]]
-    maxima <- lapply(gridchunk, function(grid_i) {
+
+    footprints <- lapply(gridchunk, function(grid_i) {
       fit_gridcell(
         grid_i, df, meta,
         distn, two_tailed,
@@ -484,7 +477,7 @@ marginal_transformer <- function(df, metadata, var, q,
         log_file, log_level
       )
     })
-    bind_rows(maxima)
+    bind_rows(footprints)
   }
 
   # fit gridcells with multiprocessing
@@ -531,6 +524,7 @@ marginal_transformer <- function(df, metadata, var, q,
     coords,
     by = c("grid" = "grid")
   )
+  log_debug(paste0("536: Mapped transformed has ", nrow(transformed), " rows."))
 
   # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",

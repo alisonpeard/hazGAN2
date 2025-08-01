@@ -1,210 +1,171 @@
-"""
-Process the marginals with fitted tails to make training dataset for the GAN.
-
-NOTE: generic names (shape, scale, loc) will be used regardless of distribution.
-These should be set to NaN accordingly.
-
-TODO: This script is bloated, it can be made way more concise.
-"""
-# %%
+"""Process marginals with fitted tail(s) to create GAN training dataset."""
 import os
 import sys
 import logging
-os.environ["USE_PYGEOS"] = "0"
+from calendar import month_name
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 import geopandas as gpd
-from calendar import month_name
+from typing import Tuple
+
+os.environ["USE_PYGEOS"] = "0"
+
+
+def load_medians(path:str) -> pd.DataFrame:
+    """Load monthly medians and prepare for tensor creation."""
+    medians = pd.read_parquet(path)
+    medians["lat"] = medians["lat"].astype(float)
+    medians["lon"] = medians["lon"].astype(float)
+    medians["month_id"] = medians["month"].map(lambda x: list(month_name).index(x))
+    medians = medians.sort_values(["month_id", "lat", "lon"]).drop(columns=["month_id"])
+    return medians
+
+
+def load_events(
+        events_path:str, metadata_path:str, fields:list
+        ) -> Tuple[gpd.GeoDataFrame, pd.Series, float]:
+    """Load events data and metadata, return GeoDataFrame and event times."""
+    # Load events
+    df = pd.read_parquet(events_path)
+    df.columns = [col.replace(".", "_") for col in df.columns]
+    df[f'day_of_{fields[0]}'] = df.groupby('event')[f'time_{fields[0]}'].rank('dense')
+    
+    # Load metadata
+    metadata = pd.read_parquet(metadata_path)
+    metadata["time"] = pd.to_datetime(metadata["time"])
+    event_times = pd.to_datetime(metadata[['event', 'time']].groupby('event').first()['time'].reset_index(drop=True))
+    event_sizes = metadata[["event", "event.size"]].groupby("event").mean()["event.size"]
+    yearly_rate = metadata['lambda'].iloc[0]
+    
+    # Create GeoDataFrame
+    df["size"] = df["event"].map(event_sizes)
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["lon"], df["lat"]), crs="EPSG:4326")
+    gdf["lat"] = gdf.geometry.y
+    gdf["lon"] = gdf.geometry.x
+    gdf = gdf.sort_values(["event", "lat", "lon"]).reset_index(drop=True)
+    
+    return gdf, event_times, yearly_rate
+
+
+def validate_data(gdf:gpd.GeoDataFrame, fields:list) -> None:
+    """Validate ECDF values are in [0, 1]."""
+    for field in fields:
+        col = f"ecdf_{field}"
+        assert 0 <= gdf[col].min() and gdf[col].max() <= 1, f"ECDF {col} not in [0,1]"
+
+
+def create_parameters(
+        gdf:gpd.GeoDataFrame, h:int, w:int, fields:list
+        ) -> np.ndarray:
+    """Create hxwx6xk parameter array for distribution parameters."""
+    params = np.full((h, w, 6, len(fields)), np.nan, dtype=np.float32)
+    
+    prefixes = ["thresh_", "scale_", "shape_"]
+    suffixes = ["", "_lower", "_upper"]
+    param_map = {0: 3, 1: 0, 2: 0}  # suffix index to parameter offset
+    
+    for k, field in enumerate(fields):
+        for i, suffix in enumerate(suffixes):
+            for j, prefix in enumerate(prefixes):
+                col = f"{prefix}{field}{suffix}"
+                if col in gdf.columns:
+                    values = gdf[[col, "lat", "lon"]].groupby(["lat", "lon"]).mean()[col].values
+                    params[:, :, j + param_map[i], k] = values.reshape([h, w])
+    
+    return params
+
+
+def create_tensors(
+        gdf:gpd.GeoDataFrame, medians:pd.DataFrame, fields:list
+        ) -> dict:
+    """Create all training tensors."""
+    w, h, n = gdf["lon"].nunique(), gdf["lat"].nunique(), gdf["event"].nunique()
+    k = len(fields)
+    logging.info(f"Found {n} events.")
+    
+    # Coordinates
+    lats, lons = gdf["lat"].unique(), gdf["lon"].unique()
+    
+    # Main tensors
+    anomalies = gdf[fields].values.reshape([n, w, h, k])
+    days_of = gdf[[f"day_of_{fields[0]}"]].values.reshape([n, h, w])
+    ecdf = gdf[[f"ecdf_{f}" for f in fields]].values.reshape([n, h, w, k])
+    scdf = gdf[[f"scdf_{f}" for f in fields]].values.reshape([n, h, w, k])
+    months = medians["month"].unique()
+    medians = medians[fields].values.reshape([12, h, w, k])
+    
+    # Event data
+    return_periods = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(n)
+    sizes = gdf[["event", "size"]].groupby("event").mean().values.reshape(n)
+    
+    # Parameters
+    params = create_parameters(gdf, h, w, fields)
+    
+    return {
+        'coords': (lats, lons),
+        'tensors': (
+            anomalies, days_of, ecdf, scdf, medians, 
+            return_periods, sizes, params
+            ),
+        'months': months
+    }
 
 
 def main(input, output, params):
-    # load parameters
-    EVENTS   = input.events
-    METADATA = input.metadata
-    MEDIANS  = input.medians
-    OUTPUT   = output.data
-    FIELDS = [key for key in params.fields.keys()]
-
-    # load monthly medians
-    medians = pd.read_parquet(MEDIANS)
-    medians["lat"] = medians["lat"].astype(float)
-    medians["lon"] = medians["lon"].astype(float)
-    msg = f"Shape of monthly medians: {medians.shape=}"
-    logging.info(msg) # 49162 is 64 x 64 x 12
-
-    # load fitted data                                                                                                        
-    df = pd.read_parquet(EVENTS)
-    df.columns = [col.replace(".", "_") for col in df.columns]
-    df[f'day_of_{FIELDS[0]}'] = df.groupby('event')[f'time_{FIELDS[0]}'].rank('dense')
-    logging.info(f"Latitudes: {df.lat.nunique()=}")
-
-    # get event times and durations
-    events = pd.read_parquet(METADATA)
-    times = pd.to_datetime(
-        events[['event', 'time']]
-        .groupby('event').first()['time']
-        .reset_index(drop=True)
-        )
-    rate = events['lambda'][0]
-    events = events[["event", "event.size", "lambda"]].groupby("event").mean()
-    events = events.to_dict()["event.size"]
-    df["size"] = df["event"].map(events)
-
-    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(
-        df["lon"],
-        df["lat"],
-        crs="EPSG:4326"
-    )).set_crs("EPSG:4326")
-
-    # check ecdfs are in (0, 1)
-    ecdf_cols = [f"ecdf_{field}" for field in FIELDS]
-    for col in ecdf_cols:
-        assert gdf[col].max() <= 1, f"ECDF values for {col} should be <= 1"
-        assert gdf[col].min() >= 0, f"ECDF values for {col} should be >= 0"
-
-    # use lat and lon columns to label grid points in (i,j) format
-    gdf["lat"] = gdf["geometry"].apply(lambda x: x.y)
-    gdf["lon"] = gdf["geometry"].apply(lambda x: x.x)
-    gdf = gdf.sort_values(["lat", "lon", "event"], ascending=[True, True, True])
-
-    #  make netcdf file
-    nfields = len(FIELDS)
-    nx      = gdf["lon"].nunique()
-    ny      = gdf["lat"].nunique()
-    T       = gdf["event"].nunique()
-
-    assert nfields * nx * ny * T == gdf.shape[0], f"Unexpected shape: {gdf.shape=} {nfields=}, {nx=}, {ny=}, {T=}"
-
-    # process monthly medians
-    medians["month_id"] = medians["month"].map(lambda x: list(month_name).index(x))
-    medians = medians.sort_values(["month_id", "lat", "lon"], ascending=[True, True, True])
-    medians = medians.drop(columns=["month_id"])
-
-    # make training tensors
-    gdf  = gdf.sort_values(["event", "lat", "lon"], ascending=[True, True, True]) # [T, i, j, field]
-    lat  = gdf["lat"].unique()
-    lon  = gdf["lon"].unique()
-    X    = gdf[FIELDS].values.reshape([T, ny, nx, nfields])
-    #! ValueError: cannot reshape array of size 18259968 into shape (1485,64,64,3)
-    D    = gdf[[f"day_of_{FIELDS[0]}"]].values.reshape([T, ny, nx])
-    U0   = gdf[[f"ecdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
-    U1   = gdf[[f"scdf_{field}" for field in FIELDS]].values.reshape([T, ny, nx, nfields])
-    z    = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(T)
-    s    = gdf[["event", "size"]].groupby("event").mean().values.reshape(T)
-    M    = medians[FIELDS].values.reshape([12, ny, nx, nfields])
-
-    assert lat.shape == (ny,), f"Unexpected shape: {lat.shape=}"
-    assert lon.shape == (nx,), f"Unexpected shape: {lon.shape=}"
-    assert X.shape == (T, ny, nx, nfields), f"Unexpected shape: {X.shape=}"
-    assert D.shape == (T, ny, nx), f"Unexpected shape: {D.shape=}"
-    assert U0.shape == (T, ny, nx, nfields), f"Unexpected shape: {U0.shape=}"
-    assert U1.shape == (T, ny, nx, nfields), f"Unexpected shape: {U1.shape=}"
-
-    print(f"Shape {nx=}")
-    print(f"Shape {ny=}")
-    print(f"Shape {T=}")
-    print(f"Shape {nfields=}")
-    print(f"Shape {lat.shape=}")
-    print(f"Shape {lon.shape=}")
-    print(f"Shape {U0.shape=}")
-    print(f"Shape {U1.shape=}")
-
-    # TODO: add checks here of lifetime max / total
-    logging.warning("Lifetime max / total not checked")
+    """Main processing function."""
+    fields = list(params.fields.keys())
     
-    if False: # old
-        gpd_params = ([f"thresh_{var}" for var in FIELDS] + [f"scale_{var}" for var in FIELDS] + [f"shape_{var}" for var in FIELDS])
-        gdf_params = (gdf[[*gpd_params, "lon", "lat"]].groupby(["lat", "lon"]).mean().reset_index())
-        thresh = np.array(gdf_params[[f"thresh_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-        scale = np.array(gdf_params[[f"scale_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-        shape = np.array(gdf_params[[f"shape_{var}" for var in FIELDS]].values.reshape([ny, nx, nfields]))
-        params = np.stack([thresh, scale, shape], axis=-2)
-        logging.info("Parameters shape: {}".format(params.shape))
-    else:
-        # import pandas as pd
-        # import numpy as np
-        # param_cols = [
-        #     "thresh_u10_lower", "thresh_u10_upper", "thresh_r30", "thresh_v10",
-        #     "scale_u10_lower", "scale_u10_upper", "scale_r30", "scale_v10",
-        #     "shape_u10_lower", "shape_u10_upper", "shape_r30", "shape_v10"
-        #     ]
-        # FIELDS = ["u10", "v10", "r30"]
-        # make params H x W x 6 x K of np.nan
-        # ny, nx = 64, 64
-        # nfields = len(FIELDS)
-        # gdf = np.random.random((ny*nx, len(param_cols) + 2))
-        # gdf = pd.DataFrame(gdf, columns=["lat", "lon"] + param_cols)
-
-        param_prefixes = ["thresh_", "scale_", "shape_"]
-        param_suffixes = ["", "_lower", "_upper"]
-
-        params = np.full((ny, nx, 6, nfields), np.nan, dtype=np.float32)
-
-        for k, field in enumerate(FIELDS):
-            for i, suffix in enumerate(param_suffixes):
-                for j, prefix in enumerate(param_prefixes):
-                    param_col = f"{prefix}{field}{suffix}"
-                    logging.info(f"{i=}, {j=}, {param_col=}, {param_col in gdf.columns=}")
-                    if param_col in gdf.columns:
-
-                        gdf_param = gdf[[param_col] + ["lat", "lon"]]
-                        gdf_param = gdf_param.groupby(["lat", "lon"]).mean().reset_index()
-                        param = gdf_param[param_col].values.reshape([ny, nx])
-
-                        
-                        _i = 3 * [0, 1, 0][i]
-                        print(f"{_i=}, {_i+j=}, {params.shape=}")
-                        params[:, :, j + _i, k] = param
-
-
-    # make an xarray dataset for training
-    ds = xr.Dataset({'uniform': (['time', 'lat', 'lon', 'field'], U1),
-                    'ecdf': (['time', 'lat', 'lon', 'field'], U0),
-                    'anomaly': (['time', 'lat', 'lon', 'field'], X),
-                    'medians': (['month', 'lat', 'lon', 'field'], M),
-                    f'day_of_{FIELDS[0]}': (['time', 'lat', 'lon'], D),
-                    'event_rp': (['time'], z),
-                    'duration': (['time'], s),
-                    'params': (['lat', 'lon', 'param', 'field'], params),
-                    },
-                    coords={'lat': (['lat'], lat),
-                            'lon': (['lon'], lon),
-                            'time': times,
-                            'field': FIELDS,
-                            'param': [
-                                "loc_upper", "scale_upper", "shape_upper",
-                                "loc_lower", "scale_lower", "shape_lower"
-                                ],
-                            'month': medians["month"].unique()
-                    },
-                    attrs={'CRS': 'EPSG:4326',
-                            'yearly_freq': rate,
-                            'fields_info': str(FIELDS)})
-
-    assert ds.uniform.shape[1:] == (ny, nx, nfields), f"Unexpected shape: {ds.uniform.shape=}"
-    logging.info(f"Shape of dataset: {ds.uniform.shape=}")
-    print(f"Shape of dataset: {ds.uniform.shape=}")
-
-    # save
-    logging.info("Finished! Saving to netcdf...")
-    ds.to_netcdf(OUTPUT)
-    logging.info("Saved to {}".format(OUTPUT))
+    logging.info("Loading data...")
+    medians = load_medians(input.medians)
+    gdf, times, rate = load_events(input.events, input.metadata,
+                                   fields, params.year0, params.yearn)
+    
+    logging.info("Validating and processing...")
+    validate_data(gdf, fields)
+    data = create_tensors(gdf, medians, fields)
+    
+    logging.info("Creating dataset...")
+    lats, lons = data['coords']
+    anomalies = data["tensors"][0]
+    days_of   = data["tensors"][1]
+    ecdf      = data["tensors"][2]
+    scdf      = data["tensors"][3]
+    medians   = data["tensors"][4]
+    return_periods = data["tensors"][5]
+    sizes     = data["tensors"][6]
+    params    = data["tensors"][7] # overwriting snakemake params here
+    
+    ds = xr.Dataset({
+        'uniform': (['time', 'lat', 'lon', 'field'], scdf),
+        'ecdf': (['time', 'lat', 'lon', 'field'], ecdf),
+        'anomaly': (['time', 'lat', 'lon', 'field'], anomalies),
+        'medians': (['month', 'lat', 'lon', 'field'], medians),
+        f'day_of_{fields[0]}': (['time', 'lat', 'lon'], days_of),
+        'event_rp': (['time'], return_periods),
+        'duration': (['time'], sizes),
+        'params': (['lat', 'lon', 'param', 'field'], params),
+    }, coords={
+        'lat': lats, 'lon': lons,
+        'time': times,
+        'field': fields,
+        'param': ["loc_upper", "scale_upper", "shape_upper", "loc_lower", "scale_lower", "shape_lower"],
+        'month': data['months']
+    }, attrs={'CRS': 'EPSG:4326', 'yearly_freq': rate, 'fields_info': str(fields)})
+    
+    logging.info(f"Saving dataset {ds.uniform.shape} to {output.data}")
+    ds.to_netcdf(output.data)
 
 
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-        logging.FileHandler(snakemake.log.file),
-        logging.StreamHandler(sys.stdout)
-    ]
+        handlers=[logging.FileHandler(snakemake.log.file), logging.StreamHandler(sys.stdout)]
     )
-
     input = snakemake.input
     output = snakemake.output
     params = snakemake.params
+    logging.info(f"Input: {input}, Output: {output}, Params: {params}")
     main(input, output, params)
-# %%

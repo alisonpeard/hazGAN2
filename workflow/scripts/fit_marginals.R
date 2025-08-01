@@ -9,11 +9,6 @@ print("fit_marginals.R - Starting...")
 source("workflow/src/R/stats.R")
 source("workflow/src/R/hfuncs.R")
 
-# If R functions are provided in params
-#  replace functions in the global environment
-# with those provided in the params
-# this allows for custom functions to be used
-# without modifying the workflow source code.
 
 if (!is.null(snakemake@params[["R_funcs"]])) {
   # overwrite with any custom functions defined in project/src/funcs.R
@@ -39,13 +34,11 @@ FIELDS   <- snakemake@params[["fields"]]
 Q        <- snakemake@params[["q"]]
 
 # load input data
-print("Loading input data...")
 daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
 # get functions and args for resampling time
 log_info("Transforming fields...")
-print("Extracting field configs")
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
 two_tailed <- sapply(FIELDS, function(x) x$two_tailed)
@@ -70,8 +63,18 @@ field_summary <- function(i) {
   return(summary_msg)
 }
 
+# figure out expected output length: metadata
+num_events <- length(unique(metadata$event))
+num_x <- length(unique(daily$lon))
+num_y <- length(unique(daily$lat))
+num_fields <- length(fields)
+expected_rows <- num_events * num_x * num_y * num_fields
+log_debug(paste0(
+  "Expected number of rows in output: ", expected_rows
+))
+
 # main: fit marginals and transform each field
-print("Fitting marginals for field 1...")
+print("Fitting marginals for field 1...") #! length(daily): 20946944
 log_debug(field_summary(1))
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
@@ -80,6 +83,9 @@ events_field1 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[1]))
+log_debug(paste0(
+  fields[1], " with ", nrow(events_field1), " rows."
+))
 
 print("Fitting marginals for field 2...")
 log_debug(field_summary(2))
@@ -90,6 +96,9 @@ events_field2 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[2]))
+log_debug(paste0(
+  fields[2], " with ", nrow(events_field2), " rows."
+))
 
 
 print("Fitting marginals for field 3...")
@@ -101,6 +110,9 @@ events_field3 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))
+log_debug(paste0(
+  fields[3], " with ", nrow(events_field3), " rows."
+))
 
 # combine fields
 renamer <- function(df, var) {
@@ -122,6 +134,10 @@ events <- events_field1 |>
   inner_join(events_field3, by = c("lat", "lon", "event", "event.rp"))
 
 events$thresh.q <- Q # keep track of threshold used
+
+log_debug(paste0(
+  "Combined events data has ", nrow(events), " rows."
+))
 
 # save results
 log_info("fit_marginals.R - Saving results...")
