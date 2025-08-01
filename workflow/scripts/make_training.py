@@ -31,10 +31,12 @@ def load_events(
     df = pd.read_parquet(events_path)
     df.columns = [col.replace(".", "_") for col in df.columns]
     df[f'day_of_{fields[0]}'] = df.groupby('event')[f'time_{fields[0]}'].rank('dense')
+    times_in_df = list(set(pd.to_datetime(df[f'time_{fields[0]}']).values))
     
     # Load metadata
     metadata = pd.read_parquet(metadata_path)
     metadata["time"] = pd.to_datetime(metadata["time"])
+    metadata = metadata[metadata["time"].isin(times_in_df)].copy()
     event_times = pd.to_datetime(metadata[['event', 'time']].groupby('event').first()['time'].reset_index(drop=True))
     event_sizes = metadata[["event", "event.size"]].groupby("event").mean()["event.size"]
     yearly_rate = metadata['lambda'].iloc[0]
@@ -119,8 +121,7 @@ def main(input, output, params):
     
     logging.info("Loading data...")
     medians = load_medians(input.medians)
-    gdf, times, rate = load_events(input.events, input.metadata,
-                                   fields, params.year0, params.yearn)
+    gdf, times, rate = load_events(input.events, input.metadata, fields)
     
     logging.info("Validating and processing...")
     validate_data(gdf, fields)
