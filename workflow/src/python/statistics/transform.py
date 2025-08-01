@@ -2,9 +2,9 @@ import numpy as np
 import xarray as xr
 from typing import List, Union
 
-import base
-from empirical import quantile
-from empirical import semiparametric_quantile
+from . import base
+from .empirical import quantile
+from .empirical import semiparametric_quantile
 
 
 def invPIT(

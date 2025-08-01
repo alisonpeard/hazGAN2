@@ -2,6 +2,7 @@ import os
 from glob import glob
 import zipfile
 
+
 def calculate_nimgs(wildcards):
     years_of_samples = 1000
     with zipfile.ZipFile(os.path.join(TRAINING_DIR, "images.zip"), 'r') as zip_ref:
@@ -38,7 +39,7 @@ rule ensure_script_executable:
 
 
 checkpoint train_stylegan:
-    """snakemake --profile profiles/slurm train_stylegan"""
+    """>>> snakemake --profile profiles/slurm train_stylegan"""
     input:
         ready="logs/cuda_env_ready.done",
         zipfile=os.path.join(TRAINING_DIR, "images.zip")
