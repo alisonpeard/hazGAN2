@@ -9,8 +9,8 @@ from PIL import Image
 import numpy as np
 import xarray as xr
 
-# from src.python.statistics import gumbel, inv_yumbel, invPIT
 import src.python.statistics as stats
+
 
 if __name__ == "__main__":
     # configure logging
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     # rescale images to marginals scale
     images_y = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    images_u = transform(images_y)    # np.exp(-np.exp(-images_y))
+    images_u = inv_transform(images_y)
 
     # flip back y-axis (latitude)
     images_y = np.flip(images_y, axis=1) # flip y-axis (latitude)
@@ -77,48 +77,45 @@ if __name__ == "__main__":
 
     # rescale train in same way
     compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
-    compare_u = inv_transform(compare_y) # np.exp(-np.exp(-train_y))
+    compare_u = inv_transform(compare_y)  # np.exp(-np.exp(-train_y))
     compare_y = np.flip(compare_y, axis=1) # flip y-axis (latitude)
     compare_u = np.flip(compare_u, axis=1) # flip y-axis (latitude)
 
-    #!! TODO: finish here !
-
-    # load the training data for the inverse ECDF and parameters
-    # NOTE: here is a good place to check distribution of data... skipping for now
     train = xr.open_dataset(TRAIN)
     
     # subset by threshold if needed
-    train['intensity'] = getattr(train.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
     if DO_SUBSET:
+        train['intensity'] = getattr(train.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
         mask = (train['intensity'] > THRESH["value"]).values
         idx  = np.where(mask)[0]
         train   = train.isel(time=idx)
-
-    train   = train.sortby("intensity", ascending=False)
+        train   = train.sortby("intensity", ascending=False)
+    
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
     train_y = transform(train_u)
     params  = train["params"].values
     logging.info(f"Loaded anomaly training data of shape {train_x.shape}.")
-    logging.info(f"Loaded uniform traingin data of shape {train_u.shape}.")
+    logging.info(f"Loaded uniform training data of shape {train_u.shape}.")
     logging.info(f"Loaded parameters of shape {params.shape}.")
 
     # check range of uniform samples
+    epsilon = 1e-6
     if not ((train_u.max() < 1.) and (train_u.min() > 0.)):
         logging.error("Training uniform samples not in [0,1] range")
         logging.error(f"Max: {train_u.max()}, Min: {train_u.min()}")
-        train_u = np.clip(train_u, 1e-6, 1 - 1e-6)
+        train_u = np.clip(train_u, epsilon, 1 - epsilon)
     
     if not ((images_u.max() < 1.) and (images_u.min() > 0.)):
         logging.error("Generated uniform samples not in [0,1] range")
         logging.error(f"Max: {images_u.max()}, Min: {images_u.min()}")
-        images_u = np.clip(images_u, 1e-6, 1 - 1e-6)
+        images_u = np.clip(images_u, epsilon, 1 - epsilon)
 
     # transform images to original scale using invPIT
     distns = [field['distn'] for field in FIELDS.values()]
     two_tailed = [field['two_tailed'] for field in FIELDS.values()]
-    images_x = stats.invPIT(images_u, train_x, params, distns=distns, two_tailed=two_tailed)
-    compare_x = stats.invPIT(compare_u, train_x, params, distns=distns, two_tailed=two_tailed)
+    images_x = stats.invPIT(images_u, train_x, theta=params, domain=DOMAIN, distns=distns, two_tailed=two_tailed)
+    compare_x = stats.invPIT(compare_u, train_x, theta=params, domain=DOMAIN, distns=distns, two_tailed=two_tailed)
 
     # save to NetCDF
     data = xr.Dataset(
@@ -129,7 +126,10 @@ if __name__ == "__main__":
             "params": (("lat", "lon", "param", "field"), params),
         },
         coords={
-            "param": ["loc", "scale", "shape"],
+            "param": [
+                "loc_upper", "scale_upper", "shape_upper",
+                "loc_lower", "scale_lower", "shape_lower"
+                ],
             "field": list(FIELDS.keys()),
             "time": (("time"), np.arange(images_x.shape[0])),
             "lat": (("lat"), train["lat"].values),

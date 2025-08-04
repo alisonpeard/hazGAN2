@@ -31,4 +31,4 @@ set-resources:
         runtime: "6h"
     generate_stylegan:
         slurm_partition: "GPU"
-        runtime: "1h"
+        runtime: "6h"

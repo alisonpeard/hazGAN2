@@ -29,7 +29,11 @@ conda config --set channel_priority strict # snakemake complains otherwise
 conda install -c conda-forge conda=24.7.1 --y
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using 
 
-# Run the workflow
+# set up the required conda environments
+snakemake --profile profiles/cluster --conda-create-envs-only
+
+
+# Run the entire workflow
 snakemake --profile profiles/local -n
 snakemake --profile profiles/local
 ```

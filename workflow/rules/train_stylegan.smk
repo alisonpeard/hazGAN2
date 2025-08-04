@@ -1,16 +1,16 @@
 import os
-from glob import glob
 import zipfile
+from glob import glob
 
 
-def calculate_nimgs(wildcards):
-    years_of_samples = 1000
+def calculate_nimgs(wildcards, years_of_samples=config["nyears"]):
     with zipfile.ZipFile(os.path.join(TRAINING_DIR, "images.zip"), 'r') as zip_ref:
         img_files = [f for f in zip_ref.namelist() if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         nimgs = len(img_files)
     nyears = YEARN - YEAR0
     freq   = nimgs / nyears
     nsamples = int(freq * years_of_samples)
+    print(f"Calculated number of samples: {nsamples} based on {nimgs} images over {nyears} years.")
     return nsamples
 
 
@@ -86,7 +86,7 @@ rule generate_stylegan:
         """
         source workflow/scripts/cuda_env.sh
 
-        python src/stylegan/generate.py \
+        python workflow/src/stylegan/generate.py \
             --outdir={output} \
             --seeds=1-{params.nimgs} \
             --trunc={params.trunc} \

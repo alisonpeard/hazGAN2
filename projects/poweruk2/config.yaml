@@ -12,15 +12,18 @@ exclude:
 resolution:
   lon: 64
   lat: 64
-sfunc: additive # or spring, summer, autumn, winter
+sfunc: winter # or [spring, summer, autumn, winter, additive]
 rfunc:
   args:
   func: dummy
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
 event_subset:
+  do: False
+  threshold:
+nyears: 10
 marginal_threshold: 0.95
-domain: gumbel
+domain: laplace
 kimg: 300
 fields:
   u10:
@@ -36,6 +39,8 @@ fields:
     distn: weibull
     two_tailed: True
     title: "Maximum eastward component of 10 m wind"
+    units: "m/s"
+    cmap: "cmocean.cm.speed"
   v10:
     init:
       func: identity
@@ -49,6 +54,8 @@ fields:
     distn: weibull
     two_tailed: True
     title: "Maximum northward component of 10 m wind"
+    units: "m/s"
+    cmap: "cmocean.cm.speed"
   r30:
     init:
       func: sum_30_days
@@ -62,5 +69,7 @@ fields:
     distn: genpareto # exponential (not implemented yet)
     two_tailed: False
     title: "30-day antecedant rainfall"
+    units: "m"
+    cmap: "cmocean.cm.rain"
 points_of_interest:
 local_crs: 27700 # https://epsg.io/27700

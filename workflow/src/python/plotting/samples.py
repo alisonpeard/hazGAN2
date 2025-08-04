@@ -16,7 +16,9 @@ def anomaly(array, reference, params):
     array = invPIT(array, reference, params)
     return array
 
-def plot(fake, train, field=0, transform=None, vmin=None, vmax=None, cmap=CMAP, title="Untitled",
+
+def plot(fake, train, field=0, transform=None,
+         vmin=None, vmax=None, cmap=CMAP, extent=None,
         cbar_label='', cbar_width=0.2, linewidth=.1, alpha=1e-4, alpha_vlim=True, 
         nrows=4, ncols=8, ndecimals=1, **transform_kws):
     """Plot training samples on top row and generated samples on bottom row."""
@@ -44,13 +46,17 @@ def plot(fake, train, field=0, transform=None, vmin=None, vmax=None, cmap=CMAP, 
     fig, axs, cax = makegrid(nrows, ncols, cbar_width=cbar_width, figsize=1.)
     for i, ax in enumerate(axs.flat):
         if i < midpoint:
-            contourmap(fake[i, ...], ax=ax, vmin=vmin, vmax=vmax,
+            contourmap(fake[i, ...], ax=ax,
+                       extent=extent,
+                       vmin=vmin, vmax=vmax,
                        cmap=cmap, linewidth=linewidth, ndecimals=ndecimals)
         if i >= midpoint:
             pos = ax.get_position()
             ax.set_position([pos.x0, pos.y0 - 0.01, pos.width, pos.height])
             j = i - midpoint
-            im = contourmap(train[j, ...], ax=ax, vmin=vmin, vmax=vmax,
+            im = contourmap(train[j, ...], ax=ax,
+                            extent=extent,
+                            vmin=vmin, vmax=vmax,
                             cmap=cmap, linewidth=linewidth, ndecimals=ndecimals)
 
     axs[0, 0].set_ylabel("HazGAN", fontsize=18)

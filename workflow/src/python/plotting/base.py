@@ -1,6 +1,7 @@
 # %%
 import os
 import numpy as np
+import cmocean.cm as cmo
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cartopy.geodesic as geodesic
@@ -22,10 +23,23 @@ FIGSIZE_TWOCOL = (7.0, 4.33)
 FIGSIZE_TWOCOL_WIDE = (7.0, 3.0)
 
 
-CMAP   = "Spectral_r" # "Oranges", "YlGnBu", "YlOrBr"
+CMAP   = "viridis"
 LABELS = ["wind speed [m]", "total precipitation [m]", "mslp [Pa]"]
 hist_kwargs = {"bins": 50, "color": "lightgrey", "edgecolor": "black", "alpha": 0.7}
 save_kwargs = {"dpi": 300, "bbox_inches": "tight", "pad_inches": 0.1}
+
+
+def eval_cmap_str(name:str):
+    """Return a cmocean colormap."""
+    if name.startswith("cmocean.cm."):
+        try:
+            name = name.split(".")[-1]
+            return getattr(cmo, name)
+        except Exception as e:
+            print(f"Couldn't retrive colormap {name} from cmocean.cm. Reason: {e}. Defaulting to {CMAP}.")
+
+    return plt.get_cmap(name)
+
 
 def linspace(start, stop, num=50, ndecimals=1):
         """Return a linspace with up to ndecimals decimal places."""
