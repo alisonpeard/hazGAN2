@@ -2,11 +2,11 @@
 rule all_figures:
     """All figures."""
     input:
-        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}.png"),
-        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[1]}.png"),
-        os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[2]}.png"),
+        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[0]}_upper.png"),
+        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[1]}_upper.png"),
+        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[2]}_upper.png"),
         os.path.join(FIGURE_DIR, "samples"),
-        os.path.join(FIGURE_DIR, "event_intensity_barchart.png"),
+        os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png"),
         os.path.join(FIGURE_DIR, "correlations_field"),
         os.path.join(FIGURE_DIR, "correlations_spatial"),
         os.path.join(FIGURE_DIR, "scatterplots")
@@ -23,9 +23,9 @@ rule plot_fitted_parameters:
     input:
         events=os.path.join(PROCESSING_DIR, "events.parquet")
     output:
-        fig1=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[0]}_upper.png"),
-        fig2=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[1]}_upper.png"),
-        fig3=os.path.join(FIGURE_DIR, f"{list(FIELDS.keys())[2]}_upper.png")
+        fig1=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[0]}_upper.png"),
+        fig2=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[1]}_upper.png"),
+        fig3=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[2]}_upper.png")
     params:
         fields=FIELDS,
         pcrit=0.05,
@@ -37,25 +37,6 @@ rule plot_fitted_parameters:
     script:
         os.path.join("..", "scripts", "plot_parameters.py")
 
-
-rule plot_samples_trainonly:
-    """Figure 3: generated and observed samples.
-    
-    >>> snakemake --profile profiles/slurm plot_samples_trainonly
-    """
-    input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-    output:
-        outdir=directory(directory(os.path.join(FIGURE_DIR, "train_samples")))
-    params:
-        fields=FIELDS,
-        shuffle=False
-    conda:
-        GEOENV
-    log:
-        file=os.path.join("logs", "plot_samples_trainonly.log")
-    script:
-        os.path.join("..", "scripts", "plot_samples_trainonly.py")
 
 
 rule plot_samples:
@@ -70,7 +51,11 @@ rule plot_samples:
         outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
     params:
         fields=FIELDS,
-        shuffle=False
+        shuffle=False,
+        lon_min=config["longitude"]["min"],
+        lon_max=config["longitude"]["max"],
+        lat_min=config["latitude"]["min"],
+        lat_max=config["latitude"]["max"]
     conda:
         GEOENV
     log:
@@ -85,13 +70,13 @@ rule plot_barcharts:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
-        figure=os.path.join(FIGURE_DIR, "event_intensity_barchart.png")
+        figure=os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png")
     params:
         month="September",
         fields=FIELDS,
         dataset=DATASET,
-        do_subset=True,
-        event_subset=config['event_subset']
+        do_subset=config['event_subset']['do'],
+        event_subset=config['event_subset']["threshold"]
     conda:
         GEOENV
     log:
@@ -111,8 +96,8 @@ rule plot_correlations:
     params:
         fields=FIELDS,
         dataset=DATASET,
-        do_subset=True,
-        event_subset=config['event_subset'],
+        do_subset=config['event_subset']['do'],
+        event_subset=config['event_subset']["threshold"],
         outres=32
     conda:
         GEOENV
@@ -133,8 +118,8 @@ rule plot_scatterplots:
     output:
         outdir=directory(os.path.join(FIGURE_DIR, "scatterplots"))
     params:
-        do_subset=True,
-        event_subset=config['event_subset'],
+        do_subset=config['event_subset']['do'],
+        event_subset=config['event_subset']["threshold"],
         pois=config["points_of_interest"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],

@@ -26,38 +26,103 @@ additive <- function(df, vars) {
   )[vars]
   df[vars] <- df[vars] - df$monthly_median
   return(list(
-    df = df[vars],
+    df = df[c(vars, "month", "lat", "lon")],
     params = monthly_median
   ))
 }
 
 autumn <- function(df, vars) {
   # extract autumn months only
-  autumn_months <- c("Sep", "Oct", "Nov")
+  autumn_months <- c("September", "October", "November")
   df <- filter_months(df, autumn_months)
-  return(df)
+
+  monthly_median <- df[, c(vars, "month", "lat", "lon")]
+  monthly_median <- aggregate(. ~ month + lat + lon, monthly_median, median)
+
+  df$monthly_median <- left_join(
+    df[, c("month", "lat", "lon")],
+    monthly_median,
+    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
+  )[vars]
+  df[vars] <- df[vars] - df$monthly_median
+
+  df <- df[, c(vars, "time", "lat", "lon")]
+
+  return(list(
+    df = df,
+    params = monthly_median
+  ))
 }
 
 
 winter <- function(df, vars) {
   # extract winter months only
-  winter_months <- c("Dec", "Jan", "Feb")
+  winter_months <- c("December", "January", "February")
   df <- filter_months(df, winter_months)
-  return(df)
+
+  monthly_median <- df[, c(vars, "month", "lat", "lon")]
+  monthly_median <- aggregate(. ~ month + lat + lon, monthly_median, median)
+
+  df$monthly_median <- left_join(
+    df[, c("month", "lat", "lon")],
+    monthly_median,
+    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
+  )[vars]
+  df[vars] <- df[vars] - df$monthly_median
+
+  df <- df[, c(vars, "time", "lat", "lon")]
+
+  return(list(
+    df = df,
+    params = monthly_median
+  ))
 }
 
 spring <- function(df, vars) {
   # extract spring months only
-  spring_months <- c("Mar", "Apr", "May")
+  spring_months <- c("March", "April", "May")
   df <- filter_months(df, spring_months)
-  return(df)
+
+  monthly_median <- df[, c(vars, "month", "lat", "lon")]
+  monthly_median <- aggregate(. ~ month + lat + lon, monthly_median, median)
+
+  df$monthly_median <- left_join(
+    df[, c("month", "lat", "lon")],
+    monthly_median,
+    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
+  )[vars]
+  df[vars] <- df[vars] - df$monthly_median
+
+  df <- df[, c(vars, "time", "lat", "lon")]
+
+  return(list(
+    df = df,
+    params = monthly_median
+  ))
 }
+
 
 summer <- function(df, vars) {
   # extract summer months only
-  summer_months <- c("Jun", "Jul", "Aug")
+  summer_months <- c("June", "July", "August")
   df <- filter_months(df, summer_months)
-  return(df)
+
+  monthly_median <- df[, c(vars, "month", "lat", "lon")]
+  monthly_median <- aggregate(. ~ month + lat + lon, monthly_median, median)
+
+  df$monthly_median <- left_join(
+    df[, c("month", "lat", "lon")],
+    monthly_median,
+    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
+  )[vars]
+  df[vars] <- df[vars] - df$monthly_median
+
+  df <- df[, c(vars, "time", "lat", "lon")]
+
+  return(list(
+    df = df,
+    params = monthly_median
+  ))
 }
 
 
@@ -70,7 +135,7 @@ monthly_medians <- function(df, var) {
   return(monthly_median)
 }
 
-filter_months <- function(df, months_to_keep = c("Oct")) {
+filter_months <- function(df, months_to_keep = c("October")) {
   # filter months to keep
   df$month <- months(df$time)
   df <- df[df$month %in% months_to_keep, ]

@@ -32,7 +32,7 @@ def gumbel(uniform):
         warn("Values == 1 found, scaling by 1e-6")
         uniform *= 1 - 1e-6
     if maxval > 1:
-        raise ValueError("Some uniform > 1")
+        raise ValueError(f"Some uniform > 1 ({maxval})")
     return -np.log(-np.log(uniform))
 
 

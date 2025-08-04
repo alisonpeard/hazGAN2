@@ -82,7 +82,11 @@ for (k in seq_along(FIELD_NAMES)) {
   deseasonalized <- deseasonalize(daily, field, method = SFUNC)
   log_info("Finished deseasonalizing, assigning parameters")
 
-  daily[, field] <- deseasonalized$df
+  # daily[, field] <- deseasonalized$df
+  daily <- deseasonalized$df |>
+    left_join(daily, by = c("lat", "lon", "time"), suffix = c("", "_old")) |>
+    rename(!!field := !!sym(field))
+  
   params[, field] <- left_join(
     params[, c("month", "lat", "lon")],
     deseasonalized$params,

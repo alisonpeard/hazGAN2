@@ -20,12 +20,8 @@ dependencies:
     - h5py
     - cartopy
     - tqdm
-    # - fiona
-    # - xagg
-    # - rioxarray
     - shapely #>=2.0
     - seaborn
     - libgdal
     - pip:
-        - -e ../../packages/hazGAN # this works
-        - -r ../../packages/hazGAN/requirements.txt
+        - cmocean
