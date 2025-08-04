@@ -6,9 +6,6 @@ import os
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-
-from snakemake.script import snakemake
-
 from src import plotting
 from src import statistics
 
@@ -16,58 +13,78 @@ import ssl # fix cartopy issue
 ssl._create_default_https_context = ssl._create_stdlib_context
 
 
-if __name__ == "__main__":
-    TRAIN = snakemake.input.train
-    GENER = snakemake.input.generated
-    FIELDS = snakemake.params.fields
-    SHUFFLE = snakemake.params.shuffle
-    OUTDIR  = snakemake.output.outdir
-
-    os.makedirs(OUTDIR, exist_ok=True)
+def main(input, output, params):
+    os.makedirs(output.outdir, exist_ok=True)
 
     # load data and samples
-    train = xr.open_dataset(TRAIN)
+    train = xr.open_dataset(input.train)
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
     train_g = statistics.gumbel(train_u)
 
-    gener = xr.open_dataset(GENER)
+    gener = xr.open_dataset(input.generated)
     gener_x = gener["anomaly"].values
     gener_u = gener["uniform"].values
     gener_g = statistics.gumbel(gener_u)
 
-    if SHUFFLE:
+    if params.shuffle:
         train_ids = np.random.permutation(train_u.shape[0])
         gener_ids = np.random.permutation(gener_u.shape[0])
     else:
-        # train_ids = np.arange(train_u.shape[0])
-        # gener_ids = np.arange(gener_u.shape[0])
-        
-        # sort by ascending wind speed
-        # ! HARDCODED
         train_ids = np.argsort(np.max(train_u[..., 0], axis=(1, 2)))[::-1]
         gener_ids = np.argsort(np.max(gener_u[..., 0], axis=(1, 2)))[::-1]
 
+    # for ax.imshow(array, extent=extent, ...)
+    xmin = params["lon_min"]
+    xmax = params["lon_max"]
+    ymin = params["lat_min"]
+    ymax = params["lat_max"]
+    extent = [xmin, xmax, ymin, ymax]
+
     # make the samples
-    for i, FIELD in enumerate(FIELDS.keys()):
-        METRIC = FIELDS[FIELD]["units"]
-        CMAP   = FIELDS[FIELD]["cmap"]
+    for i, field in enumerate(params.fields.keys()):
+        metric = params.fields[field].get("units", "")
+        cmap   = params.fields[field].get("cmap", "viridis")
+        cmap = plotting.eval_cmap_str(cmap)
 
-        figa = plotting.samples.plot(gener_g[gener_ids], train_g[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=0)
-        figb = plotting.samples.plot(gener_u[gener_ids], train_u[train_ids], field=i, title="", cbar_label="", cmap=CMAP, ndecimals=1)
-        figc = plotting.samples.plot(gener_x[gener_ids], train_x[train_ids], field=i, title="", cbar_label=METRIC, cmap=CMAP, alpha=1e-6);
+        figa = plotting.samples.plot(
+            gener_g[gener_ids], train_g[train_ids], field=i, title="",
+            extent=extent,
+            cbar_label="", cmap=cmap, ndecimals=0
+            )
+        figb = plotting.samples.plot(
+            gener_u[gener_ids], train_u[train_ids], field=i, title="",
+            extent=extent,
+            cbar_label="", cmap=cmap, ndecimals=1
+            )
+        figc = plotting.samples.plot(
+            gener_x[gener_ids], train_x[train_ids], field=i, title="",
+            extent=extent,
+            cbar_label=metric, cmap=cmap, alpha=1e-6
+            );
 
-        figa.savefig(os.path.join(OUTDIR, f"{FIELD}_gumbel.png"), dpi=300, bbox_inches="tight")
-        figb.savefig(os.path.join(OUTDIR, f"{FIELD}_uniform.png"), dpi=300, bbox_inches="tight")
-        figc.savefig(os.path.join(OUTDIR, f"{FIELD}_anomaly.png"), dpi=300, bbox_inches="tight")
+        figa.savefig(os.path.join(
+            output.outdir, f"{field}_gumbel.png"
+            ), dpi=300, bbox_inches="tight")
+        figb.savefig(os.path.join(
+            output.outdir, f"{field}_uniform.png"
+            ), dpi=300, bbox_inches="tight")
+        figc.savefig(os.path.join(
+            output.outdir, f"{field}_anomaly.png"
+            ), dpi=300, bbox_inches="tight")
 
         dates = {
             "generated": gener.time.values[gener_ids],
             "training": train.time.values[train_ids],
         }
         # save to .txt file
-        with open(os.path.join(OUTDIR, f"{FIELD}_dates.txt"), "w") as f:
+        with open(os.path.join(output.outdir, f"{field}_dates.txt"), "w") as f:
             for data in dates["training"]:
                 f.write(f"Training date: {data}\n")
 
 
+if __name__ == "__main__":
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
+    main(input, output, params)

@@ -15,8 +15,8 @@ rule process_generated:
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
-        do_subset=True,
-        event_subset=config['event_subset'],
+        do_subset=config['event_subset']['do'],
+        event_subset=config['event_subset']["threshold"],
         fields=FIELDS,
         domain=config["domain"]
     conda:
@@ -42,7 +42,7 @@ rule make_benchmarks:
         resy=RESOLUTION['lat'],
         year0=YEAR0,
         yearn=YEARN,
-        nyrs=500,
+        nyrs=config["nyears"],
         fields=FIELDS
     conda:
         GEOENV

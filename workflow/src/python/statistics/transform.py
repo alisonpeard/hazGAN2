@@ -37,7 +37,7 @@ def invPIT(
     np.ndarray
         Transformed marginals with same shape as input u
     """
-    u = u if domain is None else getattr(base, f"inv_{domain}")(u).numpy()
+    u = u if domain is None else getattr(base, f"inv_{domain}")(u)
     nparams = 6 if two_tailed else 3
     
     original_shape = u.shape
@@ -56,7 +56,7 @@ def invPIT(
             "Uniform marginals must have dimensions [n, h, w, c] or [n, h * w, c]."
             )    
 
-    def transform(x, u, theta, i, c, two_tailed):
+    def transform(x, u, theta, i, c):
         """vectorised numpy transform."""
         x_i = x[:, i, c]
         u_i = u[:, i, c]
