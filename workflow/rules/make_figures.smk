@@ -38,6 +38,31 @@ rule plot_fitted_parameters:
         os.path.join("..", "scripts", "plot_parameters.py")
 
 
+rule plot_correlations:
+    """Correlation plots of storm distribution."""
+    input:
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+    output:
+        dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
+        dir1=directory(os.path.join(FIGURE_DIR, "correlations_spatial"))
+    params:
+        fields=FIELDS,
+        dataset=DATASET,
+        outres=32,
+        event_subset=config['event_subset'],
+        lon_min=config["longitude"]["min"],
+        lon_max=config["longitude"]["max"],
+        lat_min=config["latitude"]["min"],
+        lat_max=config["latitude"]["max"],
+        domain="standardised", # ["anomaly", "uniform", "standardised"], "uniform needed for Smith (1990)"
+    conda:
+        GEOENV
+    log:
+        file=os.path.join("logs", "plot_correlations.log")
+    script:
+        os.path.join("..", "scripts", "plot_correlations.py")
+
 
 rule plot_samples:
     """Figure 3: generated and observed samples.
@@ -55,7 +80,8 @@ rule plot_samples:
         lon_min=config["longitude"]["min"],
         lon_max=config["longitude"]["max"],
         lat_min=config["latitude"]["min"],
-        lat_max=config["latitude"]["max"]
+        lat_max=config["latitude"]["max"],
+        domain=config["domain"],
     conda:
         GEOENV
     log:
@@ -75,8 +101,7 @@ rule plot_barcharts:
         month="September",
         fields=FIELDS,
         dataset=DATASET,
-        do_subset=config['event_subset']['do'],
-        event_subset=config['event_subset']["threshold"]
+        event_subset=config['event_subset']
     conda:
         GEOENV
     log:
@@ -84,27 +109,6 @@ rule plot_barcharts:
     script:
         os.path.join("..", "scripts", "plot_barcharts.py")
 
-
-rule plot_correlations:
-    """Correlation plots of storm distribution."""
-    input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
-    output:
-        dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
-        dir1=directory(os.path.join(FIGURE_DIR, "correlations_spatial"))
-    params:
-        fields=FIELDS,
-        dataset=DATASET,
-        do_subset=config['event_subset']['do'],
-        event_subset=config['event_subset']["threshold"],
-        outres=32
-    conda:
-        GEOENV
-    log:
-        file=os.path.join("logs", "plot_correlations.log")
-    script:
-        os.path.join("..", "scripts", "plot_correlations.py")
 
 
 rule plot_scatterplots:
@@ -118,8 +122,7 @@ rule plot_scatterplots:
     output:
         outdir=directory(os.path.join(FIGURE_DIR, "scatterplots"))
     params:
-        do_subset=config['event_subset']['do'],
-        event_subset=config['event_subset']["threshold"],
+        event_subset=config['event_subset'],
         pois=config["points_of_interest"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],

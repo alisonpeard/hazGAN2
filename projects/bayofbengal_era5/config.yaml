@@ -36,6 +36,7 @@ rfunc: # in r_utils/rfuncs.R
 
 # event threshold 
 event_subset:
+  do: True
   field: ws
   value: 15 # 25.5
   func: max

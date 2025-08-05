@@ -1,40 +1,43 @@
-"""Make 64x64 plots of data
+"""Make plots of data samples.
 
 Note: this is before adding back monthly medians.
 """
 import os
+import ssl
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
+
 from src import plotting
 from src import statistics
 
-import ssl # fix cartopy issue
 ssl._create_default_https_context = ssl._create_stdlib_context
 
 
 def main(input, output, params):
+    
     os.makedirs(output.outdir, exist_ok=True)
+
+    transform = getattr(statistics, params.domain)
 
     # load data and samples
     train = xr.open_dataset(input.train)
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
-    train_g = statistics.gumbel(train_u)
+    train_y = transform(train_u)
 
     gener = xr.open_dataset(input.generated)
     gener_x = gener["anomaly"].values
     gener_u = gener["uniform"].values
-    gener_g = statistics.gumbel(gener_u)
+    gener_y = transform(gener_u)
 
     if params.shuffle:
         train_ids = np.random.permutation(train_u.shape[0])
         gener_ids = np.random.permutation(gener_u.shape[0])
     else:
+        # NOTE: sorting by var 1, make more flexible
         train_ids = np.argsort(np.max(train_u[..., 0], axis=(1, 2)))[::-1]
         gener_ids = np.argsort(np.max(gener_u[..., 0], axis=(1, 2)))[::-1]
 
-    # for ax.imshow(array, extent=extent, ...)
     xmin = params["lon_min"]
     xmax = params["lon_max"]
     ymin = params["lat_min"]
@@ -48,7 +51,7 @@ def main(input, output, params):
         cmap = plotting.eval_cmap_str(cmap)
 
         figa = plotting.samples.plot(
-            gener_g[gener_ids], train_g[train_ids], field=i, title="",
+            gener_y[gener_ids], train_y[train_ids], field=i, title="",
             extent=extent,
             cbar_label="", cmap=cmap, ndecimals=0
             )
@@ -64,7 +67,7 @@ def main(input, output, params):
             );
 
         figa.savefig(os.path.join(
-            output.outdir, f"{field}_gumbel.png"
+            output.outdir, f"{field}_{params.domain}.png"
             ), dpi=300, bbox_inches="tight")
         figb.savefig(os.path.join(
             output.outdir, f"{field}_uniform.png"
@@ -87,4 +90,5 @@ if __name__ == "__main__":
     input = snakemake.input
     output = snakemake.output
     params = snakemake.params
+
     main(input, output, params)
