@@ -22,26 +22,33 @@ def identity(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
     return ds[arg]
 
 
-def max(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
+# these are hfuncs for aggregating across a time/sample dimension
+def max(ds:xr.Dataset, arg:str, params={}, dim="time") -> xr.DataArray:
     """Calculate the maximum value of a variable."""
-    return ds[arg].max(dim="time", skipna=True)
+    return ds[arg].max(dim=dim, skipna=True)
 
 
-def arg2max(ds:xr.Dataset, arg1:str, arg2:str, params={}) -> xr.DataArray:
+def l2norm_max(ds:xr.Dataset, arg1:str, arg2:str,
+              params={}, dim="time") -> xr.DataArray:
+    l2norm = np.sqrt(ds[arg1]**2 + ds[arg2]**2)
+    return l2norm.max(dim=dim)
+
+
+def arg2max(ds:xr.Dataset, arg1:str, arg2:str, params={}, dim="time") -> xr.DataArray:
     """Calculate the index of the maximum value of a variable."""
-    arg2_max = ds[arg2].max(dim="time")
+    arg2_max = ds[arg2].max(dim=dim)
     mask = ds[arg2] == arg2_max
-    return ds[arg1].where(mask).max(dim="time")
+    return ds[arg1].where(mask).max(dim=dim)
 
 
 def l2norm_argmax(ds:xr.Dataset, arg1:str, arg2:str,
-              params={}) -> xr.DataArray:
+              params={}, dim="time") -> xr.DataArray:
     l2norm = np.sqrt(ds[arg1]**2 + ds[arg2]**2)
-    l2norm_max = l2norm.max(dim='time')
+    l2norm_max = l2norm.max(dim=dim)
     mask = l2norm == l2norm_max
-    return ds[arg1].where(mask).max(dim='time')
+    return ds[arg1].where(mask).max(dim=dim)
 
 
-def mean(ds:xr.Dataset, arg, params={}) -> xr.DataArray:
+def mean(ds:xr.Dataset, arg, params={}, dim="time") -> xr.DataArray:
     """Calculate the mean value of a variable."""
-    return ds[arg].mean(dim="time", skipna=True)
+    return ds[arg].mean(dim=dim, skipna=True)

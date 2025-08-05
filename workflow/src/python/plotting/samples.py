@@ -1,11 +1,14 @@
-# %%
+"""Functions for plotting data samples.
+"""
 import numpy as np
 from .base import CMAP
 from .base import makegrid, contourmap, scalebar
 from ..statistics import invPIT
 
+
 def identity(array, *args, **kwargs):
     return array
+
 
 def gumbel(array, axis=0):
     array = np.clip(array, 1e-6, 1 - 1e-6)
@@ -18,10 +21,12 @@ def anomaly(array, reference, params):
 
 
 def plot(fake, train, field=0, transform=None,
-         vmin=None, vmax=None, cmap=CMAP, extent=None,
-        cbar_label='', cbar_width=0.2, linewidth=.1, alpha=1e-4, alpha_vlim=True, 
-        nrows=4, ncols=8, ndecimals=1, **transform_kws):
+    vmin=None, vmax=None, cmap=CMAP, extent=None,
+    cbar_label='', cbar_width=0.2, linewidth=.1, alpha=1e-4, alpha_vlim=True, 
+    nrows=4, ncols=8, ndecimals=1, **transform_kws):
     """Plot training samples on top row and generated samples on bottom row."""
+
+    assert extent is not None, "Extent must be provided for samples plots."
 
     transform = transform or identity
     fake  = transform(fake, **transform_kws)
@@ -62,28 +67,8 @@ def plot(fake, train, field=0, transform=None,
     axs[0, 0].set_ylabel("HazGAN", fontsize=18)
     axs[midrow, 0].set_ylabel("ERA5", fontsize=18)
     
-    # add a scale bar
     scalebar(axs[-1, -1])
     scalebar(axs[midrow-1, -1])
 
     fig.colorbar(im, cax=cax, label=cbar_label)
     return fig
-
-
-if __name__ == "__main__":
-    import xarray as xr
-
-    data_path = "/Users/alison/Documents/DPhil/paper1.nosync/training/64x64/data.nc"
-    data = xr.open_dataset(data_path)
-    uniform = data['uniform'].values
-    x       = data['anomaly'].values
-    params  = data['params'].values
-
-    uniform = np.nan_to_num(uniform, nan=1e-6, posinf=1 - 1e-6, neginf=1e-6)
-    uniform = uniform.clip(1e-6, 1 - 1e-6)
-
-    plot(uniform, uniform, title="Uniform samples");
-    plot(uniform, uniform, transform=gumbel, title="Gumbel samples");
-    plot(uniform, uniform, transform=anomaly, title="Anomaly samples", reference=x, params=params);
-
-# %%

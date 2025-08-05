@@ -33,8 +33,7 @@ checkpoint make_rgb_images:
         zipfile=os.path.join(TRAINING_DIR, "images.zip"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
-        do_subset=config['event_subset']['do'],
-        event_subset=config['event_subset']["threshold"],
+        subset=config['event_subset'],
         eps = 1e-6,
         domain = config["domain"],
         resx = RESOLUTION['lon'],
