@@ -1,5 +1,5 @@
-# %%
-import os
+"""Base plotting functions and settings.
+"""
 import numpy as np
 import cmocean.cm as cmo
 import cartopy.crs as ccrs
@@ -8,7 +8,7 @@ import cartopy.geodesic as geodesic
 import matplotlib.pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 
-# set up default aesthetics
+
 plt.rcParams['font.family'] = 'Helvetica'
 plt.rcParams['font.size'] = 12
 plt.rcParams['axes.spines.right'] = False
@@ -48,45 +48,6 @@ def linspace(start, stop, num=50, ndecimals=1):
         return sorted(set(levels))
 
 
-def heatmap(array, ax=None, extent=[80, 95, 10, 25], transform=ccrs.PlateCarree(),
-            cmap=CMAP, vmin=None, vmax=None, title=False, linewidth=.5):
-    """Plot a heatmap with the coastline."""
-    h, w = array.shape
-    array = np.flip(array, axis=0) # imshow is upside down
-    ax = ax or plt.axes(projection=transform)
-    im = ax.imshow(array, extent=extent, transform=transform, cmap=cmap, vmin=vmin, vmax=vmax,
-                   interpolation='nearest')
-    ax.add_feature(cfeature.COASTLINE, edgecolor='k', linewidth=linewidth)
-    ax.set_extent(extent)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    if title:
-        ax.set_title(title, fontsize=16);
-    return im
-
-
-def contourmap(array, ax=None, extent=[80, 95, 10, 25], transform=ccrs.PlateCarree(),
-            cmap=CMAP, vmin=None, vmax=None, levels=10, extend="both", title=False,
-            linewidth=.5, ndecimals=1):
-    """Plot a heatmap with the coastline."""
-    h, w = array.shape
-    ax = ax or plt.axes(projection=transform)
-
-    vmin = vmin or array.min()
-    vmax = vmax or array.max()
-
-    levels = linspace(vmin, vmax, levels, ndecimals)
-    im = ax.contourf(array, extent=extent, transform=transform, cmap=cmap, levels=levels,
-                     extend=extend)
-    ax.add_feature(cfeature.COASTLINE, edgecolor='k', linewidth=linewidth)
-    ax.set_extent(extent)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    if title:
-        ax.set_title(title, fontsize=16);
-    return im
-
-
 def makegrid(rows, cols, figsize:float=1, fig=None,
              cbar_width=.05, cbar_pad=.1, projection=ccrs.PlateCarree()):    
 
@@ -122,17 +83,6 @@ def makegrid(rows, cols, figsize:float=1, fig=None,
     return fig, axes.squeeze(), cax
 
 
-def log_image_to_wandb(fig, name:str, dir:str, **kwargs):
-    """Pass figure to wandb if available."""
-    import wandb
-    if wandb.run is not None:
-        impath = os.path.join(dir, f"{name}.png")
-        fig.savefig(impath, **kwargs)
-        wandb.log({name: wandb.Image(impath)})
-    else:
-        print("Not logging figure, wandb not intialised.")
-    
-
 def scalebar(ax, location='lower right', length_fraction=.6):
     # calculate dx
     xlim = ax.get_xlim()
@@ -151,44 +101,43 @@ def scalebar(ax, location='lower right', length_fraction=.6):
                         width_fraction=.05)
     ax.add_artist(scalebar)
 
-# %%
-if __name__ == "__main__":
-    # test functions
-    import xarray as xr
 
-    oropath = "/Users/alison/Documents/DPhil/paper1.nosync/training/constant-fields/terrain.nc"
-    data = xr.open_dataset(oropath)
-    
-    land      = data.mask.values.squeeze()
-    oro       = data.elevation.values.squeeze()
+def heatmap(array, ax=None, extent=None, transform=ccrs.PlateCarree(),
+            cmap=CMAP, vmin=None, vmax=None, title=False, linewidth=.5):
+    """Plot a heatmap with the coastline."""
+    assert extent is not None, "Extent must be provided for heatmap."
+    h, w = array.shape
+    array = np.flip(array, axis=0) # imshow is upside down
+    ax = ax or plt.axes(projection=transform)
+    im = ax.imshow(array, extent=extent, transform=transform, cmap=cmap, vmin=vmin, vmax=vmax,
+                   interpolation='nearest')
+    ax.add_feature(cfeature.COASTLINE, edgecolor='k', linewidth=linewidth)
+    ax.set_extent(extent)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    if title:
+        ax.set_title(title, fontsize=16);
+    return im
 
-    fig, axs, cax = makegrid(2, 2, figsize=.5)
-    heatmap(land, ax=axs[0, 0])
-    heatmap(oro, ax=axs[0, 1])
-    contourmap(land, ax=axs[1, 0])
-    im = contourmap(oro, ax=axs[1, 1])
-    fig.colorbar(im, cax=cax, extend='both', label="Untitled [metric]")
-    fig.suptitle("Untitled", y=1.05);
 
-    # %%
-    fig, axs, cax = makegrid(2, 3)
-    for ax in list(axs.flat):
-        im = heatmap(oro, ax=ax)
-    fig.colorbar(im, cax=cax, extend="both", label="Untitled [metric]")
-    fig.suptitle("Untitled", y=1.05);
+def contourmap(array, ax=None, extent=None, transform=ccrs.PlateCarree(),
+            cmap=CMAP, vmin=None, vmax=None, levels=10, extend="both", title=False,
+            linewidth=.5, ndecimals=1):
+    """Plot a heatmap with the coastline."""
+    assert extent is not None, "Extent must be provided for contourmap."
+    h, w = array.shape
+    ax = ax or plt.axes(projection=transform)
 
-    # %% 
-    fig, axs, cax = makegrid(3, 3)
-    for ax in list(axs.flat):
-        im = heatmap(oro, ax=ax)
-    fig.colorbar(im, cax=cax, extend="both")
-    fig.suptitle("Untitled", y=1.05, label="Untitled [metric]");
+    vmin = vmin or array.min()
+    vmax = vmax or array.max()
 
-    # %%
-    fig, axs, cax = makegrid(8, 8, cbar_width=.1, cbar_pad=.1)
-    for ax in list(axs.flat):
-        im = heatmap(oro, ax=ax, linewidth=.1)
-    fig.colorbar(im, cax=cax, extend="both")
-    fig.suptitle("Untitled", y=1.02, label="Untitled [metric]");
-
-# %%
+    levels = linspace(vmin, vmax, levels, ndecimals)
+    im = ax.contourf(array, extent=extent, transform=transform, cmap=cmap, levels=levels,
+                     extend=extend)
+    ax.add_feature(cfeature.COASTLINE, edgecolor='k', linewidth=linewidth)
+    ax.set_extent(extent)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    if title:
+        ax.set_title(title, fontsize=16);
+    return im

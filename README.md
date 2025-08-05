@@ -1,6 +1,9 @@
 [![Snakemake](https://img.shields.io/badge/snakemake->=8.0.0-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
+
 # HazGAN2 readme
+
 This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
 The workflow has been made as modular as possible to facilitate modifications for new applications.
@@ -10,18 +13,24 @@ StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
 
 ## Current status [keep updated]
+
 Date: 08-07-2025
 
 - **Complete:**
+
     - Finished Bay of Bengal workflow ✅
+
 - **In progress:**
+
     - Modifying workflow to take in event dates
 
 > ### 💡 Note on snakemake relative paths
+
 > * Input, output, log, and benchmark files are considered to be relative to the working directory (either the directory in which you have invoked Snakemake or whatever was specified for --directory or the workdir: directive).
 > * Any other directives (e.g. conda:, include:, script:, notebook:) consider paths to be relative to the Snakefile they are defined in.
 
 ## Quick start
+
 ```bash
 conda create -c conda-forge -c bioconda -n snakemake snakemake -y
 conda activate snakemake
@@ -32,12 +41,10 @@ python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if 
 # set up the required conda environments
 snakemake --profile profiles/cluster --conda-create-envs-only
 
-
 # Run the entire workflow
 snakemake --profile profiles/local -n
 snakemake --profile profiles/local
 ```
-
 
 ## Things to do outside of this workflow
 
