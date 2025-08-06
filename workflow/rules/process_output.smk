@@ -15,7 +15,7 @@ rule process_generated:
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
-        event_subset=config['event_subset'],
+        subset=config['event_subset'],
         fields=FIELDS,
         domain=config["domain"]
     conda:

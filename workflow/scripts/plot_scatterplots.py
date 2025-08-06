@@ -1,4 +1,3 @@
-# %% 
 import os
 import pandas as pd
 import numpy as np
@@ -8,6 +7,7 @@ from shapely.geometry import Point
 
 import logging
 
+from src import funcs
 from src import plotting
 
 
@@ -28,59 +28,76 @@ def op2idx(ops:dict, data:np.ndarray, extent:list):
     return op_idx
 
 
+def subset_func(ds:xr.Dataset, subset:dict):
+    """Subset the dataset using function and threshold."""
+    func = getattr(funcs, subset["func"])
+    args = subset["args"]
+    thresh = subset["value"]
+
+    logging.info(f"Subsetting {func}{*args,} with threshold {thresh}.")
+
+    for arg in args:
+        ds[arg] = ds.sel(field=arg).anomaly
+
+    intensity = func(ds, *args, dim=["lon", "lat"])
+
+    for arg in args:
+        ds = ds.drop_vars(arg)
+
+    mask = (intensity > thresh).values
+    idx = np.where(mask)[0]
+    return ds.isel(time=idx)
+
+
+def main(input, output, params):
+
+    os.makedirs(output.outdir, exist_ok=True)
+
+    # load data and samples
+    train = xr.open_dataset(input.train)
+    if params["subset"]["do"]:
+        # subset train by threshold
+        train = subset_func(train, params["subset"])
+        logging.info(f"\nExtracted {train.time.size} images from train.")
+    
+    train_x = train["anomaly"].values
+    train_u = train["uniform"].values
+
+    gener = xr.open_dataset(input.generated)
+    gener_x = gener["anomaly"].values
+    gener_u = gener["uniform"].values
+    
+    # match observation points to indices in the xarray data
+    print(f"Observation points: {params.pois}")
+    ops = op2idx(
+        params.pois, train_x[0, ..., 0],
+        extent=[params.xmin, params.xmax, params.ymin, params.ymax]
+        )
+    pixels = [ops["chittagong"], ops["dhaka"]]
+
+    _fields = params.channel_labels.keys()
+
+    for i, _field in enumerate(_fields):
+        fig = plotting.scatter.plot(gener_x, train_x, field=i, pixels=pixels, s=10,
+                        cmap=params.cmap, xlabel="Chittagong", ylabel="Dhaka")
+
+        fig.suptitle(params.channel_labels[_field].capitalize(), y=1.05, fontsize=14, fontweight='bold')
+        fig.savefig(os.path.join(output.outdir, f"field_{_field}.png"), dpi=300)
+        plt.close(fig)
+
+
 if __name__ == "__main__":
+
     logging.basicConfig(
         filename=snakemake.log.file,
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s"
         )
     
-    TRAIN = snakemake.input.train
-    GENER = snakemake.input.generated
-    DIR  = snakemake.output.outdir
-    DO_SUBSET = snakemake.params.do_subset
-    THRESH = snakemake.params.event_subset
-    YMIN = snakemake.params.ymin
-    YMAX = snakemake.params.ymax
-    XMIN = snakemake.params.xmin
-    XMAX = snakemake.params.xmax
-    POIS = snakemake.params.pois
-    CMAP = snakemake.params.cmap
-    FIELD_LABELS = snakemake.params.channel_labels
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
 
-    os.makedirs(DIR, exist_ok=True)
+    main(input, output, params)
 
-    # load data and samples
-    train = xr.open_dataset(TRAIN)
-    if DO_SUBSET:
-        train['intensity'] = getattr(
-            train.sel(field=THRESH["field"]).anomaly,
-            THRESH["func"])(dim=['lon', 'lat']
-                            )
-        mask = (train['intensity'] > THRESH["value"]).values
-        idx  = np.where(mask)[0]
-        train   = train.isel(time=idx)
-    
-    train_x = train["anomaly"].values
-    train_u = train["uniform"].values
-
-    gener = xr.open_dataset(GENER)
-    gener_x = gener["anomaly"].values
-    gener_u = gener["uniform"].values
-    
-    # match observation points to indices in the xarray data
-    print(f"Observation points: {POIS}")
-    ops = op2idx(POIS, train_x[0, ..., 0], extent=[XMIN, XMAX, YMIN, YMAX])
-    pixels = [ops["chittagong"], ops["dhaka"]]
-
-    FIELDS = FIELD_LABELS.keys()
-
-    for i, FIELD in enumerate(FIELDS):
-        fig = plotting.scatter.plot(gener_x, train_x, field=i, pixels=pixels, s=10,
-                        cmap=CMAP, xlabel="Chittagong", ylabel="Dhaka")
-
-        fig.suptitle(FIELD_LABELS[FIELD].capitalize(), y=1.05, fontsize=14, fontweight='bold')
-        fig.savefig(os.path.join(DIR, f"field_{FIELD}.png"), dpi=300)
-        plt.close(fig)
-
-# %%
+    logging.info("Plotting completed successfully.")
