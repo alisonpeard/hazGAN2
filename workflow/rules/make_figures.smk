@@ -1,4 +1,5 @@
 """Reference: https://github.com/alisonpeard/styleGAN-DA/blob/main/visualise.py"""
+
 rule all_figures:
     """All figures."""
     input:
@@ -39,9 +40,15 @@ rule plot_fitted_parameters:
 
 
 rule plot_correlations:
-    """Correlation plots of storm distribution."""
+    """Correlation plots of storm distribution.
+    
+    Swap between train=os.path.join(TRAINING_DIR, "data.nc") and 
+    train=os.path.join(GENERATED_DIR, "netcdf", "train.nc") to 
+    check transforms working correctly.
+    """
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
+        # train=os.path.join(TRAINING_DIR, "data.nc"), # use training data or re-transformed training data
+        train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
@@ -49,13 +56,14 @@ rule plot_correlations:
     params:
         fields=FIELDS,
         dataset=DATASET,
-        outres=32,
-        event_subset=config['event_subset'],
+        outres=8,
+        subset=config['event_subset'],
         lon_min=config["longitude"]["min"],
         lon_max=config["longitude"]["max"],
         lat_min=config["latitude"]["min"],
         lat_max=config["latitude"]["max"],
-        domain="standardised", # ["anomaly", "uniform", "standardised"], "uniform needed for Smith (1990)"
+        domain=config["domain"],
+        plot_domain="uniform", # ["anomaly", "uniform", "standardised"]
     conda:
         GEOENV
     log:
@@ -65,12 +73,17 @@ rule plot_correlations:
 
 
 rule plot_samples:
-    """Figure 3: generated and observed samples.
+    """Figure 3: generated and observed (deseasonalised) samples.
+    
+    Swap between train=os.path.join(TRAINING_DIR, "data.nc") and 
+    train=os.path.join(GENERATED_DIR, "netcdf", "train.nc") to 
+    check transforms working correctly.
     
     >>> snakemake --profile profiles/cluster plot_samples
     """
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
+        # train=os.path.join(TRAINING_DIR, "data.nc"), # use training data or re-transformed training data
+        train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
@@ -91,17 +104,17 @@ rule plot_samples:
 
 
 rule plot_barcharts:
-    """Saffir–Simpson barcharts of storm distribution."""
+    """Saffir-Simpson barcharts of storm distribution."""
     input:
         train=os.path.join(TRAINING_DIR, "data.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         figure=os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png")
     params:
+        event_subset=config['event_subset'],
         month="September",
         fields=FIELDS,
-        dataset=DATASET,
-        event_subset=config['event_subset']
+        dataset=DATASET
     conda:
         GEOENV
     log:
@@ -114,7 +127,7 @@ rule plot_barcharts:
 rule plot_scatterplots:
     """Scatterplots of storm distribution.
     
-    Need to map coords to datasets properly...
+    Need to map coords to datasets properly.
     """
     input:
         train=os.path.join(TRAINING_DIR, "data.nc"),
