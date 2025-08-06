@@ -74,4 +74,13 @@ fields:
     units: "m"
     cmap: "cmocean.cm.rain"
 points_of_interest:
+  birmingham:
+    lon: -1.9
+    lat: 52.5
+  cardiff:
+    lon: -3.2
+    lat: 51.5
+  truro:
+    lon: -5.1
+    lat: 50.5
 local_crs: 27700 # https://epsg.io/27700
