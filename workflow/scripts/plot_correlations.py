@@ -5,10 +5,11 @@ import logging
 
 from src import funcs
 from src import plotting
-
+from src import statistics
 
 def subset_func(ds:xr.Dataset, subset:dict):
     """Subset the dataset using function and threshold."""
+
     func = getattr(funcs, subset["func"])
     args = subset["args"]
     thresh = subset["value"]
@@ -33,6 +34,7 @@ def main(input, output, params):
     os.makedirs(output.dir0, exist_ok=True)
     os.makedirs(output.dir1, exist_ok=True)
 
+
     # load data and samples
     train = xr.open_dataset(input.train)
 
@@ -42,9 +44,14 @@ def main(input, output, params):
         logging.info(f"\nExtracted {train.time.size} images from train.")
 
     gener = xr.open_dataset(input.generated)
-
-    train = train[params.domain].values
-    gener = gener[params.domain].values
+    
+    if params.plot_domain in ["anomaly", "uniform"]:
+        gener = gener[params.plot_domain].values
+        train = train[params.plot_domain].values
+    elif params.plot_domain == "standardised":
+        transform = getattr(statistics, params.domain)
+        gener = gener[params.plot_domain].values
+        train = transform(train["uniform"].values)
     
     xmin = params["lon_min"]
     xmax = params["lon_max"]
@@ -69,17 +76,20 @@ def main(input, output, params):
         fig_pears.savefig(os.path.join(output.dir0, f"pearson_{_fields[0]}-{_fields[1]}.png"), dpi=300)
     
     # - - - - - Spatial - - - - - - - - 
-    logging.info("Resampling to 16 x 16")
     outres = params.outres
     ntrain, inx, _, _ = train.shape
     ngener, _, _, _ = gener.shape
     bin_size = inx // outres
+    
+    logging.info(f"Resampling to {outres} x {outres}")
 
     train_sample = train
     gener_sample = gener
 
-    train_sample = train_sample.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
-    gener_sample = gener_sample.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    # train_sample = train_sample.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    # gener_sample = gener_sample.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
+    train_sample = train_sample.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(4).max(2)
+    gener_sample = gener_sample.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(4).max(2)
     logging.info(f"Train shape: {train_sample.shape}")
     logging.info(f"Generated shape: {gener_sample.shape}")
 

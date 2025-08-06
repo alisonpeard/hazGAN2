@@ -68,7 +68,6 @@ def main(input, output, params):
     image_range  = image_maxima - image_minima
     logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
 
-    transform = getattr(stats, params.domain)
     inv_transform = getattr(stats, f"inv_{params.domain}")
 
     # rescale images to marginals scale
@@ -94,7 +93,6 @@ def main(input, output, params):
         
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
-    train_y = transform(train_u)
     theta  = train["params"].values
 
     logging.info(f"Loaded anomaly training data of shape {train_x.shape}.")
@@ -149,8 +147,13 @@ def main(input, output, params):
             "anomaly": (("time", "lat", "lon", "field"), compare_x),
             "standardised": (("time", "lat", "lon", "field"), compare_y),
             "uniform": (("time", "lat", "lon", "field"), compare_u),
+            "params": (("lat", "lon", "param", "field"), theta),
         },
         coords={
+            "param": [
+                "loc_upper", "scale_upper", "shape_upper",
+                "loc_lower", "scale_lower", "shape_lower"
+                ],
             "field": list(params.fields.keys()),
             "time": (("time"), np.arange(compare_y.shape[0])),
             "lat": (("lat"), train["lat"].values),

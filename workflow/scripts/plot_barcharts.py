@@ -1,59 +1,51 @@
-# %% histograms
-import os
+import logging
 import pandas as pd
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-import logging
-from warnings import warn
 
+from src import funcs
 from src import plotting
 
-# set font to Helvetica
-# plt.rcParams['font.family'] = 'sans-serif'
-# plt.rcParams['font.sans-serif'] = 'Helvetica'
 
-if __name__ == "__main__":
-    TRAIN = snakemake.input.train
-    GENER = snakemake.input.generated
-    MONTH   = snakemake.params.month
-    FIGURE  = snakemake.output.figure
-    DATASET = snakemake.params.dataset.upper()
-    DO_SUBSET = snakemake.params.do_subset
-    THRESH = snakemake.params.event_subset
+def subset_func(ds:xr.Dataset, subset:dict):
+    """Subset the dataset using function and threshold."""
+    func = getattr(funcs, subset["func"])
+    args = subset["args"]
+    thresh = subset["value"]
 
-    # configure logging
-    logging.basicConfig(
-        filename=snakemake.log.file,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    logging.info(f"Plotting barcharts for {DATASET} dataset, month {MONTH}")
+    logging.info(f"Subsetting {func}{*args,} with threshold {thresh}.")
 
-    # TRAIN = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/training/data.nc"
-    # GENER = "/Users/alison/Local/hazGAN2/results/bayofbengal_imdaa/generated/data.nc"
-    # FIGURE = "/Users/alison/Local/hazGAN2/results/figures/samples/barchart.png"
-    # DATASET = "imdaa".upper()
-    # DO_SUBSET   = True
-    # THRESH = {
-    #     "field": "ws",
-    #     "func": "max",
-    #     "value": 25.5,
-    # }
+    for arg in args:
+        ds[arg] = ds.sel(field=arg).anomaly
+
+    intensity = func(ds, *args, dim=["lon", "lat"])
+
+    for arg in args:
+        ds = ds.drop_vars(arg)
+
+    mask = (intensity > thresh).values
+    idx = np.where(mask)[0]
+    return ds.isel(time=idx)
+
+
+def main(input, output, params):
+
+    _dataset = params.dataset.upper()
 
     # load data and samples
-    train = xr.open_dataset(TRAIN)
-    medians = train.sel(month=[MONTH]).medians.values
+    logging.info(f"Plotting barcharts for {_dataset} dataset, month {params.month}")
+
+    train = xr.open_dataset(input.train)
+    medians = train.sel(month=[params.month]).medians.values
     
-    if DO_SUBSET:
-        train['intensity'] = getattr(train.sel(field=THRESH["field"]).anomaly, THRESH["func"])(dim=['lon', 'lat'])
-        mask = (train['intensity'] > THRESH["value"]).values
-        idx  = np.where(mask)[0]
-        train   = train.isel(time=idx)
+    if params["subset"]["do"]:
+        # subset train by threshold
+        train = subset_func(train, params["subset"])
+        logging.info(f"\nExtracted {train.time.size} images from train.")
     
     train_x = train["anomaly"].values
 
-    gener = xr.open_dataset(GENER)
+    gener = xr.open_dataset(input.generated)
     gener_x = gener["anomaly"].values
 
     # add medians for month back to samples
@@ -90,5 +82,19 @@ if __name__ == "__main__":
         
     ax.legend()
     fig.tight_layout()
-    fig.savefig(FIGURE, dpi=300)
-# %%
+    fig.savefig(output.figure, dpi=300)
+
+
+if __name__ == "__main__":
+    # configure logging
+    logging.basicConfig(
+        filename=snakemake.log.file,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    input = snakemake.input
+    output = snakemake.output
+    params = snakemake.params
+
+    main(input, output, params)

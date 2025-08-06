@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from matplotlib_scalebar.scalebar import ScaleBar
 
 
-plt.rcParams['font.family'] = 'Helvetica'
 plt.rcParams['font.size'] = 12
 plt.rcParams['axes.spines.right'] = False
 plt.rcParams['axes.spines.top'] = False
