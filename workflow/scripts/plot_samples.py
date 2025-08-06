@@ -23,8 +23,8 @@ def main(input, output, params):
     train = xr.open_dataset(input.train)
     train_x = train["anomaly"].values
     train_u = train["uniform"].values
-    # train_y = transform(train_u)
-    train_y = train["standardised"].values # only for comparison training set
+    train_y = transform(train_u)
+    # train_y = train["standardised"].values # only for comparison training set
 
     gener = xr.open_dataset(input.generated)
     gener_x = gener["anomaly"].values

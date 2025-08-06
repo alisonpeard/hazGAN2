@@ -7,6 +7,7 @@ from src import funcs
 from src import plotting
 from src import statistics
 
+
 def subset_func(ds:xr.Dataset, subset:dict):
     """Subset the dataset using function and threshold."""
 
@@ -26,6 +27,7 @@ def subset_func(ds:xr.Dataset, subset:dict):
 
     mask = (intensity > thresh).values
     idx = np.where(mask)[0]
+
     return ds.isel(time=idx)
 
 
@@ -67,13 +69,19 @@ def main(input, output, params):
             gener, train, plotting.fields.smith1990, fields=_fields, figsize=.6, title="",
             cbar_label=r"$\hat\theta$", cmap="Spectral", vmin=1, vmax=4, extent=extent
             )
-        fig_smith.savefig(os.path.join(output.dir0, f"smith1990_{_fields[0]}-{_fields[1]}.png"), dpi=300)
+        fig_smith.savefig(
+            os.path.join(output.dir0, f"smith1990_{_fields[0]}-{_fields[1]}.png"),
+            dpi=300, bbox_inches="tight"
+            )
 
         fig_pears = plotting.fields.plot(
             gener, train, plotting.fields.pearson, fields=_fields, figsize=.6,
             title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r", extent=extent
             )
-        fig_pears.savefig(os.path.join(output.dir0, f"pearson_{_fields[0]}-{_fields[1]}.png"), dpi=300)
+        fig_pears.savefig(
+            os.path.join(output.dir0, f"pearson_{_fields[0]}-{_fields[1]}.png"),
+            dpi=300, bbox_inches="tight"
+            )
     
     # - - - - - Spatial - - - - - - - - 
     outres = params.outres
@@ -86,8 +94,6 @@ def main(input, output, params):
     train_sample = train
     gener_sample = gener
 
-    # train_sample = train_sample.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(3).max(1)
-    # gener_sample = gener_sample.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(3).max(1)
     train_sample = train_sample.reshape(ntrain, outres, bin_size, outres, bin_size, 3).max(4).max(2)
     gener_sample = gener_sample.reshape(ngener, outres, bin_size, outres, bin_size, 3).max(4).max(2)
     logging.info(f"Train shape: {train_sample.shape}")
@@ -101,7 +107,9 @@ def main(input, output, params):
             gener_sample, train_sample, plotting.spatial.pearson, field=_field,
             figsize=.6, title="", cbar_label=r"$r$", vmin=-1, vmax=1, cmap="Spectral_r"
             )
-        fig_pears.savefig(os.path.join(output.dir1, f"pearson_{_field}.png"), dpi=300)
+        fig_pears.savefig(
+            os.path.join(output.dir1, f"pearson_{_field}.png"), dpi=300, bbox_inches="tight"
+            )
 
         logging.info(f"Plotting Smith (1990) field {_field}")
         fig_smith = plotting.spatial.plot(
@@ -109,7 +117,9 @@ def main(input, output, params):
             figsize=.6, title="", cbar_label=r"$\hat\theta$", cmap="Spectral",
             vmin=1, vmax=4
             )
-        fig_smith.savefig(os.path.join(output.dir1, f"smith1990_{_field}.png"), dpi=300)
+        fig_smith.savefig(
+            os.path.join(output.dir1, f"smith1990_{_field}.png"), dpi=300, bbox_inches="tight"
+            )
 
 
 if __name__ == "__main__":
