@@ -47,8 +47,8 @@ rule plot_correlations:
     check transforms working correctly.
     """
     input:
-        # train=os.path.join(TRAINING_DIR, "data.nc"), # use training data or re-transformed training data
-        train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        # train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
@@ -82,8 +82,8 @@ rule plot_samples:
     >>> snakemake --profile profiles/cluster plot_samples
     """
     input:
-        # train=os.path.join(TRAINING_DIR, "data.nc"), # use training data or re-transformed training data
-        train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
+        train=os.path.join(TRAINING_DIR, "data.nc"),
+        # train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
         generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
     output:
         outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
