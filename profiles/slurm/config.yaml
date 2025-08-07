@@ -28,7 +28,7 @@ set-resources:
         slurm_extra: "'--gpus=1'"
         cpus_per_task: 8
         mem: "32G"
-        runtime: "6h"
+        runtime: "10h"
     generate_stylegan:
         slurm_partition: "GPU"
         slurm_extra: "'--gpus=1'"

@@ -94,6 +94,7 @@ rule plot_samples:
         lon_max=config["longitude"]["max"],
         lat_min=config["latitude"]["min"],
         lat_max=config["latitude"]["max"],
+        intensity=config["event_subset"],
         domain=config["domain"],
     conda:
         GEOENV

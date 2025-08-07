@@ -1,7 +1,8 @@
 dataset: era5
 year0: 2004
 yearn: 2019
-nyears: 15 # to re-sample
+nyears: 50 # to re-sample
+kimg: 900
 antecedent_buffer_days: 30
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
@@ -20,13 +21,12 @@ rfunc:
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
 event_subset:
-  do: True
+  do: False
   args: [u10, v10]
   func: l2norm_max
   value: 25
 marginal_threshold: 0.95
 domain: laplace
-kimg: 300
 fields:
   u10:
     init:
