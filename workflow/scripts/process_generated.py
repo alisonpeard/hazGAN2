@@ -37,9 +37,7 @@ def subset_func(ds:xr.Dataset, subset:dict):
 def main(input, output, params):
     # load all images
     image_list = glob(os.path.join(input.image_dir, "*.png"))
-
     logging.info(f"Found {len(image_list)} images in {input.image_dir}.")
-
     images = []
     for png in sorted(image_list):
         with Image.open(png) as img:
@@ -49,6 +47,7 @@ def main(input, output, params):
     images /= 255
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
+    # load training images
     train_list = glob(os.path.join(input.training_dir, "*.png"))
     logging.info(f"Found {len(train_list)} training images in {input.training_dir}.")
     images_train = []
@@ -71,19 +70,20 @@ def main(input, output, params):
     inv_transform = getattr(stats, f"inv_{params.domain}")
 
     # rescale images to marginals scale
-    images_y = (images * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    images_y = (images * (image_n + 1) - 1) / (image_n - 1)
+    images_y = images_y * image_range + image_minima
     images_u = inv_transform(images_y)
-
-    # flip back y-axis (latitude)
     images_y = np.flip(images_y, axis=1)
     images_u = np.flip(images_u, axis=1)
 
     # rescale train in same way
-    compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1) * image_range + image_minima
+    compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1)
+    compare_y = compare_y * image_range + image_minima
     compare_u = inv_transform(compare_y)
     compare_y = np.flip(compare_y, axis=1)
     compare_u = np.flip(compare_u, axis=1)
 
+    # load training netCDF
     train = xr.open_dataset(input.training_data)
     
     if params["subset"]["do"]:
@@ -92,19 +92,17 @@ def main(input, output, params):
         logging.info(f"\nExtracted {train.time.size} images from train.")
         
     train_x = train["anomaly"].values
-    train_u = train["uniform"].values
     theta  = train["params"].values
 
     logging.info(f"Loaded anomaly training data of shape {train_x.shape}.")
-    logging.info(f"Loaded uniform training data of shape {train_u.shape}.")
     logging.info(f"Loaded parameters of shape {theta.shape}.")
 
     # check range of uniform samples
     epsilon = 1e-6
-    if not ((train_u.max() < 1.) and (train_u.min() > 0.)):
+    if not ((compare_u.max() < 1.) and (compare_u.min() > 0.)):
         logging.error("Training uniform samples not in [0,1] range")
-        logging.error(f"Max: {train_u.max()}, Min: {train_u.min()}")
-        train_u = np.clip(train_u, epsilon, 1 - epsilon)
+        logging.error(f"Max: {compare_u.max()}, Min: {compare_u.min()}")
+        compare_u = np.clip(compare_u, epsilon, 1 - epsilon)
     
     if not ((images_u.max() < 1.) and (images_u.min() > 0.)):
         logging.error("Generated uniform samples not in [0,1] range")
