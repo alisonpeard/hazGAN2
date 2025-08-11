@@ -47,9 +47,16 @@ def is_image_ext(fname: Union[str, Path]) -> bool:
     ext = file_ext(fname).lower()
     return f'.{ext}' in PIL.Image.EXTENSION # type: ignore
 
+
 #----------------------------------------------------------------------------
 
-def open_image_folder(source_dir, *, max_images: Optional[int]):
+def is_numpy_ext(fname: Union[str, Path]) -> bool:
+    """Rewrite to handle numpy instead of PNGs."""
+    return file_ext(fname) == 'npy'
+
+#----------------------------------------------------------------------------
+
+def _open_image_folder(source_dir, *, max_images: Optional[int]):
     input_images = [str(f) for f in sorted(Path(source_dir).rglob('*')) if is_image_ext(f) and os.path.isfile(f)]
 
     # Load labels.
@@ -78,6 +85,7 @@ def open_image_folder(source_dir, *, max_images: Optional[int]):
 #----------------------------------------------------------------------------
 
 def open_image_zip(source, *, max_images: Optional[int]):
+    """Old, for PNG files."""
     with zipfile.ZipFile(source, mode='r') as z:
         input_images = [str(f) for f in sorted(z.namelist()) if is_image_ext(f)]
 
@@ -99,6 +107,94 @@ def open_image_zip(source, *, max_images: Optional[int]):
                 with z.open(fname, 'r') as file:
                     img = PIL.Image.open(file) # type: ignore
                     img = np.array(img)
+                yield dict(img=img, label=labels.get(fname))
+                if idx >= max_idx-1:
+                    break
+    return max_idx, iterate_images()
+
+#----------------------------------------------------------------------------
+
+def open_image_folder(source_dir, *, max_images: Optional[int]):
+    """Old, for PNG files."""
+    input_images = [str(f) for f in sorted(Path(source_dir).rglob('*')) if is_image_ext(f) and os.path.isfile(f)]
+
+    # Load labels.
+    labels = {}
+    meta_fname = os.path.join(source_dir, 'dataset.json')
+    if os.path.isfile(meta_fname):
+        with open(meta_fname, 'r') as file:
+            labels = json.load(file)['labels']
+            if labels is not None:
+                labels = { x[0]: x[1] for x in labels }
+            else:
+                labels = {}
+
+    max_idx = maybe_min(len(input_images), max_images)
+
+    def iterate_images():
+        for idx, fname in enumerate(input_images):
+            arch_fname = os.path.relpath(fname, source_dir)
+            arch_fname = arch_fname.replace('\\', '/')
+            img = np.array(PIL.Image.open(fname))
+            yield dict(img=img, label=labels.get(arch_fname))
+            if idx >= max_idx-1:
+                break
+    return max_idx, iterate_images()
+
+#----------------------------------------------------------------------------
+
+def open_numpy_folder(source_dir, *, max_images: Optional[int]):
+    """Rewrite to handle numpy instead of PNGs."""
+    input_images = [str(f) for f in sorted(Path(source_dir).rglob('*')) if is_numpy_ext(f) and os.path.isfile(f)]
+
+    # Load labels.
+    labels = {}
+    meta_fname = os.path.join(source_dir, 'dataset.json')
+    if os.path.isfile(meta_fname):
+        with open(meta_fname, 'r') as file:
+            labels = json.load(file)['labels']
+            if labels is not None:
+                labels = { x[0]: x[1] for x in labels }
+            else:
+                labels = {}
+
+    max_idx = maybe_min(len(input_images), max_images)
+
+    def iterate_images():
+        for idx, fname in enumerate(input_images):
+            arch_fname = os.path.relpath(fname, source_dir)
+            arch_fname = arch_fname.replace('\\', '/')
+            img = np.load(fname)
+            yield dict(img=img, label=labels.get(arch_fname))
+            if idx >= max_idx-1:
+                break
+    return max_idx, iterate_images()
+
+#----------------------------------------------------------------------------
+
+def open_numpy_zip(source, *, max_images: Optional[int]):
+    """Rewrite to handle numpy instead of PNGs."""
+    
+    with zipfile.ZipFile(source, mode='r') as z:
+        input_images = [str(f) for f in sorted(z.namelist()) if is_numpy_ext(f)]
+
+        # Load labels.
+        labels = {}
+        if 'dataset.json' in z.namelist():
+            with z.open('dataset.json', 'r') as file:
+                labels = json.load(file)['labels']
+                if labels is not None:
+                    labels = { x[0]: x[1] for x in labels }
+                else:
+                    labels = {}
+
+    max_idx = maybe_min(len(input_images), max_images)
+
+    def iterate_images():
+        with zipfile.ZipFile(source, mode='r') as z:
+            for idx, fname in enumerate(input_images):
+                with z.open(fname, 'r') as file:
+                    img = np.load(img)
                 yield dict(img=img, label=labels.get(fname))
                 if idx >= max_idx-1:
                     break
@@ -250,11 +346,12 @@ def make_transform(
 #----------------------------------------------------------------------------
 
 def open_dataset(source, *, max_images: Optional[int]):
+    """Modified to handle numpy instead of PNGs."""
     if os.path.isdir(source):
         if source.rstrip('/').endswith('_lmdb'):
             return open_lmdb(source, max_images=max_images)
         else:
-            return open_image_folder(source, max_images=max_images)
+            return open_numpy_folder(source, max_images=max_images)
     elif os.path.isfile(source):
         if os.path.basename(source) == 'cifar-10-python.tar.gz':
             return open_cifar10(source, max_images=max_images)

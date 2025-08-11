@@ -36,27 +36,23 @@ def subset_func(ds:xr.Dataset, subset:dict):
 
 def main(input, output, params):
     # load all images
-    image_list = glob(os.path.join(input.image_dir, "*.png"))
-    logging.info(f"Found {len(image_list)} images in {input.image_dir}.")
+    flist = glob(os.path.join(input.image_dir, "*.npy"))
+    logging.info(f"Found {len(flist)} images in {input.image_dir}.")
     images = []
-    for png in sorted(image_list):
-        with Image.open(png) as img:
-            img = np.array(img, dtype=np.float32)
-            images.append(img)
+    for f in sorted(flist):
+        img = np.load(f)
+        images.append(img / 255)
     images = np.stack(images, axis=0)
-    images /= 255
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
     # load training images
-    train_list = glob(os.path.join(input.training_dir, "*.png"))
-    logging.info(f"Found {len(train_list)} training images in {input.training_dir}.")
+    flist = glob(os.path.join(input.training_dir, "*.npy"))
+    logging.info(f"Found {len(flist)} training images in {input.training_dir}.")
     images_train = []
-    for png in sorted(train_list):
-        with Image.open(png) as img:
-            img = np.array(img, dtype=np.float32)
-            images_train.append(img)
+    for f in sorted(flist):
+        img = np.load(f)
+        images_train.append(img / 255)
     images_train = np.stack(images_train, axis=0)
-    images_train /= 255
     logging.info(f"Created training images ndarray of shape {images_train.shape}.")
 
     # apply image statistics to rescale

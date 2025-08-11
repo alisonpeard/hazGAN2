@@ -85,20 +85,25 @@ def main(input, output, params):
     # convert images to RGB and save
     for i in range(nimgs):
         arr = array[i]
-        arr = np.uint8(arr * 255)
-        img = Image.fromarray(arr, 'RGB')
-        output_path = os.path.join(output.outdir, f"footprint{i}.png")
-        img.save(output_path)
+        # PNG output
+        # arr = np.uint8(arr * 255)
+        # img = Image.fromarray(arr, 'RGB')
+        # output_path = os.path.join(output.outdir, f"footprint{i}.png")
+        # img.save(output_path)
+
+        # npy output
+        output_path = os.path.join(output.outdir, f"footprint{i}.npy")
+        np.save(output_path, arr * 255)
 
     # verify saved image
-    test_load = Image.open(output_path)
-    logging.info(f"Saved {nimgs} PNG images to {output.outdir}")
+    test_load = np.load(output_path)
+    logging.info(f"Saved {nimgs} npy files to {output.outdir}")
 
     # save to zipfile
     with zipfile.ZipFile(output.zipfile, 'w') as zipf:
         for root, dirs, files in os.walk(output.outdir):
             for file in files:
-                if file.endswith('.png'):
+                if file.endswith('.npy'):
                     file_path = os.path.join(root, file)
                     zipf.write(file_path, os.path.relpath(file_path, output.outdir))
     
