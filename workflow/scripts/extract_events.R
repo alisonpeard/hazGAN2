@@ -24,7 +24,6 @@ log_appender(appender_stdout(lines = 1))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(INFO)
 
-
 # load snakemake config
 log_info("Loading snakemake config...")
 INPUT        <- snakemake@input[["netcdf"]]
@@ -88,8 +87,8 @@ for (k in seq_along(FIELD_NAMES)) {
     rename(!!field := !!sym(field))
   
   params[, field] <- left_join(
-    params[, c("month", "lat", "lon")],
     deseasonalized$params,
+    params[, c("month", "lat", "lon")],
     by = c("month" = "month", "lat" = "lat", "lon" = "lon")
   )[field]
 }
