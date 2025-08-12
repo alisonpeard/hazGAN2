@@ -108,8 +108,8 @@ def main(input, output, params):
     # transform images to original scale using invPIT
     distns = [field['distn'] for field in params.fields.values()]
     two_tailed = [field['two_tailed'] for field in params.fields.values()]
-    images_x = stats.invPIT(images_u, train_x, theta=theta, domain=params.domain, distns=distns, two_tailed=two_tailed)
-    compare_x = stats.invPIT(compare_u, train_x, theta=theta, domain=params.domain, distns=distns, two_tailed=two_tailed)
+    images_x = stats.invPIT(images_u, train_x, theta=theta, distns=distns, two_tailed=two_tailed)
+    compare_x = stats.invPIT(compare_u, train_x, theta=theta, distns=distns, two_tailed=two_tailed)
 
     # save to NetCDF
     data = xr.Dataset(

@@ -48,8 +48,8 @@ train = train.isel(time=mask)
 medians = train.medians.sel(month="December") # this should only have months for season
 
 # %%
-data = train.copy() + medians
-# data = gener.copy() + medians
+# data = train.copy() + medians
+data = gener.copy() + medians
 
 data["u10"] = data.sel(field="u10").anomaly
 data["v10"] = data.sel(field="v10").anomaly
