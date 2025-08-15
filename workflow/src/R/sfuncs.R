@@ -4,7 +4,7 @@ suppressPackageStartupMessages({
   library(lubridate)
   library(methods) # for S4 methods / snakemake
 })
-# source("workflow/src/R/utils.R")
+
 
 deseasonalize <- function(df, var, method = "additive") {
   # add more methods below, var is a list of variables
@@ -14,6 +14,7 @@ deseasonalize <- function(df, var, method = "additive") {
   }
   return(method(df, var))
 }
+
 
 additive <- function(df, vars) {
   df$month <- months(df$time)
@@ -30,6 +31,7 @@ additive <- function(df, vars) {
     params = monthly_median
   ))
 }
+
 
 autumn <- function(df, vars) {
   # extract autumn months only
@@ -77,6 +79,7 @@ winter <- function(df, vars) {
     params = monthly_median
   ))
 }
+
 
 spring <- function(df, vars) {
   # extract spring months only
