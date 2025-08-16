@@ -38,13 +38,24 @@ rule ensure_script_executable:
         """
 
 
-checkpoint train_stylegan:
+def extract_fold(zipfile, i, k=config["num_kfolds"]):
+    """Extract kth fold for k-fold cross validation"
+    # TODO: check sample naming pattern
+    # sort samples according to index (time)
+    # partition zipfile into k folds
+    # return folds - fold[i] 
+    raise NotImplementedError
+
+
+checkpoint train_stylegan_fold:
     """>>> snakemake --profile profiles/slurm train_stylegan"""
     input:
         ready="logs/cuda_env_ready.done",
-        zipfile=os.path.join(TRAINING_DIR, "images.zip")
+        zipfile=extract_folds(
+            os.path.join(TRAINING_DIR, "images.zip"), {fold_id}
+        )
     output:
-        outdir=directory(os.path.join(GENERATED_DIR, "training-output"))
+        outdir=directory(os.path.join(GENERATED_DIR, {fold_id}, "training-output"))
     params:
         augment="color,translation,cutout",
         kimg=KIMG
@@ -69,12 +80,12 @@ checkpoint train_stylegan:
         """
 
 
-rule generate_stylegan:
+rule generate_stylegan_fold:
     input:
         ready="logs/cuda_env_ready.done",
         network=get_model_path
     output:
-        directory(os.path.join(GENERATED_DIR, "images"))
+        directory(os.path.join(GENERATED_DIR, {fold_id}, "images")
     params:
         trunc=1.0,
         nimgs=calculate_nimgs
@@ -93,3 +104,11 @@ rule generate_stylegan:
             --network={input.network} \
             &> {log}
         """
+
+
+rule generate_stylegan_all:
+    input:
+        expand(
+            directory(os.path.join(GENERATED_DIR, {fold_id}, "images"),
+            fold_id=range(config["num_kfolds"]
+    )
