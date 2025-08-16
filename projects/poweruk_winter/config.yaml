@@ -2,8 +2,9 @@ dataset: era5
 year0: 2004
 yearn: 2019
 nyears: 50 # to simulate
-kimg: 900
+kimg: 300
 antecedent_buffer_days: 30
+num_kfolds: 2
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
   max: 5.125
