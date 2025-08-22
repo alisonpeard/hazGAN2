@@ -47,7 +47,8 @@ def sum_30_days(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
 
 
 def scale_to_gust(
-    ds:xr.Dataset, u:str, v:str, i10fg:str
+    ds:xr.Dataset, u:str, v:str, i10fg:str,
+    params={}
     ) -> xr.Dataset:
     """Scale the u and v components of wind to gust speed.
     
