@@ -103,11 +103,13 @@ def main(input, output, params):
     for field, config in params.fields.items():
         func       = config["init"]["func"]
         args       = config["init"]["args"]
-        hfunc      = config["hfunc"]["func"]
-        hfunc_args = config["hfunc"]["args"]
 
         logging.info(f"Applying {field} = {func}{*args,}.")
         data[field] = getattr(funcs, func)(data, *args, params=theta)
+
+    for field, config in params.fields.items():
+        hfunc      = config["hfunc"]["func"]
+        hfunc_args = config["hfunc"]["args"]
 
         logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
         resampled[field] = data.resample(time='1D').apply(
