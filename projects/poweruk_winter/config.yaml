@@ -4,7 +4,6 @@ yearn: 2019
 nyears: 50 # to simulate
 kimg: 300
 antecedent_buffer_days: 30
-num_kfolds: 2
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
   min: -10.875
   max: 5.125
@@ -23,7 +22,7 @@ rfunc:
 rfuncs_dir: src/funcs.R
 event_subset:
   do: False
-  args: [u10, v10]
+  args: [u10_gust, v10_gust]
   func: l2norm_max
   value: 25
 marginal_threshold: 0.95
