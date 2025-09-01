@@ -53,7 +53,7 @@ rule make_training_data:
     """
     input:
         events=os.path.join(PROCESSING_DIR, "fitted.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
+        metadata=os.path.join(PROCESSING_DIR, "events.parquet"),
         medians=os.path.join(PROCESSING_DIR, "medians.parquet")
     output:
         data=os.path.join(TRAINING_DIR, "data.nc")
@@ -76,8 +76,8 @@ rule fit_marginals:
     >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
-        daily=os.path.join(PROCESSING_DIR, "daily.parquet")
+        metadata=os.path.join(PROCESSING_DIR, "events.parquet"),
+        daily=os.path.join(PROCESSING_DIR, "timeseries.parquet")
     output:
         events=os.path.join(PROCESSING_DIR, "fitted.parquet")
     params:
@@ -107,11 +107,11 @@ rule extract_events:
     >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/event_metadata.parquet
     """
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
+        netcdf=os.path.join(PROCESSING_DIR, "data_daily.nc")
     output:
         medians=os.path.join(PROCESSING_DIR, "medians.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
-        daily=os.path.join(PROCESSING_DIR, "daily.parquet")
+        metadata=os.path.join(PROCESSING_DIR, "events.parquet"),
+        daily=os.path.join(PROCESSING_DIR, "timeseries.parquet")
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
@@ -141,7 +141,7 @@ rule concatenate_data:
             year=YEARS
         )
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "data_all.nc")
+        netcdf=os.path.join(PROCESSING_DIR, "data_daily.nc")
     params:
         exclude=EXCLUDE
     resources:

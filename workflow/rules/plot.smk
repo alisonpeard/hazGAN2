@@ -22,7 +22,7 @@ rule plot_fitted_parameters:
     >>> snakemake --profile profiles/cluster plot_fitted_parameters
     """
     input:
-        events=os.path.join(PROCESSING_DIR, "events.parquet")
+        events=os.path.join(PROCESSING_DIR, "fitted.parquet")
     output:
         fig1=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[0]}_upper.png"),
         fig2=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[1]}_upper.png"),

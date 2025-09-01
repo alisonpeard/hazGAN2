@@ -69,7 +69,7 @@ include: "rules/get_data.smk"
 include: "rules/process_data.smk"
 include: "rules/train_stylegan.smk"
 include: "rules/process_output.smk"
-include: "rules/make_figures.smk"
+include: "rules/plot.smk"
 
 # run full workflow (up to checkpoint)
 rule all:
