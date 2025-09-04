@@ -1,3 +1,14 @@
+# Custom
+.DS_Store
+.Rhistory
+.env
+._*
+*.so
+*.lock
+workflow.svg
+.snakemake/
+conda/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -172,13 +183,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-# Custom
-.DS_Store
-.Rhistory
-.env
-._*
-*.so
-*.lock
-workflow.svg
-.snakemake/
