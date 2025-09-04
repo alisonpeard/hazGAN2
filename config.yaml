@@ -2,6 +2,7 @@
 project: __dev__/poweruk2 #poweruk_winter
 conda-cleanup-envs: true
 conda-cleanup-pkgs: cache
+conda-prefix: "conda"
 
 # environment specs 
 setup:

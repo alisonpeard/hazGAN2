@@ -29,7 +29,7 @@ checkpoint make_rgb_images:
     input:
         data=os.path.join(TRAINING_DIR, "data.nc")
     output:
-        outdir=directory(os.path.join(TRAINING_DIR, "rgb")),
+        outdir=temp(directory(os.path.join(TRAINING_DIR, "rgb"))),
         zipfile=os.path.join(TRAINING_DIR, "images.zip"),
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
@@ -161,7 +161,7 @@ rule resample_year:
     input:
         netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled", "{year}.nc")
+        netcdf=temp(os.path.join(PROCESSING_DIR, "resampled", "{year}.nc"))
     params:
         year="{year}",
         resx=RESOLUTION['lon'],
