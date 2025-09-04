@@ -66,6 +66,9 @@ checkpoint train_stylegan:
             --DiffAugment={params.augment} \
             --kimg={params.kimg} \
             &> {log}
+
+        rm -rf {TRAINING_DIR}/rgb/
+        find {output.outdir} -name "network-snapshot-*.pkl" -not -name "network-snapshot-{KIMG:06d}.pkl" -delete
         """
 
 
