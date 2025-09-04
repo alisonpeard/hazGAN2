@@ -104,7 +104,7 @@ rule extract_events:
             or defined in utils.R.
         R_funcs: 
     
-    >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/event_metadata.parquet
+    >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
         netcdf=os.path.join(PROCESSING_DIR, "data_daily.nc")
