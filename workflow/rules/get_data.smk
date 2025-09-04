@@ -35,7 +35,7 @@ rule get_year:
         indir=INDIR,
         params=get_param_file()
     output:
-        netcdf=os.path.join(PROCESSIccleNG_DIR, "input", "{year}.nc")
+        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
     params:
         year="{year}",
         xmin=config["longitude"]["min"],
