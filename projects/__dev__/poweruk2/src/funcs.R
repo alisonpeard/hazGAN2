@@ -9,7 +9,7 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-input_path <- "projects/poweruk2/resources/cyclones_midlands.csv"
+input_path <- "projects/__dev__/poweruk2/resources/cyclones_midlands.csv"
 
 identify_events <- function(daily, rfunc = NULL) {
   # read text file with dates from ..resources/cyclones_midlands.txt
