@@ -25,3 +25,4 @@ dependencies:
     - libgdal
     - pip:
         - cmocean
+        - matplotlib-scalebar
