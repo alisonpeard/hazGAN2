@@ -67,7 +67,7 @@ EXCLUDE = config.get("exclude", None)
 # NOTE: comment rule files out if you want to avoid reruns
 include: "rules/get_data.smk"
 include: "rules/process_data.smk"
-include: "rules/train_stylegan.smk"
+include: "rules/stylegan.smk"
 include: "rules/process_output.smk"
 include: "rules/plot.smk"
 

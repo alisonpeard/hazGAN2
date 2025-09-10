@@ -3,14 +3,19 @@ import zipfile
 from glob import glob
 
 
-def calculate_nimgs(wildcards, years_of_samples=config["nyears"]):
+def calculate_nimgs(wildcards, years_of_samples=config["nyears"], verbose=False):
+    if not os.path.exists(os.path.join(TRAINING_DIR, "images.zip")):
+        if verbose:
+            print(f"Training zip file {os.path.join(TRAINING_DIR, 'images.zip')} does not exist yet.")
+        return None
     with zipfile.ZipFile(os.path.join(TRAINING_DIR, "images.zip"), 'r') as zip_ref:
         img_files = [f for f in zip_ref.namelist() if f.lower().endswith(('.png', '.jpg', '.jpeg', '.npy'))]
         nimgs = len(img_files)
     nyears = YEARN - YEAR0
     freq   = nimgs / nyears
     nsamples = int(freq * years_of_samples)
-    print(f"Calculated number of samples: {nsamples} based on {nimgs} images over {nyears} years.")
+    if verbose:
+        print(f"Calculated number of samples: {nsamples} based on {nimgs} images over {nyears} years.")
     return nsamples
 
 
