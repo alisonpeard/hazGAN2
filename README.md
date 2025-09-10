@@ -32,10 +32,9 @@ Date: 08-07-2025
 ## Quick start
 
 ```bash
-conda create -c conda-forge -c bioconda -n snakemake snakemake -y
-conda activate snakemake
-conda config --set channel_priority strict # snakemake complains otherwise
-conda install -c conda-forge conda=24.7.1 --y
+micromamba create -c conda-forge -c bioconda -n snakemake snakemake conda=24.7.1 -y
+micromamba activate snakemake
+# conda config --set-channel_priority strict  # (or change in .condarc file)
 python -m pip install snakemake-executor-plugin-slurm # snakemake >= 9.0.0, if using 
 
 # set up the required conda environments
