@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
 
 print("fit_marginals.R - Starting...")
 
-source("workflow/src/R/stats.R")
+source("workflow/src/R/fitting.R")
 source("workflow/src/R/hfuncs.R")
 
 
@@ -23,8 +23,6 @@ log_level <- snakemake@log[["level"]]
 log_appender(appender_file(log_file))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(log_level)
-log_debug(paste0("Log file: ", log_file))
-log_debug(paste0("Logger level: ", log_level))
 
 # load snakemake rule paramet
 METADATA <- snakemake@input[["metadata"]]
@@ -48,19 +46,7 @@ nfields <- length(fields)
 
 
 field_summary <- function(i) {
-  summary_msg <- paste0(
-    "fit_marginals.R - ",
-    "Fitting field: ", fields[i], "\n",
-    "Using distribution: ", distns[i], "\n",
-    "Variable mean: ", mean(daily[[fields[i]]], na.rm = TRUE), "\n",
-    "Variable sd: ", sd(daily[[fields[i]]], na.rm = TRUE), "\n",
-    "Variable min: ", min(daily[[fields[i]]], na.rm = TRUE), "\n",
-    "Variable max: ", max(daily[[fields[i]]], na.rm = TRUE), "\n",
-    "Q70: ", quantile(daily[[fields[i]]], 0.7, na.rm = TRUE), "\n",
-    "Q95: ", quantile(daily[[fields[i]]], 0.95, na.rm = TRUE), "\n",
-    "Q99: ", quantile(daily[[fields[i]]], 0.99, na.rm = TRUE), "\n"
-  )
-  return(summary_msg)
+  paste0("Fitting field: ", fields[i], "\n")
 }
 
 # figure out expected output length: metadata
@@ -69,12 +55,8 @@ num_x <- length(unique(daily$lon))
 num_y <- length(unique(daily$lat))
 num_fields <- length(fields)
 expected_rows <- num_events * num_x * num_y * num_fields
-log_debug(paste0(
-  "Expected number of rows in output: ", expected_rows
-))
 
 # main: fit marginals and transform each field
-print("Fitting marginals for field 1...") #! length(daily): 20946944
 log_debug(field_summary(1))
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
@@ -83,11 +65,7 @@ events_field1 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[1]))
-log_debug(paste0(
-  fields[1], " with ", nrow(events_field1), " rows."
-))
 
-print("Fitting marginals for field 2...")
 log_debug(field_summary(2))
 events_field2 <- marginal_transformer(
   daily, metadata, fields[2], Q,
@@ -96,12 +74,7 @@ events_field2 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("Finished fitting: ", fields[2]))
-log_debug(paste0(
-  fields[2], " with ", nrow(events_field2), " rows."
-))
 
-
-print("Fitting marginals for field 3...")
 log_debug(field_summary(3))
 events_field3 <- marginal_transformer(
   daily, metadata, fields[3], Q,
@@ -110,9 +83,6 @@ events_field3 <- marginal_transformer(
   log_file = log_file, log_level = log_level
 )
 log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))
-log_debug(paste0(
-  fields[3], " with ", nrow(events_field3), " rows."
-))
 
 # combine fields
 renamer <- function(df, var) {
