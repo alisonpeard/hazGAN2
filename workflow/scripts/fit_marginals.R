@@ -4,18 +4,15 @@ suppressPackageStartupMessages({
   library(logger, quietly = TRUE)
 })
 
-print("fit_marginals.R - Starting...")
-
 source("workflow/src/R/fitting.R")
 source("workflow/src/R/hfuncs.R")
-
 
 if (!is.null(snakemake@params[["R_funcs"]])) {
   # overwrite with any custom functions defined in project/src/funcs.R
   rfunc_file <- snakemake@params[["R_funcs"]]
   source(rfunc_file)
+  print(paste0("Loaded custom R functions from ", rfunc_file))
 }
-print("Loaded custom R functions")
 
 # configure logging
 log_file <- snakemake@log[["file"]]
@@ -24,7 +21,7 @@ log_appender(appender_file(log_file))
 log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
 log_threshold(log_level)
 
-# load snakemake rule paramet
+# load snakemake rule parameters
 METADATA <- snakemake@input[["metadata"]]
 DAILY    <- snakemake@input[["daily"]]
 OUTPUT   <- snakemake@output[["events"]]
@@ -35,8 +32,7 @@ Q        <- snakemake@params[["q"]]
 daily    <- read_parquet(DAILY)
 metadata <- read_parquet(METADATA)
 
-# get functions and args for resampling time
-log_info("Transforming fields...")
+# get functions and args for resampling time dimension
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
 two_tailed <- sapply(FIELDS, function(x) x$two_tailed)
@@ -57,6 +53,8 @@ num_fields <- length(fields)
 expected_rows <- num_events * num_x * num_y * num_fields
 
 # main: fit marginals and transform each field
+log_info("Transforming fields...")
+
 log_debug(field_summary(1))
 events_field1 <- marginal_transformer(
   daily, metadata, fields[1], Q,
