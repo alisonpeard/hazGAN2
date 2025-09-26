@@ -19,7 +19,9 @@ identify_events <- function(daily, rfunc = NULL) {
   event_data$year <- format(event_data$time, "%Y")
   event_data$event <- as.numeric(factor(event_data$cyclone_id))
 
-  # assign event ids to daily data
+  # assign ids to daily data... 
+  # could also collapse daily along time here instead
+  # of later...
   metadata <- left_join(
     event_data[c("time", "wind", "event")],
     daily,
@@ -32,17 +34,21 @@ identify_events <- function(daily, rfunc = NULL) {
   # clean up metadata
   metadata <- rename(metadata, variable = "wind")
   metadata <- metadata[, c("time", "event", "variable")]
-  print(head(metadata))
 
   # extract event statistics
   events <- metadata |>
-    group_by(event) |>
-    mutate(
-      event.size = n(),
-    ) |>
-    slice(which.max(variable)) |>
-    ungroup() |>
-    select(event, variable, time, event.size)
+  group_by(time) |>
+  summarise(
+    event = first(event),
+    variable = max(variable),
+    .groups = "drop"
+  ) |>
+  group_by(event) |>
+  summarise(
+    event.size = n(),
+    variable = max(variable),  # if you want to keep variable info
+    .groups = "drop"
+  )
 
   # Ljung-Box
   p <- Box.test(c(events$variable), type = "Ljung")$p.value
@@ -67,10 +73,12 @@ identify_events <- function(daily, rfunc = NULL) {
   events$event.rp <- rp
 
   # remaining metadata
-  metadata <- left_join(metadata,
-                        events[c("event", "event.rp", "event.size")],
-                        by = c("event"))
+  metadata <- left_join(
+    metadata,
+    events[c("event", "event.rp", "event.size")],
+    by = c("event")
+  )
   metadata <- metadata |> rename(wind = variable)
-
+  metadata$p_independent <- rep(p, nrow(metadata))
   return(metadata)
 }
