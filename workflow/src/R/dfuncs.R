@@ -68,13 +68,6 @@ identify_events <- function(daily, rfunc) {
   p <- result$p
 
   thresh <- quantile(series[, args], q)
-  cat(paste0(
-    "Final selection from gridsearch:\n",
-    "Run length: ", r, "\n",
-    "Quantile: : ", q, "\n",
-    "Threshold: ", round(thresh, 4), "\n",
-    "P-value (H0:independent): ", round(p, 4), "\n"
-  ))
 
   # final declustering
   declustering <- decluster(series[, args], thresh, r = r)
@@ -88,13 +81,13 @@ identify_events <- function(daily, rfunc) {
     group_by(event) |>
     mutate(
       event.size = n(),
-      max_val = max(variable) #! think this should be match.fun(hfunc)(variable)
+      var_max = max(variable)
     ) |>
-    filter(variable == max_val) |>
+    filter(variable == var_max) |>
     group_by(event) |>
     summarise(
-      variable = first(variable),
-      time = first(time),
+      variable = first(variable), # only for assigning rps
+      #time = first(time),
       event.size = first(event.size)
     )
 
@@ -117,10 +110,17 @@ identify_events <- function(daily, rfunc) {
   events$event.rp <- rp
 
   # remaining metadata
-  metadata <- left_join(metadata,
-                        events[c("event", "event.rp", "event.size")],
-                        by = c("event"))
+  metadata <- left_join(
+    metadata,
+    events[c("event", "event.rp", "event.size")],
+    by = c("event")
+  )
   metadata <- metadata |> rename_with(~ args, variable)
+
+  # gridsearch fitted parameters
+  metadata$run_length    <- rep(r, nrow(metadata))
+  metadata$p_independent <- rep(p, nrow(metadata))
+  metadata$event_thresh  <- rep(thresh, nrow(metadata))
 
   return(metadata)
 }

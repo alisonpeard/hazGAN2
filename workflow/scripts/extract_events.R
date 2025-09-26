@@ -1,4 +1,4 @@
-# Identify independent events using runs declustering.
+"Identify independent events using runs declustering."
 suppressPackageStartupMessages({
   library(logger)
   library(arrow)
@@ -43,9 +43,7 @@ FIELD_NAMES  <- names(FIELDS)
 
 # ====== 1.LOAD AND DESEASONALIZE DATA =========================================
 log_info("Loading data")
-start <- Sys.time()
 src <- tidync(INPUT)
-
 daily  <- src |> hyper_tibble(force = TRUE)
 
 # negate any variables where minimum is of interest
@@ -59,11 +57,11 @@ for (k in seq_along(FIELDS)) {
 
 # additional processing
 daily$time <- as.Date(daily$time)
+log_info(paste0("Dataframe rows: ", nrow(daily)))
+log_info(paste0("Dataframe columns: ", ncol(daily)))
 
 # remove seasonality (sfuncs)
 log_info("Removing seasonality")
-log_info(paste0("Dataframe rows: ", nrow(daily)))
-log_info(paste0("Dataframe columns: ", ncol(daily)))
 
 # faster (hopefully)
 lats <- unique(daily$lat)
@@ -83,14 +81,14 @@ for (k in seq_along(FIELD_NAMES)) {
 
   # daily[, field] <- deseasonalized$df
   daily <- deseasonalized$df |>
-    left_join(daily, by = c("lat", "lon", "time"), suffix = c("", "_old")) |>
+    left_join(daily, by = c("lat", "lon", "time"), suffix = c("", "_seasonal")) |>
     rename(!!field := !!sym(field))
   
   params[, field] <- left_join(
     deseasonalized$params,
     params[, c("month", "lat", "lon")],
     by = c("month" = "month", "lat" = "lat", "lon" = "lon")
-  )[field]
+  )[[field]]
 }
 
 # ====== 2.EXTRACT EVENTS ======================================================
@@ -98,10 +96,10 @@ log_info("Extracting events")
 metadata <- identify_events(daily, RFUNC)
 
 # ====== 3.SAVE RESULTS ========================================================
-log_info(paste0("Finished event extraction. Saving ",
-                METADATA_OUT, ", and ", DAILY_OUT, " ..."))
+log_info(paste0(
+  "Finished event extraction. Saving ",
+  METADATA_OUT, ", and ", DAILY_OUT, " ..."
+))
+write_parquet(metadata, METADATA_OUT)
 write_parquet(params, MEDIANS_OUT)
 write_parquet(daily, DAILY_OUT)
-write_parquet(metadata, METADATA_OUT)
-
-# ==============================================================================
