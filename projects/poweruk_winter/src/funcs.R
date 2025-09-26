@@ -37,18 +37,18 @@ identify_events <- function(daily, rfunc = NULL) {
 
   # extract event statistics
   events <- metadata |>
-  group_by(time) |>
-  summarise(
-    event = first(event),
-    variable = max(variable),
-    .groups = "drop"
-  ) |>
-  group_by(event) |>
-  summarise(
-    event.size = n(),
-    variable = max(variable),  # if you want to keep variable info
-    .groups = "drop"
-  )
+    group_by(time) |>
+    summarise(
+      event = first(event),
+      variable = max(variable),
+      .groups = "drop"
+    ) |>
+    group_by(event) |>
+    summarise(
+      event.size = n(),
+      variable = max(variable),  # if you want to keep variable info
+      .groups = "drop"
+    )
 
   # Ljung-Box
   p <- Box.test(c(events$variable), type = "Ljung")$p.value
