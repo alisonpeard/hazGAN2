@@ -219,7 +219,7 @@ fit_gridcell <- function(
 }
 
 
-marginal_transformer <- function(df, metadata, var, q,
+marginal_transformer <- function(df, metadata, var,
                                  hfunc = "max",
                                  hfunc_args = NULL,
                                  distn = "genpareto",
