@@ -22,7 +22,7 @@ identify_events <- function(daily, rfunc = NULL) {
   # assign ids to daily data... 
   # could also collapse daily along time here instead
   # of later...
-  metadata <- left_join(
+  metadata <- inner_join(
     event_data[c("time", "wind", "event")],
     daily,
     by = "time"
