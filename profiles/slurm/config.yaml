@@ -2,6 +2,7 @@ config: ["device=cluster"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
+latency-wait: 60
 
 # if sacct enabled
 executor: slurm
