@@ -3,7 +3,7 @@ import zipfile
 from glob import glob
 
 
-def calculate_nimgs(wildcards, years_of_samples=config["nyears"], verbose=False):
+def calculate_nimgs(wildcards, years_of_samples=config["nyears"], verbose=True):
     if not os.path.exists(os.path.join(TRAINING_DIR, "images.zip")):
         if verbose:
             print(f"Training zip file {os.path.join(TRAINING_DIR, 'images.zip')} does not exist yet.")
@@ -72,7 +72,6 @@ checkpoint train_stylegan:
             --kimg={params.kimg} \
             &> {log}
 
-        rm -rf {TRAINING_DIR}/rgb/
         find {output.outdir} -name "network-snapshot-*.pkl" -not -name "network-snapshot-{KIMG:06d}.pkl" -delete
         """
 
@@ -80,7 +79,8 @@ checkpoint train_stylegan:
 rule generate_stylegan:
     input:
         ready="logs/cuda_env_ready.done",
-        network=get_model_path
+        network=get_model_path,
+        zipfile=os.path.join(TRAINING_DIR, "images.zip")
     output:
         directory(os.path.join(GENERATED_DIR, "images"))
     params:
