@@ -38,9 +38,9 @@ def main(input, output, params):
     train = xr.open_dataset(input.train)
     medians = train.sel(month=[params.month]).medians.values
     
-    if params["subset"]["do"]:
+    if params["event_subset"]["do"]:
         # subset train by threshold
-        train = subset_func(train, params["subset"])
+        train = subset_func(train, params["event_subset"])
         logging.info(f"\nExtracted {train.time.size} images from train.")
     
     train_x = train["anomaly"].values
