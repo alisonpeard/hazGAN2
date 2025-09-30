@@ -95,8 +95,9 @@ def create_tensors(
     days_of = gdf[[f"day_of_{fields[0]}"]].values.reshape([n, h, w])
     ecdf = gdf[[f"ecdf_{f}" for f in fields]].values.reshape([n, h, w, k])
     scdf = gdf[[f"scdf_{f}" for f in fields]].values.reshape([n, h, w, k])
-    months = medians["month"].unique()
-    medians = medians[fields].values.reshape([12, h, w, k])
+    num_months = medians["month"].unique()
+    medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, False, True])
+    medians = medians[fields].values.reshape([num_months, h, w, k])
     
     # Event data
     return_periods = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(n)
@@ -111,7 +112,7 @@ def create_tensors(
             anomalies, days_of, ecdf, scdf, medians, 
             return_periods, sizes, params
             ),
-        'months': months
+        'months': num_months
     }
 
 
