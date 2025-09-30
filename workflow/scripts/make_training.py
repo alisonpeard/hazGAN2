@@ -95,9 +95,12 @@ def create_tensors(
     days_of = gdf[[f"day_of_{fields[0]}"]].values.reshape([n, h, w])
     ecdf = gdf[[f"ecdf_{f}" for f in fields]].values.reshape([n, h, w, k])
     scdf = gdf[[f"scdf_{f}" for f in fields]].values.reshape([n, h, w, k])
-    num_months = medians["month"].unique()
+    num_months = medians["month"].nunique()
+    months = medians["month"].unique().tolist()
     medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, False, True])
     medians = medians[fields].values.reshape([num_months, h, w, k])
+    print(f"{medians.shape=}")
+    print(f"{medians=}")
     
     # Event data
     return_periods = gdf[["event", "event_rp"]].groupby("event").mean().values.reshape(n)
@@ -112,7 +115,7 @@ def create_tensors(
             anomalies, days_of, ecdf, scdf, medians, 
             return_periods, sizes, params
             ),
-        'months': num_months
+        'months': months
     }
 
 
@@ -131,7 +134,6 @@ def main(input, output, params):
     logging.info("Creating dataset...")
     lats, lons = data['coords']
     anomalies = data["tensors"][0]
-    days_of   = data["tensors"][1]
     ecdf      = data["tensors"][2]
     scdf      = data["tensors"][3]
     medians   = data["tensors"][4]
@@ -144,7 +146,6 @@ def main(input, output, params):
         'ecdf': (['time', 'lat', 'lon', 'field'], ecdf),
         'anomaly': (['time', 'lat', 'lon', 'field'], anomalies),
         'medians': (['month', 'lat', 'lon', 'field'], medians),
-        f'day_of_{fields[0]}': (['time', 'lat', 'lon'], days_of),
         'event_rp': (['time'], return_periods),
         'duration': (['time'], sizes),
         'params': (['lat', 'lon', 'param', 'field'], params),
@@ -152,9 +153,16 @@ def main(input, output, params):
         'lat': lats, 'lon': lons,
         'time': times,
         'field': fields,
-        'param': ["loc_upper", "scale_upper", "shape_upper", "loc_lower", "scale_lower", "shape_lower"],
+        'param': [
+            "loc_upper", "scale_upper", "shape_upper",
+            "loc_lower", "scale_lower", "shape_lower"
+        ],
         'month': data['months']
-    }, attrs={'CRS': 'EPSG:4326', 'yearly_freq': rate, 'fields_info': str(fields)})
+    }, attrs={
+        'CRS': 'EPSG:4326',
+        'yearly_freq': rate,
+        'fields_info': str(fields)
+    })
     
     logging.info(f"Saving dataset {ds.uniform.shape} to {output.data}")
     ds.to_netcdf(output.data)
