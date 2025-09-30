@@ -6,6 +6,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   require(ggplot2)
   library(tidync)
+  library(purrr)
 })
 
 source("workflow/src/R/dfuncs.R")
@@ -66,10 +67,8 @@ log_info("Removing seasonality")
 # faster (hopefully)
 lats <- unique(daily$lat)
 lons <- unique(daily$lon)
-latlon <- data.frame(expand.grid(lat = lats, lon = lons))
-months <- month.name
-params <- latlon[rep(seq_len(nrow(latlon)), each = length(months)), ]
-params$month <- rep(months, nrow(latlon))
+
+params_list <- list()
 
 # deseasonalize each field
 for (k in seq_along(FIELD_NAMES)) {
@@ -79,17 +78,18 @@ for (k in seq_along(FIELD_NAMES)) {
   deseasonalized <- deseasonalize(daily, field, method = SFUNC)
   log_info("Finished deseasonalizing, assigning parameters")
 
-  # daily[, field] <- deseasonalized$df
   daily <- deseasonalized$df |>
     left_join(daily, by = c("lat", "lon", "time"), suffix = c("", "_seasonal")) |>
     rename(!!field := !!sym(field))
-  
-  params[, field] <- left_join(
-    deseasonalized$params,
-    params[, c("month", "lat", "lon")],
-    by = c("month" = "month", "lat" = "lat", "lon" = "lon")
-  )[[field]]
+
+  params_list[[k]] <- deseasonalized$params[, c("month", "lat", "lon", field)]
+
 }
+
+params <- Reduce(
+  function(x, y) left_join(x, y, by = c("month", "lat", "lon")),
+  params_list
+)
 
 # ====== 2.EXTRACT EVENTS ======================================================
 log_info("Extracting events")
