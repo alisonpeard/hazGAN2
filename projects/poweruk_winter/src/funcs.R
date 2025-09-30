@@ -1,6 +1,5 @@
 # add any project-specific functions you want to source / overwrite here
 # custom method for cyclone extraction from existing csv
-# I think bug might be in this script
 
 suppressPackageStartupMessages({
   library(extRemes)
