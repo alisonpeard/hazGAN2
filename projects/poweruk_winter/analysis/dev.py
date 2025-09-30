@@ -28,8 +28,10 @@ def derive_variables(ds):
 
 
 
-regions = ["East Midlands", "West Midlands",
-           "South West England", "South Wales"]
+regions = [
+    "East Midlands", "West Midlands",
+    "South West England", "South Wales"
+    ]
 
 
 with open(os.path.join("..", "config.yaml"), "r") as stream:
@@ -37,28 +39,61 @@ with open(os.path.join("..", "config.yaml"), "r") as stream:
 
 path = os.path.join("..", "resources", "dno_license_areas.geojson")
 
-gdf = gpd.read_file(path)
-gdf_subset = gdf[gdf["region"].isin(regions)]
+dno_regions_uk = gpd.read_file(path)
+dno_regions = dno_regions_uk[dno_regions_uk["region"].isin(regions)]
 
 fig, ax = plt.subplots()
-gdf.boundary.plot(color="k", ax=ax, linewidth=0.5)
-gdf_subset.plot("region", ax=ax, categorical=True, legend=True)
-bbox = gdf_subset.total_bounds
-
+dno_regions.boundary.plot(color="k", ax=ax, linewidth=0.5)
+dno_regions.plot("region", ax=ax, categorical=True, legend=True)
+bbox = dno_regions.total_bounds
 
 # %% Load real and generated events (and medians)
 train = xr.open_dataset(os.path.join("..", "results", "training", "data.nc"))
 gener = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "data.nc"))
 
 if config["event_subset"]["do"]:
-    train["l2norm"] = np.sqrt(train.sel(field="u10").anomaly**2 + train.sel(field="v10").anomaly**2)
-    mask = train.l2norm.max(dim=["lon", "lat"]) > 25
+    train["l2norm"] = np.sqrt(train.sel(field="u10_gust").anomaly**2 + \
+                              train.sel(field="v10_v10_gust").anomaly**2)
+    mask = train.l2norm.max(dim=["lon", "lat"]) > config["event_subset"]["value"]
     train = train.isel(time=mask)
-# %%
-medians = train.medians.sel(month="December") # this should only have months for season
+
+    gener = np.sqrt(gener.sel(field="u10_gust").anomaly**2 + \
+                     gener.sel(field="v10_gust").anomaly**2)
+    mask = gener.max(dim=["lon", "lat"]) > config["event_subset"]["value"]
+    gener = gener.isel(time=mask)
 
 # %%
+import pandas as pd
+
+fields = ["u10_gust", "v10_gust", "r30"]
+
+medians_file = os.path.join("..", "results", "processing", "medians.parquet")
+medians = pd.read_parquet(medians_file)
+medians = medians.astype({"lat": float, "lon": float})
+
+medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, False, True])
+print(medians.head())
+medians = medians[fields].values.reshape([12, 64, 64, 3])
+plt.imshow(medians[:,:,0,0], cmap=cmo.speed);
+
+
+# %%
+train.sel(field="u10_gust").medians.isel(month=0).plot(cmap=cmo.speed)
+# %%
+medians = train.medians.sel(month="December") # this should only have months for season
+medians.sel(field="u10_gust").plot(cmap=cmo.speed)
+# %%
+medians = medians.to_dataset(name="medians")
+medians["u10"] = medians.sel(field="u10_gust").medians
+medians["v10"] = medians.sel(field="v10_gust").medians
+medians["r30"] = medians.sel(field="r30").medians
+medians = derive_variables(medians)
+
+# %%
+medians.dx.plot(cmap=cmo.balance)
+# %% Work with the training or generated dataset
 dataset = ["train", "generated"][0]
+
 if dataset == "train":
     data = train.copy() #+ medians
 else:
@@ -70,176 +105,31 @@ data["r30"] = data.sel(field="r30").anomaly
 
 data = derive_variables(data)
 
-fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection='windrose'))
-
-# subset to bbox
-data_wr = data.sel(
-    lon=slice(bbox[0], bbox[2]),
-    lat=slice(bbox[1], bbox[3])
-    )
-
-dirs = data_wr.dx.values.flatten()
-speeds = data_wr.vx.values.flatten()
-
-ax.bar(dirs, speeds, normed=True, opening=0.8, edgecolor='black',
-        nsector=16, bins=10,
-        cmap=cmo.speed, linewidth=0.5)
-ax.set_legend()
-
-
-# %% plot aggregate statistics
-agg_func = ["mean", "median", "min", "max"][1]
-
-data_agg = getattr(data, agg_func)(dim="time")
-fig, axs = plt.subplots(1, 2, figsize=(10, 10), subplot_kw={"projection": ccrs.PlateCarree()})
-
-ax = axs[0]
-data_agg.vx.plot(
-    ax=ax, cmap=cmo.speed,
-    cbar_kwargs={"label": "mean gust speed (m/s)", "shrink": 0.6}
-    )
-data_agg.plot.streamplot(
-    x='lon', y='lat', u='u10', v='v10',
-    transform=ccrs.PlateCarree(), color="white", ax=ax, density=1.5,
-    linewidth=0.5, arrowstyle='->', arrowsize=2
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.25)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_title("Mean wind speed and direction")
-
-ax = axs[1]
-data_agg.r30.plot(
-    ax=ax, cmap=cmo.rain,
-    cbar_kwargs={"label": "30-day rainfall (m)", "shrink": 0.6}
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.25)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_title("Mean 30-day antecedent rainfall")
-
-fig.suptitle(f"{agg_func.capitalize()} {dataset.lower()}", fontsize=16, y=0.85)
-plt.tight_layout()
-
-# %% 
-data_agg = data.std(dim="time")
-fig, axs = plt.subplots(1, 3, figsize=(15, 10), subplot_kw={"projection": ccrs.PlateCarree()})
-
-ax = axs[0]
-data_agg.dx.plot(
-    ax=ax, cmap=cmo.speed,
-    vmin=60, vmax=120,
-    cbar_kwargs={"label": "direction (m/s)", "shrink": 0.6}
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.25)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_title("Wind direction")
-
-ax = axs[1]
-data_agg.vx.plot(
-    ax=ax, cmap=cmo.speed,
-    vmin=2.5, vmax=5.5,
-    cbar_kwargs={"label": "gust speed (m/s)", "shrink": 0.6}
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.25)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_title("Wind speed")
-
-ax = axs[2]
-data_agg.r30.plot(
-    ax=ax, cmap=cmo.rain,
-    vmin=0.02, vmax=0.14,
-    cbar_kwargs={"label": "30-day rainfall (m)", "shrink": 0.6}
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.25)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_title("30-day antecedent rainfall")
-
-fig.suptitle(f"Std {dataset.lower()}", fontsize=16, y=0.85)
-plt.tight_layout()
-
-# %% plot scatter plots for directon of specific locations in NE and SE
-locations = {
-    "North Sea": {"lon": 0.71512, "lat": 57.5237},
-    "English Channel": {"lon": -0.2522, "lat": 50.3990}
-}
-
-
-fig, axs = plt.subplots(2, 2, figsize=(8, 7), sharex=True, sharey=True)
-
-for i, (loc, coords) in enumerate(locations.items()):
-    data_t = data.sel(lon=coords["lon"], lat=coords["lat"], method="nearest")
-    ax = axs[0, i]
-    speed = ax.scatter(data_t.u10, data_t.v10,
-               c=data_t.vx, cmap=cmo.speed,
-               s=10)
-    fig.colorbar(speed, ax=ax, label="max gust speed (m/s)", shrink=0.6)
-    
-    ax = axs[1, i]
-    dir = ax.scatter(data_t.u10, data_t.v10,
-               c=data_t.dx, cmap="twilight_shifted",
-               vmin=0, vmax=360,
-               s=10)
-    fig.colorbar(dir, ax=ax, label="direction (degrees)", shrink=0.6)
-    
-    for ax in axs[:, i]:
-        ax.set_xlabel("u10")
-        ax.set_ylabel("v10")
-        ax.set_title(f"{loc}")
-        ax.axhline(0, color='k', lw=0.5, alpha=0.1)
-        ax.axvline(0, color='k', lw=0.5, alpha=0.1)
-
-        m, b = np.polyfit(data_t.u10, data_t.v10, 1)
-        ax.plot(data_t.u10, m * data_t.u10 + b,
-                color="k", lw=0.75, alpha=0.75)
-    
-        ax.label_outer()
-
-
-# %%
-config["longitude"] # {'min': -10.875, 'max': 5.125}
-config["latitude"] # {'min': 49.0, 'max': 64.75}
-
-# %%
-t = int(np.random.choice(range(data.sizes["time"]), 1)[0])
-
-print(f"Selected time step: {t}")
+# %% crop to license area
+t = 0
+agg_func = ["mean", "max"][1]
 
 data_t = data.isel(time=t)
 
-resample = data_t.isel(lon=slice(None, None, 7), lat=slice(None, None, 7))
+dno_region = dno_regions[dno_regions["region"] == "East Midlands"]
+dno_bbox = dno_region.to_crs(27700).buffer(1500).to_crs(4326).total_bounds
 
-fig, axs = plt.subplots(1, 2, figsize=(18, 10), subplot_kw={"projection": ccrs.PlateCarree()})
+lon_mask = (data_t.lon >= dno_bbox[0]) & (data_t.lon <= dno_bbox[2])
+lat_mask = (data_t.lat >= dno_bbox[1]) & (data_t.lat <= dno_bbox[3])
+data_region = data_t.isel(lon=lon_mask, lat=lat_mask)
 
+fig, axs = plt.subplots(1, 3, figsize=(8,2), subplot_kw={"projection": ccrs.PlateCarree()})
 
 ax = axs[0]
-data_t.vx.plot(
-    ax=ax, cmap=cmo.speed,
-    cbar_kwargs={"label": "max gust speed (m/s)", "shrink": 0.6}
-    )
-data_t.plot.streamplot(
-    x='lon', y='lat', u='u10', v='v10', 
-    transform=ccrs.PlateCarree(), color="white", ax=ax, density=1.5,
-    linewidth=0.5, arrowstyle='->', arrowsize=2
-    )
+data_region.vx.plot(ax=axs[0], cmap=cmo.speed)
+data_region.dx.plot(ax=axs[1], cmap=cmo.amp)
+data_region.r30.plot(ax=axs[2], cmap=cmo.rain)
 
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.5)
+for ax in axs:
+    dno_region.boundary.plot(color="k", ax=ax, linewidth=0.5)
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+ax.set_title(f"{agg_func.capitalize()} wind speed over {dno_region.iloc[0]['region']}")
 
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_xlim(bbox[0], bbox[2])
-ax.set_ylim(bbox[1], bbox[3])
-ax.set_title("Wind speed and direction")
 
-ax = axs[1]
-data_t.r30.plot(
-    ax=ax, cmap=cmo.rain,
-    cbar_kwargs={"label": "30-day rainfall (m)", "shrink": 0.6}
-    )
-gdf_subset.boundary.plot(color="k", ax=ax, linewidth=0.5)
-ax.add_feature(cfeature.COASTLINE, linewidth=0.25)
-ax.set_xlim(bbox[0], bbox[2])
-ax.set_ylim(bbox[1], bbox[3])
-ax.set_title("30-day antecedent rainfall")
 
-fig.suptitle(f"{dataset.capitalize()} wind and rainfall for {t=}", fontsize=16, y=0.85)
-
-plt.tight_layout()
-# %%
+#
