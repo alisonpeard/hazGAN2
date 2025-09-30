@@ -1,3 +1,4 @@
+"""Aggregate data for the DNO license areas of interest."""
 # %%
 import os
 import yaml
@@ -8,7 +9,6 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cmocean.cm as cmo
-from windrose import WindroseAxes #noqa: E402
 
 
 def direction(
@@ -25,7 +25,6 @@ def derive_variables(ds):
     ds["vx"] = np.sqrt(ds.u10**2 + ds.v10**2)
     ds["dx"] = direction(ds, "u10", "v10")
     return ds
-
 
 
 regions = [
@@ -52,6 +51,7 @@ train = xr.open_dataset(os.path.join("..", "results", "training", "data.nc"))
 gener = xr.open_dataset(os.path.join("..", "results", "generated", "netcdf", "data.nc"))
 
 if config["event_subset"]["do"]:
+    # subset to events with a max wind gust over a threshold
     train["l2norm"] = np.sqrt(train.sel(field="u10_gust").anomaly**2 + \
                               train.sel(field="v10_v10_gust").anomaly**2)
     mask = train.l2norm.max(dim=["lon", "lat"]) > config["event_subset"]["value"]
@@ -62,37 +62,9 @@ if config["event_subset"]["do"]:
     mask = gener.max(dim=["lon", "lat"]) > config["event_subset"]["value"]
     gener = gener.isel(time=mask)
 
-# %%
-import pandas as pd
 
-fields = ["u10_gust", "v10_gust", "r30"]
-
-medians_file = os.path.join("..", "results", "processing", "medians.parquet")
-medians = pd.read_parquet(medians_file)
-medians = medians.astype({"lat": float, "lon": float})
-
-medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, False, True])
-print(medians.head())
-medians = medians[fields].values.reshape([12, 64, 64, 3])
-plt.imshow(medians[:,:,0,0], cmap=cmo.speed);
-
-
-# %%
-train.sel(field="u10_gust").medians.isel(month=0).plot(cmap=cmo.speed)
-# %%
-medians = train.medians.sel(month="December") # this should only have months for season
-medians.sel(field="u10_gust").plot(cmap=cmo.speed)
-# %%
-medians = medians.to_dataset(name="medians")
-medians["u10"] = medians.sel(field="u10_gust").medians
-medians["v10"] = medians.sel(field="v10_gust").medians
-medians["r30"] = medians.sel(field="r30").medians
-medians = derive_variables(medians)
-
-# %%
-medians.dx.plot(cmap=cmo.balance)
 # %% Work with the training or generated dataset
-dataset = ["train", "generated"][0]
+dataset = ["train", "generated"][1]
 
 if dataset == "train":
     data = train.copy() #+ medians
@@ -104,9 +76,20 @@ data["v10"] = data.sel(field="v10_gust").anomaly
 data["r30"] = data.sel(field="r30").anomaly
 
 data = derive_variables(data)
+data["dx"] = data["dx"].__abs__()
+
+# assign units to variables
+data.vx.attrs["units"] = "m/s"
+data.dx.attrs["units"] = "°"
+data.r30.attrs["units"] = "mm"
+
+# assign long names to variables
+data.vx.attrs["long_name"] = "10m wind speed anomaly"
+data.dx.attrs["long_name"] = "10m wind direction anomaly"
+data.r30.attrs["long_name"] = "30-day accumulated precipitation anomaly"
 
 # %% crop to license area
-t = 0
+t = 100
 agg_func = ["mean", "max"][1]
 
 data_t = data.isel(time=t)
@@ -118,9 +101,8 @@ lon_mask = (data_t.lon >= dno_bbox[0]) & (data_t.lon <= dno_bbox[2])
 lat_mask = (data_t.lat >= dno_bbox[1]) & (data_t.lat <= dno_bbox[3])
 data_region = data_t.isel(lon=lon_mask, lat=lat_mask)
 
-fig, axs = plt.subplots(1, 3, figsize=(8,2), subplot_kw={"projection": ccrs.PlateCarree()})
+fig, axs = plt.subplots(1, 3, figsize=(12, 4), subplot_kw={"projection": ccrs.PlateCarree()})
 
-ax = axs[0]
 data_region.vx.plot(ax=axs[0], cmap=cmo.speed)
 data_region.dx.plot(ax=axs[1], cmap=cmo.amp)
 data_region.r30.plot(ax=axs[2], cmap=cmo.rain)
@@ -128,8 +110,35 @@ data_region.r30.plot(ax=axs[2], cmap=cmo.rain)
 for ax in axs:
     dno_region.boundary.plot(color="k", ax=ax, linewidth=0.5)
     ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
-ax.set_title(f"{agg_func.capitalize()} wind speed over {dno_region.iloc[0]['region']}")
 
+# %% aggregate over license area
+from regionmask import mask_geopandas
 
+lon = data_region.lon.values
+lat = data_region.lat.values
+dno_mask = regionmask.mask_geopandas(dno_region, lon, lat)
+# %% visualise mask
+data_region["dno_mask"] = dno_mask
 
-#
+fig, axs = plt.subplots(1, 3, figsize=(12, 4), subplot_kw={"projection": ccrs.PlateCarree()})
+
+data_region.vx.plot(ax=axs[0], cmap=cmo.speed)
+data_region.dx.plot(ax=axs[1], cmap=cmo.amp)
+data_region.r30.plot(ax=axs[2], cmap=cmo.rain)
+
+for ax in axs:
+    dno_region.boundary.plot(color="k", ax=ax, linewidth=0.5)
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+
+    data_region.dno_mask.plot(alpha=0.5, ax=ax)
+
+# %% apply to all data
+data["dno_mask"] = regionmask.mask_geopandas(dno_regions[dno_regions["region"] == "East Midlands"], data.lon, data.lat)
+data_agg = data.groupby("dno_mask").reduce(getattr(np, agg_func))
+
+# %%
+fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+data_agg.vx.plot.hist(ax=ax[0], bins=20)
+data_agg.dx.plot.hist(ax=ax[1], bins=20)
+data_agg.r30.plot.hist(ax=ax[2], bins=20)
+# %%
