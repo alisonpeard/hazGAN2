@@ -97,7 +97,7 @@ def create_tensors(
     scdf = gdf[[f"scdf_{f}" for f in fields]].values.reshape([n, h, w, k])
     num_months = medians["month"].nunique()
     months = medians["month"].unique().tolist()
-    medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, False, True])
+    medians = medians.sort_values(["month", "lat", "lon"], ascending=[True, True, True])
     medians = medians[fields].values.reshape([num_months, h, w, k])
     print(f"{medians.shape=}")
     print(f"{medians=}")
