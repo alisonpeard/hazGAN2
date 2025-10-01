@@ -113,7 +113,7 @@ rule plot_barcharts:
         figure=os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png")
     params:
         event_subset=config['event_subset'],
-        month="September",
+        month="January",
         fields=FIELDS,
         dataset=DATASET
     conda:
