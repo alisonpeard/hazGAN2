@@ -1,7 +1,7 @@
 dataset: era5
 year0: 2004
 yearn: 2019
-nyears: 50 # to simulate
+nyears: 500 # to simulate
 kimg: 300
 antecedent_buffer_days: 30
 longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
@@ -21,10 +21,10 @@ rfunc:
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
 event_subset:
-  do: False
+  do: True
   args: [u10_gust, v10_gust]
   func: l2norm_max
-  value: 25
+  value: 20
 marginal_threshold: 0.95
 domain: laplace
 fields:

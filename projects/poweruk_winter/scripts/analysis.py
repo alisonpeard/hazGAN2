@@ -1,3 +1,6 @@
+"""
+Script from original slides.
+"""
 # %%
 import os
 import yaml
@@ -25,7 +28,6 @@ def derive_variables(ds):
     ds["vx"] = np.sqrt(ds.u10**2 + ds.v10**2)
     ds["dx"] = direction(ds, "u10", "v10")
     return ds
-
 
 
 regions = ["East Midlands", "West Midlands",
