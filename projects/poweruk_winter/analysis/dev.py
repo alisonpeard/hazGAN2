@@ -42,6 +42,7 @@ dno_regions_uk = gpd.read_file(path)
 dno_regions = dno_regions_uk[dno_regions_uk["region"].isin(regions)]
 
 fig, ax = plt.subplots()
+
 dno_regions.boundary.plot(color="k", ax=ax, linewidth=0.5)
 dno_regions.plot("region", ax=ax, categorical=True, legend=True)
 bbox = dno_regions.total_bounds
@@ -116,7 +117,7 @@ from regionmask import mask_geopandas
 
 lon = data_region.lon.values
 lat = data_region.lat.values
-dno_mask = regionmask.mask_geopandas(dno_region, lon, lat)
+dno_mask = mask_geopandas(dno_region, lon, lat)
 # %% visualise mask
 data_region["dno_mask"] = dno_mask
 
@@ -133,7 +134,7 @@ for ax in axs:
     data_region.dno_mask.plot(alpha=0.5, ax=ax)
 
 # %% apply to all data
-data["dno_mask"] = regionmask.mask_geopandas(dno_regions[dno_regions["region"] == "East Midlands"], data.lon, data.lat)
+data["dno_mask"] = mask_geopandas(dno_regions[dno_regions["region"] == "East Midlands"], data.lon, data.lat)
 data_agg = data.groupby("dno_mask").reduce(getattr(np, agg_func))
 
 # %%
@@ -141,4 +142,32 @@ fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 data_agg.vx.plot.hist(ax=ax[0], bins=20)
 data_agg.dx.plot.hist(ax=ax[1], bins=20)
 data_agg.r30.plot.hist(ax=ax[2], bins=20)
+# %%
+data_agg
+# %% load the coefs
+import pandas as pd
+coefs = pd.read_csv(os.path.join("..", "resources/E_Mid_All_Variable_Model_coefficients_wind-thresh=20.csv"))
+coefs
+# %%
+# data_agg must be parsed to items [1, vx, r30, dx, spring, summer, autumn] with last three all zero
+
+X = np.hstack([
+    np.ones(data_agg.vx.shape).reshape(-1, 1),
+    data_agg.vx.values.reshape(-1, 1),
+    data_agg.r30.values.reshape(-1, 1),
+    data_agg.dx.values.reshape(-1, 1),
+    np.zeros(data_agg.vx.shape).reshape(-1, 1),
+    np.zeros(data_agg.vx.shape).reshape(-1, 1),
+    np.zeros(data_agg.vx.shape).reshape(-1, 1)
+    ])
+
+X.shape
+
+# %%
+# logistic regression model using coefs
+from scipy.special import expit
+
+y = expit(np.dot(X, coefs["Coefficients"].values))
+# %%
+plt.hist(y, bins=20)
 # %%
