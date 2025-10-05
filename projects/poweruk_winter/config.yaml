@@ -63,7 +63,7 @@ fields:
       func: sum_30_days
       args: [tp]
     hfunc:
-      func: mean
+      func: first
       args: [r30]
     resample:
       func: average

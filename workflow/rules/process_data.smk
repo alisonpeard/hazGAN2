@@ -14,7 +14,6 @@ event footprints for training GAN.
 >>> snakemake --profile profiles/slurm/ --executor slurm --use-conda process_all_data
 """
 
-
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
