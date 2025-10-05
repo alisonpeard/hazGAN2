@@ -52,3 +52,8 @@ def l2norm_argmax(ds:xr.Dataset, arg1:str, arg2:str,
 def mean(ds:xr.Dataset, arg, params={}, dim="time") -> xr.DataArray:
     """Calculate the mean value of a variable."""
     return ds[arg].mean(dim=dim, skipna=True)
+
+
+def first(ds:xr.Dataset, arg, params={}, dim="time") -> xr.DataArray:
+    """Calculate the mean value of a variable."""
+    return ds[arg].isel(**{dim: 0})
