@@ -1,0 +1,33 @@
+config: ["device=cluster"]
+use-conda: true
+rerun-incomplete: true
+jobs: 20 # number of rules to run in parallel
+latency-wait: 60
+
+executor: slurm
+slurm-logdir: sbatch_dump
+slurm-delete-logfiles-older-than: 1
+default-resources:
+    slurm_partition: "short"
+    slurm_account: "ouce-opsis"
+    mem: "16G"
+    runtime: "4h"
+
+set-resources:
+    extract_events:
+        cpus_per_task: 32
+        runtime: "2h"
+    fit_marginals:
+        cpus_per_task: 32
+        mem_mb_per_cpu: 1024
+        runtime: "4h"
+    train_stylegan:
+        slurm_extra: "--gres=gpu:1"
+        cpus_per_task: 8
+        mem: "32G"
+        runtime: "10h"
+    generate_stylegan:
+        slurm_extra: "--gres=gpu:1"
+        cpus_per_task: 8
+        mem: "32G"
+        runtime: "6h"
