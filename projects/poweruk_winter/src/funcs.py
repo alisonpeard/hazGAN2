@@ -46,6 +46,21 @@ def sum_30_days(ds:xr.Dataset, arg:str, params={}) -> xr.DataArray:
     return r30
 
 
+def dir_at_max_gust(
+    ds:xr.Dataset, u:str, v:str, i10fg:str,
+    params={}
+    ) -> xr.Dataset:
+    """Calculate wind direction at time of maximum gust."""
+    gust = ds[i10fg]
+    u    = ds[u]
+    v    = ds[v]
+    tmax = gust.idxmax(dim="time")
+    u_max = u.sel(time=tmax)
+    v_max = v.sel(time=tmax)
+    direction_max = (180 + 180 / np.pi * np.arctan2(v_max, u_max)) % 360
+    return direction_max
+
+
 def scale_to_gust(
     ds:xr.Dataset, u:str, v:str, i10fg:str,
     params={}
