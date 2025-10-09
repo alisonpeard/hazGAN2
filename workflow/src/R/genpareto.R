@@ -24,7 +24,7 @@ threshold_selector <- function(
   fits <- fits_with_fallback(var, thresholds, nsim = nsim)
 
   valid_pk <- fits$ForwardStop
-  k <- min(which(valid_pk > alpha))
+  k <- max(which(valid_pk > alpha))
 
   if (!is.finite(k)) {
     error_msg <- paste0(
