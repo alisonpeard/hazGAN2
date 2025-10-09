@@ -53,7 +53,7 @@ fields:
     resample:
       func: max
     obj: max
-    distn: genpareto
+    distn: weibull
     two_tailed: True
     title: "Direction at time of maximum 10 m gust speed"
     units: "m/s"
