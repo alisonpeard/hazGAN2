@@ -8,7 +8,6 @@ from .base import makegrid
 from ..statistics import pairwise_extremal_coeffs
 
 
-
 def smith1990(array):
     array = array.astype(np.float16)
     return pairwise_extremal_coeffs(array)
