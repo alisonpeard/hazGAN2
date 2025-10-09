@@ -55,17 +55,7 @@ threshold_selector <- function(var, id, alpha = 0.05, nthresholds = 50) {
 
   pk <- rev(eva:::pSeqStop(rev(pvals))$ForwardStop)
   
-  # choose index of highest pk-value
-  # k <- which.max(pk - alpha)
-  # if (is.na(pk[k]) || pk[k] <= alpha) {
-  #   error_msg <- paste0(
-  #     "All thresholds for ", id, " rejected under H0: X ~ GPD."
-  #   )
-  #   stop(error_msg)
-  # }
-  
-  # alternative (old): choose highest valid threshold
-  k   <- max(which(pk > alpha)) # highest index being "accepted"
+  k   <- min(which(pk > alpha)) # lowest index being "accepted"
   if (!is.finite(k)) {
     stop("All thresholds rejected under H0:X~Weibull with α=0.05")
   }
