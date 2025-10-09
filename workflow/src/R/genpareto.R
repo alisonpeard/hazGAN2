@@ -24,15 +24,24 @@ threshold_selector <- function(
   fits <- fits_with_fallback(var, thresholds, nsim = nsim)
 
   valid_pk <- fits$ForwardStop
-  k <- max(which(valid_pk > alpha))
-
-  if (!is.finite(k)) {
+  k <- which.max(valid_pk - alpha)
+  
+  if (is.na(valid_pk[k]) || valid_pk[k] <= alpha) {
     error_msg <- paste0(
       "All thresholds for ", id, " rejected under H0: X ~ GPD."
     )
     stop(error_msg)
-    k <- 1
   }
+
+  # alternative (old): choose highest valid threshold
+  # k <- max(which(valid_pk > alpha)) # highest valid threshold
+  # if (!is.finite(k))  {
+  #   error_msg <- paste0(
+  #     "All thresholds for ", id, " rejected under H0: X ~ GPD."
+  #   )
+  #   stop(error_msg)
+  # }
+  
   return(list(
     params   = list(
       thresh = fits$threshold[k],
