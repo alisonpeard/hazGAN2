@@ -21,7 +21,7 @@ rfunc:
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
 event_subset:
-  do: True
+  do: False
   args: [vx]
   func: max
   value: 20
