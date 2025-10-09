@@ -51,7 +51,7 @@ fields:
       func: arg2max
       args: [dx, vx]
     resample:
-      func: mean
+      func: average
     obj: max
     distn: genpareto
     two_tailed: True
