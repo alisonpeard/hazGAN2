@@ -54,7 +54,7 @@ threshold_selector <- function(var, id, alpha = 0.05, nthresholds = 50) {
   }
 
   pk <- rev(eva:::pSeqStop(rev(pvals))$ForwardStop)
-  k   <- min(which(pk > alpha)) # lowest index being "accepted"
+  k   <- max(which(pk > alpha)) # highest index being "accepted"
   if (!is.finite(k)) {
     stop("All thresholds rejected under H0:X~Weibull with α=0.05")
     k <- 1
