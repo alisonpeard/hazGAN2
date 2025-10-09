@@ -97,3 +97,31 @@ def raw_extremal_coeff_nd(frechets):
         theta = d
     return float(theta)
 
+
+def _tail_dependence_coeff(u, v):
+    """
+    Classical tail dependence coefficient λ for upper tail dependence.
+    Uses the Reiss & Thomas (2007) estimator.
+
+    Args:
+        u, v: 1D arrays of uniform marginals
+    Returns:
+        λ: tail dependence coefficient
+
+    Refs:
+        Reiss, R.-D. and Thomas, M. (2007) Statistical Analysis of Extreme Values,
+        Birkhäuser, 3rd edition, Eq (2.62)
+        https://rdrr.io/cran/extRemes/man/taildep.html
+    """
+    n = len(u)
+    thresholds = np.arange(0.8, 0.99, 0.01)  # Multiple thresholds
+    lambdas = []
+    
+    for t in thresholds:
+        both_exceed = (u > t) & (v > t)
+        
+        # Reiss & Thomas (2007) formula: chi_hat = joint_exceedances / (n * (1-t))
+        chi_t = np.sum(both_exceed) / (n * (1 - t))
+        lambdas.append(chi_t)
+
+    return np.mean(lambdas) if lambdas else 0
