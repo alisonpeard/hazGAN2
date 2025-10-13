@@ -67,20 +67,30 @@ def main(input, output, params):
 
     # rescale to (0, 1) if domain is not uniform
     if params.domain is not None:
+        ppf = getattr(stats, params.domain)
         array = np.clip(array, params.eps, 1-params.eps) # Avoid log(0)
-        array = getattr(stats, params.domain)(array)
-        array_min = np.min(array, axis=(0, 1, 2), keepdims=True)
-        array_max = np.max(array, axis=(0, 1, 2), keepdims=True)
-        n = len(array)
+        array = ppf(array)
 
+        # scaling with explicit max / min
+        array_min = ppf(1 / params.rp_max)
+        array_max = ppf(1 - 1 / params.rp_max)
+        # array_min = np.array(array_min).reshape((1, 1, 3))
+        # array_max = np.array(array_max).reshape((1, 1, 3))
+        logging.info(f"Using {params.domain} with min {array_min} and max {array_max}")
+
+        # array_min = np.min(array, axis=(0, 1, 2), keepdims=True)
+        # array_max = np.max(array, axis=(0, 1, 2), keepdims=True)
+        # n = len(array)
         # scale to (0, 1)
+        # array = (array - array_min) / (array_max - array_min)
+        # array = (array * (n - 1) + 1) / (n + 1)
+
         array = (array - array_min) / (array_max - array_min)
-        array = (array * (n - 1) + 1) / (n + 1)
 
         logging.info("Range: {}--{}".format(array.min(), array.max()))
         logging.info("Shape: {},{}".format(array_min.shape, array_max.shape))
 
-        np.savez(output.image_stats, min=array_min, max=array_max, n=n)
+        np.savez(output.image_stats, min=array_min, max=array_max)#, n=n)
 
     # convert images to RGB and save
     for i in range(nimgs):
