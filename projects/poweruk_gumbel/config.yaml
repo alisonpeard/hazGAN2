@@ -1,0 +1,86 @@
+dataset: era5
+year0: 2004
+yearn: 2019
+nyears: 500 # to simulate
+kimg: 300
+antecedent_buffer_days: 30
+longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
+  min: -10.875
+  max: 5.125
+latitude:
+  min: 49.0
+  max: 64.75
+exclude:
+resolution:
+  lon: 64
+  lat: 64
+sfunc: winter # [spring, summer, autumn, winter, additive]
+rfunc:
+  args:
+  func: dummy
+  desc: using custom func defined in src/funcs.R
+rfuncs_dir: src/funcs.R
+event_subset:
+  do: False
+  args: [u10_gust, v10_gust]
+  func: max
+  value: 20
+marginal_threshold: 0.95
+domain: gumbel
+fields:
+  u10_gust:
+    init:
+      func: scale_to_gust
+      args: [u10, v10, i10fg]
+    hfunc:
+      func: l2norm_argmax
+      args: [u10_gust, v10_gust]
+    resample:
+      func: max
+    obj: max
+    distn: weibull
+    two_tailed: True
+    title: "Maximum 10 m gust speed"
+    units: "m/s"
+    cmap: "cmocean.cm.speed"
+  v10_gust:
+    init:
+      func: scale_to_gust
+      args: [v10, u10, i10fg]
+    hfunc:
+      func: l2norm_argmax
+      args: [v10_gust, u10_gust]
+    resample:
+      func: max
+    obj: max
+    distn: weibull
+    two_tailed: True
+    title: "Direction at time of maximum 10 m gust speed"
+    units: "m/s"
+    cmap: "cmocean.cm.speed"
+  r30:
+    init:
+      func: sum_30_days
+      args: [tp]
+    hfunc:
+      func: first
+      args: [r30]
+    resample:
+      func: average
+    obj: max
+    distn: genpareto
+    two_tailed: False
+    title: "30-day antecedant rainfall"
+    units: "m"
+    cmap: "cmocean.cm.rain"
+points_of_interest:
+  birmingham:
+    lon: -1.9
+    lat: 52.5
+  cardiff:
+    lon: -3.2
+    lat: 51.5
+  truro:
+    lon: -5.1
+    lat: 50.5
+local_crs: 27700 # https://epsg.io/27700

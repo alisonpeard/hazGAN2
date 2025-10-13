@@ -1,5 +1,5 @@
 # Global config file
-project: poweruk_winter
+project: poweruk_gumbel
 conda-cleanup-envs: true
 conda-cleanup-pkgs: cache
 conda-prefix: "conda"
