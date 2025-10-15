@@ -39,7 +39,7 @@ def inv_laplace(x, mu=0, b=1):
         1 - 0.5 * np.exp(-(x - mu) / b)
     )
 
-k = 0
+k = 1
 project = ["bayofbengal_era5", "poweruk_winter"][k]
 inv_transform = [inv_gumbel, inv_laplace][k]
 
@@ -49,6 +49,27 @@ trn_dir = os.path.join("projects", project, "results", "training", "rgb")
 gen_dir = os.path.join("projects", project, "results", "generated", "images")
 
 os.listdir(gen_dir)
+# %%
+import xarray as xr
+
+rp_max = 10_000
+p_min = 1 / rp_max
+p_max = 1 - 1 / rp_max
+
+train = xr.open_dataset(trn_path)
+u = train.uniform.values
+
+assert (u < p_max).all(), "Found value above {}-year return level".format(rp_max)
+assert (p_min < u).all(), "Found value below {}-year return level".format(rp_max)
+
+y = laplace(u)
+y_lower = laplace(p_min)
+y_upper = laplace(p_max)
+z = (y - y_lower) / (y_upper - y_lower)
+
+# %%
+
+
 
 # %%
 print("{} contains {} samples".format(trn_dir, len(os.listdir(trn_dir))))
@@ -122,8 +143,6 @@ print("Uniform: {}, {}".format(train_u[..., 0].min(), gen_u[..., 0].min()))
 # %%
 
 # %%
-import xarray as xr
-train = xr.open_dataset(trn_path)
-theta  = train["params"].values
+
 
 images_x = stats.invPIT(images_u, train_x, theta=theta, distns=distns, two_tailed=two_tailed)

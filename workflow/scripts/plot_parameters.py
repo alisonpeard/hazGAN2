@@ -168,10 +168,7 @@ def main(input, output, params):
 
             logging.info(f"Filling nans for {var}_{tail_type} with -1, 0, 0, 0")
             gdf[pk(var, tail_type)] = gdf[pk(var, tail_type)].fillna(-1)  # switched to -1 to avoid confusion with significant values
-            # gdf[thresh(var, tail_type)] = gdf[thresh(var, tail_type)].fillna(0) #! keep NAs
-            # gdf[scale(var, tail_type)] = gdf[scale(var, tail_type)].fillna(0)
-            # gdf[shape(var, tail_type)] = gdf[shape(var, tail_type)].fillna(0)
-
+            
             logging.info(f"Converting {var}_{tail_type} to float")
             gdf[pk(var, tail_type)] = gdf[pk(var, tail_type)].astype(float)
             gdf[thresh(var, tail_type)] = gdf[thresh(var, tail_type)].astype(float)

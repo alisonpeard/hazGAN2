@@ -9,12 +9,14 @@ def ecdf(x:np.ndarray, *args, **kwargs) -> callable:
     return Empirical(x).forward
 
 
-def quantile(x:np.ndarray, *args, **kwargs) -> callable:
+def quantile(u:np.ndarray, *args, **kwargs) -> callable:
     """Simple wrapper to mimic R ecdf but for quantile function."""
-    return Empirical(x).inverse
+    return Empirical(u).inverse
 
 
-def semiparametric_cdf(x, params, distn="genpareto", two_tailed=False, *args, **kwargs) -> callable:
+def semiparametric_cdf(
+        x, params, distn="genpareto", two_tailed=False, *args, **kwargs
+    ) -> callable:
     """Semi-parametric CDF."""
     if not two_tailed:
         loc, scale, shape = params[:3]
@@ -30,17 +32,21 @@ def semiparametric_cdf(x, params, distn="genpareto", two_tailed=False, *args, **
             ).forward
 
 
-def semiparametric_quantile(u, params, distn="genpareto", two_tailed=False, *args, **kwargs) -> callable:
+def semiparametric_quantile(
+        x, params, distn="genpareto", two_tailed=False, *args, **kwargs
+    ) -> callable:
     """Semi-parametric quantile."""
+    print(f"\nsemiparametric_quantile x ({distn=}, {two_tailed=}): {x[:5]}")
     if not two_tailed:
         loc, scale, shape = params[:3]
-        return SemiParametric(u, loc, scale, shape, distn=distn).inverse
+        return SemiParametric(x, loc, scale, shape, distn=distn).inverse
     else:
-        assert len(params) == 6, "Two-tailed semi-parametric quantile requires 6 parameters."
+        assert len(params) == 6, \
+            f"Two-tailed semi-parametric quantile requires 6 parameters ({len(params)=})."
         loc_upper, scale_upper, shape_upper = params[:3]
         loc_lower, scale_lower, shape_lower = params[3:]
         return TwoTailedSemiParametric(
-            u, loc_upper, scale_upper, shape_upper,
+            x, loc_upper, scale_upper, shape_upper,
             loc_lower, scale_lower, shape_lower,
             distn=distn
             ).inverse
@@ -106,6 +112,7 @@ class Empirical(object):
 
         return interpolator
     
+
     def _quantile(self) -> callable:
         """Empirical quantile function."""
         x = sorted(self.x)
@@ -119,11 +126,13 @@ class Empirical(object):
 
 class SemiParametric(Empirical):
     """Semi-empirical GPD distribution object."""
-    def __init__(self, x,
+    def __init__(self, x, #! this should be the data, not u
                  loc=0, scale=1, shape=1,
                  distn="genpareto",
                  alpha=0, beta=0) -> None:
         super().__init__(x, alpha, beta)
+
+        print(f"SemiParametric x ({distn=}): {x[:5]}") #! this should be the data, not u
 
         self.loc = loc
         self.scale = scale
@@ -179,6 +188,7 @@ class SemiParametric(Empirical):
     def _semiquantile(self, u) -> np.ndarray:
         # empirical base
         x = self.quantile(u)
+        print(f"_semiquantile x: {x[:5]}")
 
         # check parameters are not NaN
         if np.isfinite(self.loc):
@@ -186,11 +196,12 @@ class SemiParametric(Empirical):
             loc_u = self.ecdf(self.loc)
             tail_mask = u > loc_u
             tail_u = u[tail_mask]
-
             tail_u = 1 - ((1 - tail_u) / (1 - loc_u))
-            tail_x = self.distn.ppf(tail_u, self.shape, loc=self.loc, scale=self.scale)
-
+            tail_x = self.distn.ppf(
+                tail_u, self.shape, loc=self.loc, scale=self.scale
+                )
             x[tail_mask] = tail_x
+            print(f"_semiquantile tail_x: {tail_x[:5]}")
 
             try:
                 assert np.isfinite(x).all(), "Non-finite values in quantile function."
@@ -208,6 +219,8 @@ class SemiParametric(Empirical):
                 print("tail_fit max: ", max(tail_x))
                 print("multiplicative constant: ", 1 - ((1 - tail_u) / (1 - loc_u)))
                 raise e
+            
+        print(f"_semiquantile final x: {x[:5]}\n")
 
         return x
     
@@ -220,6 +233,8 @@ class TwoTailedSemiParametric(Empirical):
                  distn="genpareto",
                  alpha=0, beta=0) -> None:
         super().__init__(x, alpha, beta)
+
+        print(f"TwoTailedSemiParametric x ({distn=}): {x[:5]}")
 
         self.loc_upper = loc_upper
         self.scale_upper = scale_upper
@@ -313,6 +328,7 @@ class TwoTailedSemiParametric(Empirical):
     def _semiquantile(self, u) -> np.ndarray:
         # empirical base
         x = self.quantile(u)
+        print(f"_semiquantile x: {x[:5]}") 
 
         # check parameters are not NaN
         if np.isfinite(self.loc_upper):
@@ -320,13 +336,16 @@ class TwoTailedSemiParametric(Empirical):
             loc_u = self.ecdf(self.loc_upper)
             tail_mask = u > loc_u
             tail_u = u[tail_mask]
+            print(f"_semiquantile upper tail size: {sum(tail_mask)}")
+            print(f"_semiquantile upper tail_u: {tail_u[:5]}")
 
-            tail_u = 1 - (tail_u / loc_u)
+            tail_u = 1 - (1 - tail_u) / (1 - loc_u)
             tail_x = self.distn.ppf(
-                tail_u, self.shape_lower, loc=self.loc_lower, scale=self.scale_lower
+                tail_u, self.shape_upper, loc=self.loc_upper, scale=self.scale_upper
                 )
 
             x[tail_mask] = tail_x
+            print(f"_semiquantile upper tail_x: {tail_x}")
 
             try:
                 assert np.isfinite(x).all(), "Non-finite values in quantile function."
@@ -344,18 +363,21 @@ class TwoTailedSemiParametric(Empirical):
                 print("tail_fit max: ", max(tail_x))
                 raise e
             
+        print(f"_semiquantile lower tail loc: {self.loc_lower}")
         if np.isfinite(self.loc_lower):
             # parametric tail
             loc_u = self.ecdf(self.loc_lower)
             tail_mask = u <= loc_u
             tail_u = u[tail_mask]
 
-            tail_u = tail_u / loc_u
+            tail_u = 1 - (tail_u / loc_u)
             tail_x = -self.distn.ppf(
                 tail_u, self.shape_lower, loc=self.loc_lower, scale=self.scale_lower
                 )
 
             x[tail_mask] = tail_x
+            print(f"_semiquantile lower tail size: {sum(tail_mask)}")
+            print(f"_semiquantile lower tail_x: {tail_x}")
 
             try:
                 assert np.isfinite(x).all(), "Non-finite values in quantile function."
@@ -372,7 +394,7 @@ class TwoTailedSemiParametric(Empirical):
                 print("tail_fit min: ", min(tail_x))
                 print("tail_fit max: ", max(tail_x))
                 raise e
-
+        print(f"_semiquantile final x: {x[:5]}\n")
         return x
 
 
