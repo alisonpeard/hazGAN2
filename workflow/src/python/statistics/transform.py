@@ -38,29 +38,29 @@ def invPIT(
         Transformed marginals with same shape as input u
     """
     u = u if domain is None else getattr(base, f"inv_{domain}")(u)
-    nparams = 6 if two_tailed else 3
     
     original_shape = u.shape
+
     if u.ndim == 4:
         n, h, w, c = u.shape
         hw = h * w
         u = u.reshape(n, hw, c)
         x = x.reshape(len(x), hw, c)
         if theta is not None:
-            theta = theta.reshape(hw, nparams, c)
+            theta = theta.reshape(hw, 6, c)
             theta = theta.transpose(1, 0, 2)
     elif u.ndim == 3:
         n, hw, c = u.shape
     else:
         raise ValueError(
             "Uniform marginals must have dimensions [n, h, w, c] or [n, h * w, c]."
-            )    
+            )
 
     def transform(x, u, theta, i, c):
         """vectorised numpy transform."""
         x_i = x[:, i, c]
         u_i = u[:, i, c]
-        theta_i = theta[:, i, c] if theta is not None else None
+        theta_i = theta[:, i, c] if theta is not None else None #!unsure
         distn = distns[c]
         tails = two_tailed[c]
         return (
@@ -70,7 +70,7 @@ def invPIT(
             if theta is not None
             else quantile(x_i)(u_i)
         )
-
+        
     quantiles = np.array([
         transform(x, u, theta, i, channel)
         for i in range(hw) for channel in range(c) 
