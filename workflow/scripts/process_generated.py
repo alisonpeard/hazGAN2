@@ -59,22 +59,23 @@ def main(input, output, params):
     image_stats = np.load(input.image_stats)
     image_minima = image_stats['min']
     image_maxima = image_stats['max']
-    image_n      = image_stats['n']
+    # image_n      = image_stats['n']
     image_range  = image_maxima - image_minima
-    logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
+    logging.info(f"Image statistics: min {image_minima}, max {image_maxima}") #, n {image_n}.")
 
     inv_transform = getattr(stats, f"inv_{params.domain}")
 
     # rescale images to marginals scale
-    images_y = (images * (image_n + 1) - 1) / (image_n - 1)
-    images_y = images_y * image_range + image_minima
+    # images_y = (images * (image_n + 1) - 1) / (image_n - 1)
+
+    images_y = images * image_range + image_minima
     images_u = inv_transform(images_y)
     images_y = np.flip(images_y, axis=1)
     images_u = np.flip(images_u, axis=1)
 
     # rescale train in same way
-    compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1)
-    compare_y = compare_y * image_range + image_minima
+    # compare_y = (images_train * (image_n + 1) - 1) / (image_n - 1)
+    compare_y = images_train * image_range + image_minima
     compare_u = inv_transform(compare_y)
     compare_y = np.flip(compare_y, axis=1)
     compare_u = np.flip(compare_u, axis=1)

@@ -65,16 +65,19 @@ def create_parameters(
     params = np.full((h, w, 6, len(fields)), np.nan, dtype=np.float32)
     
     prefixes = ["thresh_", "scale_", "shape_"]
-    suffixes = ["", "_lower", "_upper"]
+    suffixes = ["", "lower_", "upper_"]
     param_map = {0: 3, 1: 0, 2: 0}  # suffix index to parameter offset
     
     for k, field in enumerate(fields):
         for i, suffix in enumerate(suffixes):
             for j, prefix in enumerate(prefixes):
-                col = f"{prefix}{field}{suffix}"
+                col = f"{prefix}{suffix}{field}"
                 if col in gdf.columns:
+                    logging.info(f"Proessing parameter column {col}")
                     values = gdf[[col, "lat", "lon"]].groupby(["lat", "lon"]).mean()[col].values
                     params[:, :, j + param_map[i], k] = values.reshape([h, w])
+                else:
+                    logging.warning(f"Parameter column {col} not found in data.")
     
     return params
 
