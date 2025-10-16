@@ -36,19 +36,15 @@ if __name__ == "__main__":
         config = yaml.safe_load(stream)
 
     fields = list(config["fields"].keys())
-    train_all = xr.open_dataset(os.path.join(wd, "results", "training", "data.nc"))
-    print("Training data shapes:\n\n{}".format(train_all.sizes))
 
-    pois, lats, lons = format_pois(config["points_of_interest"])
+    train = xr.open_dataset(os.path.join(wd, "results", "testing", "pois.nc"))
+    pois = train["poi"].values
     num_pois = len(pois)
-
-    lat_da = xr.DataArray(lats, dims="poi", coords={"poi": pois})
-    lon_da = xr.DataArray(lons, dims="poi", coords={"poi": pois})
-    train = train_all.sel(lat=lat_da, lon=lon_da, method="nearest")
-    print("\nTrain for poi {}:\n\n{}".format(pois[0].title(), train.sel(poi=pois[0])))
-
+    print("Loaded pois from file: {}".format(os.path.join(wd, "results", "testing", "pois.nc")))
+    print("Pois: {}".format(pois))
+    print("Train for poi {}:\n\n{}".format(pois[0].title(), train.sel(poi=pois[0])))
     # %% view distributions overall
-    k = 2
+    k = 0
 
     fig, axs = plt.subplots(1, num_pois, figsize=(3*num_pois, 2), constrained_layout=True)
 
@@ -96,6 +92,7 @@ if __name__ == "__main__":
     u = train["uniform"].values
     x = train["anomaly"].values
     theta = train["params"].values
+
     domain = config["domain"]
     distns = [v["distn"] for v in config["fields"].values()]
     two_tailed = [v["two_tailed"] for v in config["fields"].values()]
@@ -116,7 +113,7 @@ if __name__ == "__main__":
         ax = axs[i] if num_pois > 1 else axs
         data = x_inv[:, i, k]
         data = data[~np.isnan(data)]
-        ax.hist(data, bins=30, density=True, alpha=0.5, label=f"invPIT: {fields[k]}")
+        ax.hist(data, bins=30, density=True, alpha=0.5, label=r"$T^{{-1}}(T(x))$")
         ax.set_title("{} (n={})".format(poi.title(), len(data)))
         ax.legend(loc="upper left", frameon=False)
         ax.set_xlabel("Value")
@@ -138,7 +135,7 @@ if __name__ == "__main__":
         
         data = data[data > loc]
         data = data[~np.isnan(data)]
-        ax.hist(data, bins=30, density=True, alpha=0.5, label=f"invPIT: {fields[k]}")
+        ax.hist(data, bins=30, density=True, alpha=0.5, label=r"$T^{{-1}}(T(x))$")
         ax.set_title("{} (n={})".format(poi.title(), len(data)))
         ax.legend(loc="upper left", frameon=False)
         ax.set_xlabel("Value")
@@ -169,7 +166,7 @@ if __name__ == "__main__":
         
         data = data[data > loc]
         data = data[~np.isnan(data)]
-        ax.axvline(data[0], color="C2", linestyle="--", label=f"invPIT max: {data[0]:.1f}")
+        ax.axvline(data[0], color="r", linestyle="--", label=rf"$T^{{-1}}$({rp_max:,.0f}-yr)")
         ax.set_title("{} (n={})".format(poi.title(), len(data)))
         ax.legend(loc="upper left", frameon=False)
         ax.set_xlabel("Value")
@@ -177,8 +174,4 @@ if __name__ == "__main__":
     
     tail_hist[0]
 
-# view transforms
-# %%
-
-# #%% save to a ../tests/folder
-# %%
+# %% view transforms

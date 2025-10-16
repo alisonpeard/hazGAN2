@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+from tqdm import tqdm
 from typing import List, Union
 
 from . import base
@@ -51,6 +52,8 @@ def invPIT(
             theta = theta.transpose(1, 0, 2)
     elif u.ndim == 3:
         n, hw, c = u.shape
+        if theta is not None:
+            theta = theta.transpose(1, 0, 2)
     else:
         raise ValueError(
             "Uniform marginals must have dimensions [n, h, w, c] or [n, h * w, c]."
@@ -73,7 +76,7 @@ def invPIT(
         
     quantiles = np.array([
         transform(x, u, theta, i, channel)
-        for i in range(hw) for channel in range(c) 
+        for i in tqdm(range(hw)) for channel in range(c) 
     ])
 
     quantiles = quantiles.T
