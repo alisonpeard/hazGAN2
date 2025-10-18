@@ -22,12 +22,14 @@ set-resources:
         mem_mb_per_cpu: 1024
         runtime: "4h"
     train_stylegan:
-        slurm_extra: "--gres=gpu:1"
-        cpus_per_task: 8
-        mem: "32G"
-        runtime: "10h"
-    generate_stylegan:
-        slurm_extra: "--gres=gpu:1"
-        cpus_per_task: 8
-        mem: "32G"
+        slurm_partition: "short,interactive,medium"    
+        slurm_extra: "--gres=gpu:v100:1"
+        cpus_per_task: 4
+        mem: "24G"
         runtime: "6h"
+    generate_stylegan:
+        slurm_partition: "short,interactive,medium"
+        slurm_extra: "--gres=gpu:v100:1"
+        cpus_per_task: 4
+        mem: "24G"
+        runtime: "2h"
