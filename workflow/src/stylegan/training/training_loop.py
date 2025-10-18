@@ -5,6 +5,7 @@
 # and any modifications thereto.  Any use, reproduction, disclosure or
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
+# ! Additions by Alison based on https://proceedings.mlr.press/v139/huster21a.html
 
 import os
 import time
@@ -25,10 +26,13 @@ import legacy
 from metrics import metric_main
 
 #----------------------------------------------------------------------------
-DIST = ['gaussian', 'gumbel', 'laplace'][0] # ! (Alison addition)
+DIST = ['gaussian', 'gumbel', 'laplace'][2] # ! (Alison addition)
 
-def sample_latent(shape, distribution='gaussian', device='cuda'): #! Alison addition
-    """Sample latent vectors from different distributions."""
+def sample_latent(shape, distribution=DIST, device='cuda'): #! Alison addition
+    """Sample latent vectors from different distributions.
+    
+    Tail weights: Gumbel < Gaussian < Laplace < Power-law
+    """
     with torch.no_grad():
         if distribution == 'gaussian':
             return torch.randn(shape, device=device)
