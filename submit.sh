@@ -29,6 +29,5 @@ echo "Current conda env: $CONDA_DEFAULT_ENV"
 which snakemake
 echo ""
 
-# qsub -N PIPE -cwd -j yes python snakemake --cluster "ssh spet5107@headnode_address 'qsub -N pipe_task -j yes -cwd -S /bin/sh ' " -j
-
-snakemake --profile profiles/slurm
+snakemake --profile profiles/slurm generate_stylegan --unlock
+snakemake --profile profiles/slurm generate_stylegan --rerun-incomplete
