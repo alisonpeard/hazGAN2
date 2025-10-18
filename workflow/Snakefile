@@ -72,7 +72,7 @@ include: "rules/process_output.smk"
 # include: "rules/plot.smk"
 
 # run full workflow (up to checkpoint)
-rule all:
-    """Complete full data processing sequence."""
-    input:
-        os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+# rule all:
+#     """Complete full data processing sequence."""
+#     input:
+#         os.path.join(GENERATED_DIR, "netcdf", "data.nc")
