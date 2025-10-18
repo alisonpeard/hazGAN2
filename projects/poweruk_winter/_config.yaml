@@ -22,40 +22,40 @@ rfunc:
 rfuncs_dir: src/funcs.R
 event_subset:
   do: True
-  args: [u10_gust, v10_gust]
-  func: l2norm_max
+  args: [vx]
+  func: max
   value: 20
 marginal_threshold: 0.95
 domain: laplace
 fields:
-  u10_gust:
+  vx:
     init:
-      func: scale_to_gust
-      args: [u10, v10, i10fg]
+      func: identity
+      args: [i10fg]
     hfunc:
-      func: l2norm_argmax
-      args: [u10_gust, v10_gust]
+      func: max
+      args: [vx]
     resample:
       func: max
     obj: max
     distn: weibull
-    two_tailed: True
-    title: "Maximum eastward component of 10 m wind (scaled to gust)"
+    two_tailed: False
+    title: "Maximum 10 m gust speed"
     units: "m/s"
     cmap: "cmocean.cm.speed"
-  v10_gust:
+  dx:
     init:
-      func: scale_to_gust
+      func: dir_at_max_gust
       args: [v10, u10, i10fg]
     hfunc:
-      func: l2norm_argmax
-      args: [v10_gust, u10_gust]
+      func: arg2max
+      args: [dx, vx]
     resample:
-      func: max
+      func: mean
     obj: max
-    distn: weibull
+    distn: genpareto
     two_tailed: True
-    title: "Maximum northward component of 10 m wind (scaled to gust)"
+    title: "Direction at time of maximum 10 m gust speed"
     units: "m/s"
     cmap: "cmocean.cm.speed"
   r30:
