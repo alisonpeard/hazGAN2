@@ -21,41 +21,41 @@ rfunc:
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
 event_subset:
-  do: True
-  args: [vx]
-  func: max
+  do: False
+  args: [u10_gust, v10_gust]
+  func: l2norm_max
   value: 20
 marginal_threshold: 0.95
 domain: laplace
 fields:
-  vx:
+  u10_gust:
     init:
-      func: identity
-      args: [i10fg]
+      func: scale_to_gust
+      args: [u10, v10, i10fg]
     hfunc:
-      func: max
-      args: [vx]
+      func: l2norm_argmax
+      args: [u10_gust, v10_gust]
     resample:
       func: max
-    obj: max
-    distn: weibull
-    two_tailed: False
-    title: "Maximum 10 m gust speed"
-    units: "m/s"
-    cmap: "cmocean.cm.speed"
-  dx:
-    init:
-      func: dir_at_max_gust
-      args: [v10, u10, i10fg]
-    hfunc:
-      func: arg2max
-      args: [dx, vx]
-    resample:
-      func: mean
     obj: max
     distn: genpareto
     two_tailed: True
-    title: "Direction at time of maximum 10 m gust speed"
+    title: "Maximum eastward component of 10 m wind (scaled to gust)"
+    units: "m/s"
+    cmap: "cmocean.cm.speed"
+  v10_gust:
+    init:
+      func: scale_to_gust
+      args: [v10, u10, i10fg]
+    hfunc:
+      func: l2norm_argmax
+      args: [v10_gust, u10_gust]
+    resample:
+      func: max
+    obj: max
+    distn: genpareto
+    two_tailed: True
+    title: "Maximum northward component of 10 m wind (scaled to gust)"
     units: "m/s"
     cmap: "cmocean.cm.speed"
   r30:
