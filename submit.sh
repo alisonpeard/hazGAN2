@@ -29,5 +29,5 @@ echo "Current conda env: $CONDA_DEFAULT_ENV"
 which snakemake
 echo ""
 
-snakemake --profile profiles/slurm generate_stylegan --unlock
-snakemake --profile profiles/slurm generate_stylegan --rerun-incomplete
+snakemake --profile profiles/arc generate_stylegan --unlock
+snakemake --profile profiles/arc generate_stylegan --rerun-incomplete
