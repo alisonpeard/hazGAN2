@@ -65,11 +65,11 @@ EXCLUDE = config.get("exclude", None)
 
 # load rules
 # NOTE: comment rule files out if you want to avoid reruns
-# include: "rules/get_data.smk"
-# include: "rules/process_data.smk"
-include: "rules/stylegan.smk"
+include: "rules/get_data.smk"
+include: "rules/process_data.smk"
+# include: "rules/stylegan.smk"
 include: "rules/process_output.smk"
-# include: "rules/plot.smk"
+include: "rules/plot.smk"
 
 # run full workflow (up to checkpoint)
 # rule all:
