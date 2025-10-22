@@ -1,4 +1,9 @@
 # Custom
+*.log
+*.err
+*.out
+logs/
+sbatch_dump/
 .DS_Store
 .Rhistory
 .env
