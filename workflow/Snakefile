@@ -75,20 +75,3 @@ if LOCATION in ["local", "ouce"]:
 
 if LOCATION == "arc": # had to add this due to issues with OUCE GPUs
     include: "rules/stylegan.smk"
-
-# run full workflow (up to checkpoint)
-rule all:
-    """Complete full data processing sequence."""
-    input:
-        os.path.join(GENERATED_DIR, "netcdf", "data.nc"),
-        os.path.join(GENERATED_DIR, "netcdf", "dependent.nc"),
-        os.path.join(GENERATED_DIR, "netcdf", "independent.nc"),
-        expand(
-            os.path.join(FIGURE_DIR, "parameters", "{key}_upper.png"),
-            key=list(FIELDS.keys())
-        ),
-        os.path.join(FIGURE_DIR, "samples"),
-        os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png"),
-        os.path.join(FIGURE_DIR, "correlations_field"),
-        os.path.join(FIGURE_DIR, "correlations_spatial"),
-        os.path.join(FIGURE_DIR, "scatterplots")
