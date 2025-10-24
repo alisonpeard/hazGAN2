@@ -75,9 +75,3 @@ if LOCATION in ["local", "ouce"]:
 
 if LOCATION == "arc": # had to add this due to issues with OUCE GPUs
     include: "rules/stylegan.smk"
-
-# run full workflow (up to checkpoint)
-# rule all:
-#     """Complete full data processing sequence."""
-#     input:
-#         os.path.join(GENERATED_DIR, "netcdf", "data.nc")
