@@ -23,7 +23,7 @@ rfuncs_dir: src/funcs.R
 event_subset:
   do: False
   args: [u10_gust, v10_gust]
-  func: max
+  func: l2norm_max
   value: 20
 marginal_threshold: 0.95
 domain: laplace
@@ -40,7 +40,7 @@ fields:
     obj: max
     distn: weibull
     two_tailed: True
-    title: "Maximum 10 m gust speed"
+    title: "Maximum eastward component of 10 m wind (scaled to gust)"
     units: "m/s"
     cmap: "cmocean.cm.speed"
   v10_gust:
@@ -55,7 +55,7 @@ fields:
     obj: max
     distn: weibull
     two_tailed: True
-    title: "Direction at time of maximum 10 m gust speed"
+    title: "Maximum northward component of 10 m wind (scaled to gust)"
     units: "m/s"
     cmap: "cmocean.cm.speed"
   r30:
