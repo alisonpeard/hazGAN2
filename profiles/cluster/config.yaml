@@ -2,5 +2,6 @@ config: ["device=cluster"]
 cores: 8
 use-conda: true
 latency-wait: 60
+location: "ouce"
 # conda-prefix: "/soge-home/users/spet5107/micromamba/envs/"
 # conda-create-envs-only: true
