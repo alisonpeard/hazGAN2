@@ -1,3 +1,4 @@
 config: ["device=local"]
 cores: 4
 use-conda: true
+location: "local"
