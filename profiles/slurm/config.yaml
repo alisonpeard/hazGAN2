@@ -24,15 +24,16 @@ set-resources:
         cpus_per_task: 32
         mem_mb_per_cpu: 1G
         runtime: "4h"
+        slurm_extra: "'--mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
     train_stylegan:
         slurm_partition: "GPU"
-        slurm_extra: "'--gpus=1'"
+        slurm_extra: "'--gpus=1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 8
         mem: "32G"
         runtime: "10h"
     generate_stylegan:
         slurm_partition: "GPU"
-        slurm_extra: "'--gpus=1'"
+        slurm_extra: "'--gpus=1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 8
         mem: "32G"
         runtime: "6h"
