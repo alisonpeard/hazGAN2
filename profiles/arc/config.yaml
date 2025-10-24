@@ -3,6 +3,7 @@ use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
 latency-wait: 60
+location: "arc"
 
 executor: slurm
 slurm-logdir: sbatch_dump
