@@ -1,9 +1,8 @@
-config: ["device=cluster"]
+config: ["device=cluster", "location=ouce"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
 latency-wait: 60
-location: "ouce"
 
 # if sacct enabled
 executor: slurm
