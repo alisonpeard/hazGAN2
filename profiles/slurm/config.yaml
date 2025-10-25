@@ -1,4 +1,4 @@
-config: ["device=cluster"]
+config: ["device=cluster", "location=ouce"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
@@ -13,6 +13,7 @@ default-resources:
     slurm_partition: "Short"
     mem: "16G"
     runtime: "4h"
+    slurm_extra: "'--mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
 
 # # here only rules, which require different (more) resources:
 set-resources:
