@@ -1,4 +1,4 @@
-config: ["device=cluster"]
+config: ["device=cluster", "location=ouce"]
 cores: 8
 use-conda: true
 latency-wait: 60

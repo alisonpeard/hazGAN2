@@ -7,6 +7,7 @@ import sys
 configfile: "config.yaml"
 PROJECT = config["project"]
 DEVICE  = config["device"]
+LOCATION = config["location"]
 INDIR   = config['setup'][DEVICE]['input']
 WD      = os.path.join("projects", PROJECT)
 
@@ -63,16 +64,14 @@ RFUNCS     = os.path.join(WD, RFUNCS) if RFUNCS else None
 # load the dates to select / exclude
 EXCLUDE = config.get("exclude", None)
 
-# load rules
-# NOTE: comment rule files out if you want to avoid reruns
-include: "rules/get_data.smk"
-include: "rules/process_data.smk"
-# include: "rules/stylegan.smk"
-include: "rules/process_output.smk"
-include: "rules/plot.smk"
+# load rules (this is spread over devices atm)
+if LOCATION == "ouce": # get data from OUCE storage
+    include: "rules/get_data.smk"
 
-# run full workflow (up to checkpoint)
-# rule all:
-#     """Complete full data processing sequence."""
-#     input:
-#         os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+if LOCATION in ["local", "ouce"]:
+    include: "rules/process_data.smk"
+    include: "rules/process_output.smk"
+    include: "rules/plot.smk"
+
+if LOCATION == "arc": # had to add this due to issues with OUCE GPUs
+    include: "rules/stylegan.smk"
