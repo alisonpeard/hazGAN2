@@ -1,9 +1,8 @@
-config: ["device=cluster"]
+config: ["device=cluster", "location=arc"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
 latency-wait: 60
-location: "arc"
 
 executor: slurm
 slurm-logdir: sbatch_dump
@@ -24,13 +23,13 @@ set-resources:
         runtime: "4h"
     train_stylegan:
         slurm_partition: "short,interactive,medium"    
-        slurm_extra: "--gres=gpu:v100:1"
+        slurm_extra: "'--gres=gpu:v100:1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 4
         mem: "24G"
         runtime: "6h"
     generate_stylegan:
         slurm_partition: "short,interactive,medium"
-        slurm_extra: "--gres=gpu:v100:1"
+        slurm_extra: "'--gres=gpu:v100:1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 4
         mem: "24G"
         runtime: "2h"
