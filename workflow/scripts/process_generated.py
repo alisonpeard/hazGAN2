@@ -1,6 +1,7 @@
 """Load all generated PNGs, inverse-PIT to original scales, and save to NetCDF."""
 import os
 import logging
+import zipfile
 from glob import glob
 
 os.environ["USE_PYGEOS"] = "0"
@@ -35,23 +36,27 @@ def subset_func(ds:xr.Dataset, subset:dict):
 
 
 def main(input, output, params):
-    # load all images
-    flist = glob(os.path.join(input.image_dir, "*.npy"))
-    logging.info(f"Found {len(flist)} images in {input.image_dir}.")
-    images = []
-    for f in sorted(flist):
-        img = np.load(f)
-        images.append(img / 255)
+    # load all images from zipfile
+    with zipfile.ZipFile(input.image_dir, 'r') as zip_ref:
+        flist = [f for f in zip_ref.namelist() if f.endswith('.npy')]
+        logging.info(f"Found {len(flist)} images in {input.image_dir}.")
+        images = []
+        for f in sorted(flist):
+            with zip_ref.open(f) as file:
+                img = np.load(file)
+                images.append(img / 255)
     images = np.stack(images, axis=0)
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
-    # load training images
-    flist = glob(os.path.join(input.training_dir, "*.npy"))
-    logging.info(f"Found {len(flist)} training images in {input.training_dir}.")
-    images_train = []
-    for f in sorted(flist):
-        img = np.load(f)
-        images_train.append(img / 255)
+    # load training images from zipfile
+    with zipfile.ZipFile(input.training_dir, 'r') as zip_ref:
+        flist = [f for f in zip_ref.namelist() if f.endswith('.npy')]
+        logging.info(f"Found {len(flist)} training images in {input.training_dir}.")
+        images_train = []
+        for f in sorted(flist):
+            with zip_ref.open(f) as file:
+                img = np.load(file)
+                images_train.append(img / 255)
     images_train = np.stack(images_train, axis=0)
     logging.info(f"Created training images ndarray of shape {images_train.shape}.")
 

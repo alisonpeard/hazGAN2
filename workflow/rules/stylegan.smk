@@ -9,7 +9,7 @@ def calculate_nimgs(wildcards, years_of_samples=config["nyears"], verbose=True):
             print(f"Training zip file {os.path.join(TRAINING_DIR, 'images.zip')} does not exist yet.")
         return None
     with zipfile.ZipFile(os.path.join(TRAINING_DIR, "images.zip"), 'r') as zip_ref:
-        img_files = [f for f in zip_ref.namelist() if f.lower().endswith(('.png', '.jpg', '.jpeg', '.npy'))]
+        img_files = [f for f in zip_ref.namelist() if f.lower().endswith(('.npy'))]
         nimgs = len(img_files)
     nyears = YEARN - YEAR0
     freq   = nimgs / nyears
@@ -82,7 +82,7 @@ rule generate_stylegan:
         network=get_model_path,
         zipfile=os.path.join(TRAINING_DIR, "images.zip")
     output:
-        directory(os.path.join(GENERATED_DIR, "images"))
+        temp(directory(os.path.join(GENERATED_DIR, "images")))
     params:
         trunc=1.0,
         nimgs=calculate_nimgs
@@ -100,4 +100,14 @@ rule generate_stylegan:
             --trunc={params.trunc} \
             --network={input.network} \
             &> {log}
+        """
+
+rule zip_generated:
+    input:
+        images_dir=os.path.join(GENERATED_DIR, "images")
+    output:
+        zipfile=os.path.join(GENERATED_DIR, "images.zip")
+    shell:
+        """
+        zip -j {output.zipfile} {input.images_dir}/*.npy 
         """
