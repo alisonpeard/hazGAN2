@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io)
 
-# HazGAN2 readme
+# HazGAN2 ReadMe
 
 This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate multivariate climate event sets using extreme value theory and generative adversarial networks.
 
@@ -12,17 +12,12 @@ StyleGAN notes: https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11
 
 The theory of the workflow is described in [this paper](link/to/paper.com) and the rest of this README describes basic use.
 
-## Current status [keep updated]
+## Branches
 
-Date: 08-07-2025
-
-- **Complete:**
-
-    - Finished Bay of Bengal workflow ✅
-
-- **In progress:**
-
-    - Modifying workflow to take in event dates
+- `main`: stable branch, trains successfully
+- `development`: branch for small changes and incorporating new features
+- `wip/...`: branches for developing big experimental changes
+- `backup/...`: archive branches
 
 > ### 💡 Note on snakemake relative paths
 
