@@ -38,7 +38,7 @@ fields:
     resample:
       func: max
     obj: max
-    distn: weibull
+    distn: genpareto
     two_tailed: True
     title: "Maximum eastward component of 10 m wind (scaled to gust)"
     units: "m/s"
@@ -53,7 +53,7 @@ fields:
     resample:
       func: max
     obj: max
-    distn: weibull
+    distn: genpareto
     two_tailed: True
     title: "Maximum northward component of 10 m wind (scaled to gust)"
     units: "m/s"
