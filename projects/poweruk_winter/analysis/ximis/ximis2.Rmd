@@ -13,7 +13,6 @@ library(evir)  # for Gumbel fitting if needed
 
 Define XIMIS reduced variate and quantile estimators. The `yximis` plotting position estimator was derived in Harris (2009). There is one set of plotting positions for every dataset of size $M$ exceedances over a record length of $R$ (e.g., $R$ years).
 
-
 ```{r}
 # plotting positions
 yximis <- function(M = 100, R = 1) {
@@ -90,7 +89,7 @@ pot.XMW <- function(V, R = length(V)) {
 }
 ```
 
-Define some simulation parameters. We wil use a Rayleigh distribution, with scale $C=10$, $r=22$ events per year over $R=16$ years, and extract the top $M=30$ values as exceedances.
+Define some simulation parameters. We will use a Rayleigh distribution, with scale $C=10$, $r=22$ events per year over $R=16$ years, and extract the top $M=30$ values as exceedances.
 
 ```{r}
 # Weibull parameters
@@ -115,9 +114,10 @@ set.seed(42)  # For reproducibility
 # Generate parent Weibull data
 N <- r * R  # Total population
 parent_data <- C * (-log(runif(N)))^(1/w_true) # equiv to rweibull(N, shape = w_true, scale = C)
+parent_data <- sort(parent_data, decreasing = TRUE)
 
 # Select top M values (POT approach)
-V <- sort(parent_data, decreasing = TRUE)[1:M]
+V <- parent_data[1:M]
 
 cat("Generated POT data:\n")
 cat(sprintf("  Number of POT values (M): %d\n", M))
@@ -141,12 +141,22 @@ nll <- function(x, par) {
 par_parent <- c(0.5, mean(parent_data))
 par_POT <- c(0.5, mean(V))
 
-w_parent <- optim(par_parent, nll, x = parent_data, method = "L-BFGS-B", lower = c(0.01, 0.01))$par[[1]]
+fit_parent <- optim(par_parent, nll, x = parent_data, method = "L-BFGS-B", lower = c(0.01, 0.01))
+w_parent <- fit_parent$par[[1]]
+C_parent <- fit_parent$par[[2]]
 w_POT <- optim(par_POT, nll, x = V, method = "L-BFGS-B", lower = c(0.01, 0.01))$par[[1]]
 
 cat("Estimated tail indices:\n")
 cat(sprintf("  Parent data (w_parent): %f\n", w_parent))
 cat(sprintf("  POT data (w_POT): %f\n", w_POT))
+```
+
+
+Start with a Weibull plot of the data (Cook, 2003; Harris and Cook, 2004). Use $P=P(V<v)$ the CDF of the parent to calculate the ordinate $-ln(-ln(1-P))$ and $log(V)$ as the abscissa. This is a Weibull plot (see Cook, 2003).
+
+```{r}
+y_plot <- yximis(length(parent_data), R)$mean
+plot(x=y_plot, y=log(parent_data))
 ```
 
 Clearly, fitting the Weibull distribution to peaks only won't do. A truncated Weibull density function is given by,
@@ -222,6 +232,7 @@ cat(sprintf("  True value: %.2f\n", V_MRI_true))
 cat(sprintf("  XIMIS prediction: %.2f\n", V_MRI_pred))
 cat(sprintf("  Error: %.2f%%\n\n", 100 * (V_MRI_pred - V_MRI_true) / V_MRI_true))
 ```
+
 Bootstrap analysis (multiple trials).
 
 ```{r}

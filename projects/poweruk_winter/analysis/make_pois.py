@@ -26,10 +26,10 @@ def format_pois(p: list):
 if __name__ == "__main__":
     # config and paths
     plt.rcParams["font.family"] = ["serif", "sans-serif", "monospace"][2]
-    bd = os.path.join("/hn01-home", "spet5107") # depends on device
+    # bd = os.path.join("/hn01-home", "spet5107") # depends on device
+    bd = os.path.join("/Users", "alison", "Local", "github")
     wd = "hazGAN2/projects/poweruk_winter"
     sys.path.append(os.path.join(bd, "hazGAN2", "workflow"))
-    from src.python.statistics import invPIT
     os.chdir(bd)
 
     with open(os.path.join(wd, "config.yaml"), "r") as stream:
