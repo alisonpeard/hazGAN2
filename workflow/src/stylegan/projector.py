@@ -165,43 +165,31 @@ def run_projection(
         G = legacy.load_network_pkl(fp)['G_ema'].requires_grad_(False).to(device) # type: ignore
 
     # Load target image.
-    target_pil = PIL.Image.open(target_fname).convert('RGB')
-    w, h = target_pil.size
-    s = min(w, h)
-    target_pil = target_pil.crop(((w - s) // 2, (h - s) // 2, (w + s) // 2, (h + s) // 2))
-    target_pil = target_pil.resize((G.img_resolution, G.img_resolution), PIL.Image.LANCZOS)
-    target_uint8 = np.array(target_pil, dtype=np.uint8)
+    target_npy = np.load(target_fname)
+    assert target_npy.dim <= 3, 'Target image must be HWC or HW'
+    if target_npy.ndim == 2:
+        target_npy = target_npy[:, :, np.newaxis] # HW => HWC
+    target_fp32 = target_npy.astype(np.float32)
 
     # Optimize projection.
     start_time = perf_counter()
     projected_w_steps = project(
         G,
-        target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
+        target=torch.tensor(target_fp32.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
         num_steps=num_steps,
         device=device,
         verbose=True
     )
     print (f'Elapsed: {(perf_counter()-start_time):.1f} s')
 
-    # Render debug output: optional video and projected image and W vector.
-    os.makedirs(outdir, exist_ok=True)
-    if save_video:
-        video = imageio.get_writer(f'{outdir}/proj.mp4', mode='I', fps=10, codec='libx264', bitrate='16M')
-        print (f'Saving optimization progress video "{outdir}/proj.mp4"')
-        for projected_w in projected_w_steps:
-            synth_image = G.synthesis(projected_w.unsqueeze(0), noise_mode='const')
-            synth_image = (synth_image + 1) * (255/2)
-            synth_image = synth_image.permute(0, 2, 3, 1).clamp(0, 255).to(torch.uint8)[0].cpu().numpy()
-            video.append_data(np.concatenate([target_uint8, synth_image], axis=1))
-        video.close()
+    # NOTE: Removed mp4 code because don't need it
 
     # Save final projected frame and W vector.
-    target_pil.save(f'{outdir}/target.png')
+    np.save(f'{outdir}/target.npy', target_npy)
     projected_w = projected_w_steps[-1]
     synth_image = G.synthesis(projected_w.unsqueeze(0), noise_mode='const')
-    synth_image = (synth_image + 1) * (255/2)
-    synth_image = synth_image.permute(0, 2, 3, 1).clamp(0, 255).to(torch.uint8)[0].cpu().numpy()
-    PIL.Image.fromarray(synth_image, 'RGB').save(f'{outdir}/proj.png')
+    synth_image = synth_image.to(np.float32).cpu().numpy()
+    np.save(f'{outdir}/proj.npy', synth_image)
     np.savez(f'{outdir}/projected_w.npz', w=projected_w.unsqueeze(0).cpu().numpy())
 
 #----------------------------------------------------------------------------
