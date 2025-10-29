@@ -341,7 +341,7 @@ def setup_training_loop_kwargs(
     # -------------------------------------------------
 
     if fp32 is None:
-        fp32 = False
+        fp32 = True # added for Gumbel latents so we don't clamp heavy tails
     assert isinstance(fp32, bool)
     if fp32:
         args.G_kwargs.synthesis_kwargs.num_fp16_res = args.D_kwargs.num_fp16_res = 0
