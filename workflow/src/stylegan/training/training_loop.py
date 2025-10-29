@@ -5,6 +5,7 @@
 # and any modifications thereto.  Any use, reproduction, disclosure or
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
+# ! Additions by Alison based on https://proceedings.mlr.press/v139/huster21a.html
 
 import os
 import time
@@ -25,6 +26,21 @@ import legacy
 from metrics import metric_main
 
 #----------------------------------------------------------------------------
+DIST = ['gaussian', 'gumbel', 'laplace'][0] # temporary for development, parameterize later
+
+def sample_latent(shape, distribution=DIST, device='cuda'):
+    """Sample latent vectors from different distributions.
+    """
+    with torch.no_grad():
+        if distribution == 'gaussian':
+            return torch.randn(shape, device=device)
+        elif distribution == 'gumbel':
+            return torch.distributions.Gumbel(0, 1).sample(shape).to(device)
+        elif distribution == 'laplace':
+            return torch.distributions.Laplace(0, 1).sample(shape).to(device)
+        else:
+            raise ValueError(f"Unknown distribution: {distribution}")
+
 
 def setup_snapshot_image_grid(training_set, random_seed=0):
     rnd = np.random.RandomState(random_seed)
@@ -220,11 +236,17 @@ def training_loop(
     if rank == 0:
         print('Exporting sample images...')
         grid_size, images, labels = setup_snapshot_image_grid(training_set=training_set)
-        save_image_grid(images, os.path.join(run_dir, 'reals.png'), drange=[0,255], grid_size=grid_size)
-        grid_z = torch.randn([labels.shape[0], G.z_dim], device=device).split(batch_gpu)
+
+        # save_image_grid(images, os.path.join(run_dir, 'reals.png'), drange=[0,255], grid_size=grid_size)
+        save_image_grid(images, os.path.join(run_dir, 'reals.png'), drange=[images.min(),images.max()], grid_size=grid_size)
+
+        grid_z = sample_latent([labels.shape[0], G.z_dim], distribution=DIST, device=device).split(batch_gpu)
+
         grid_c = torch.from_numpy(labels).to(device).split(batch_gpu)
         images = torch.cat([G_ema(z=z, c=c, noise_mode='const').cpu() for z, c in zip(grid_z, grid_c)]).numpy()
-        save_image_grid(images, os.path.join(run_dir, 'fakes_init.png'), drange=[-1,1], grid_size=grid_size)
+
+        # save_image_grid(images, os.path.join(run_dir, 'fakes_init.png'), drange=[-1,1], grid_size=grid_size)
+        save_image_grid(images, os.path.join(run_dir, 'fakes_init.png'), drange=[images.min(),images.max()], grid_size=grid_size)
 
     # Initialize logs.
     if rank == 0:
@@ -258,9 +280,14 @@ def training_loop(
         # Fetch training data.
         with torch.autograd.profiler.record_function('data_fetch'):
             phase_real_img, phase_real_c = next(training_set_iterator)
-            phase_real_img = (phase_real_img.to(device).to(torch.float32) / 127.5 - 1).split(batch_gpu)
+
+            # phase_real_img = (phase_real_img.to(device).to(torch.float32) / 127.5 - 1).split(batch_gpu)
+            phase_real_img = (phase_real_img.to(device).to(torch.float32)).split(batch_gpu)
+
             phase_real_c = phase_real_c.to(device).split(batch_gpu)
-            all_gen_z = torch.randn([len(phases) * batch_size, G.z_dim], device=device)
+
+            all_gen_z = sample_latent([len(phases) * batch_size, G.z_dim], distribution=DIST, device=device)
+            
             all_gen_z = [phase_gen_z.split(batch_gpu) for phase_gen_z in all_gen_z.split(batch_size)]
             all_gen_c = [training_set.get_label(np.random.randint(len(training_set))) for _ in range(len(phases) * batch_size)]
             all_gen_c = torch.from_numpy(np.stack(all_gen_c)).pin_memory().to(device)
@@ -347,7 +374,9 @@ def training_loop(
         # Save image snapshot.
         if (rank == 0) and (image_snapshot_ticks is not None) and (done or cur_tick % image_snapshot_ticks == 0):
             images = torch.cat([G_ema(z=z, c=c, noise_mode='const').cpu() for z, c in zip(grid_z, grid_c)]).numpy()
-            save_image_grid(images, os.path.join(run_dir, f'fakes{cur_nimg//1000:06d}.png'), drange=[-1,1], grid_size=grid_size)
+
+            # save_image_grid(images, os.path.join(run_dir, f'fakes{cur_nimg//1000:06d}.png'), drange=[-1,1], grid_size=grid_size)
+            save_image_grid(images, os.path.join(run_dir, f'fakes{cur_nimg//1000:06d}.png'), drange=[images.min(),images.max()], grid_size=grid_size)
 
         # Save network snapshot.
         snapshot_pkl = None
