@@ -9,7 +9,7 @@ slurm-logdir: sbatch_dump
 slurm-delete-logfiles-older-than: 1
 default-resources:
     slurm_partition: "short"
-    slurm_account: "ouce-opsis"
+    slurm_account: "ouce-opsis" # needed for ARC quota tracking
     mem: "16G"
     runtime: "4h"
 
