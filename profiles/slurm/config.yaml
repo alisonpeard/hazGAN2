@@ -8,7 +8,7 @@ latency-wait: 60
 executor: slurm
 slurm-logdir: sbatch_dump
 slurm-delete-logfiles-older-than: 1
-slurm-no-account: true
+slurm-no-account: true # to avoid conflict with SoGE cluster settings
 default-resources:
     slurm_partition: "Short"
     mem: "16G"
