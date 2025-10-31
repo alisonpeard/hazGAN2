@@ -33,7 +33,7 @@ checkpoint make_rgb_images:
         image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
     params:
         subset=config['event_subset'],
-        rp_max=10_000,
+        rp_max=1000,
         eps = 1e-6,
         domain = config["domain"],
         resx = RESOLUTION['lon'],
