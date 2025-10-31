@@ -17,6 +17,40 @@ The git branches are organised as follows:
     - periodically merge into `main` when stable
 - `wip/<newfeature>`: branches for new features with potentially breaking changes
 
+###  Checkpoint tags
+
+Use tags to mark successful StyleGAN training runs, making it easy to return to working versions after breaking changes.
+
+Tag a successful run:
+```bash
+git tag -a success-<yyyy-mm-dd>
+```
+
+In the editor, document what worked and what didn't:
+```text
+Successful run: feature 1, feature 2
+
+Results:
+- result 1
+- result 2
+- ...
+```
+
+Push the tag:
+```bash
+git push origin success-<yyyy-mm-dd>
+```
+
+View tag details:
+```bash
+git show success-<yyyy-mm-dd>
+```
+
+To find all checkpoints:
+
+```bash
+git tag -l "successs-*"
+```
 
 ## Current status
 
