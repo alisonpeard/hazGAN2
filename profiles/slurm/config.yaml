@@ -13,7 +13,7 @@ default-resources:
     slurm_partition: "Short"
     mem: "16G"
     runtime: "4h"
-    slurm_extra: "'--mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
+    slurm_extra: "'--mail-type=END,FAIL --mail-user=spet5107@ox.ac.uk'"
 
 # # here only rules, which require different (more) resources:
 set-resources:
