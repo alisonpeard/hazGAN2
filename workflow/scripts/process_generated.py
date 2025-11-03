@@ -46,6 +46,7 @@ def main(input, output, params):
                 img = np.load(file)
                 images.append(img / 255)
     images = np.stack(images, axis=0)
+    images = np.transpose(images, (0, 1, 3, 2))
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
     # load training images from zipfile
