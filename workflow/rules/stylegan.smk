@@ -52,7 +52,8 @@ checkpoint train_stylegan:
         outdir=directory(os.path.join(GENERATED_DIR, "training-output"))
     params:
         augment="color,translation,cutout",
-        kimg=KIMG
+        kimg=100,
+        gamma=0.1
     resources:
         gpus=1
     conda:
@@ -70,6 +71,7 @@ checkpoint train_stylegan:
             --gpus={resources.gpus} \
             --DiffAugment={params.augment} \
             --kimg={params.kimg} \
+            --gamma={params.gamma} \
             &> {log}
 
         find {output.outdir} -name "network-snapshot-*.pkl" -not -name "network-snapshot-{KIMG:06d}.pkl" -delete
