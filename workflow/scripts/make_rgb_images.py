@@ -93,7 +93,7 @@ def main(input, output, params):
 
         # npy output
         output_path = os.path.join(output.outdir, f"footprint{i}.npy")
-        np.save(output_path, arr * 255)
+        np.save(output_path, arr)  # no rescaling !
 
     # verify saved image
     test_load = np.load(output_path)

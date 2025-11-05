@@ -44,7 +44,7 @@ def main(input, output, params):
         for f in sorted(flist):
             with zip_ref.open(f) as file:
                 img = np.load(file)
-                images.append(img / 255)
+                images.append(img) # no rescaling !
     images = np.stack(images, axis=0)
     logging.info(f"Created generated images ndarray of shape {images.shape}.")
 
@@ -56,7 +56,7 @@ def main(input, output, params):
         for f in sorted(flist):
             with zip_ref.open(f) as file:
                 img = np.load(file)
-                images_train.append(img / 255)
+                images_train.append(img)  # no rescaling !
     images_train = np.stack(images_train, axis=0)
     logging.info(f"Created training images ndarray of shape {images_train.shape}.")
 
