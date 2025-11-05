@@ -80,7 +80,7 @@ def main(input, output, params):
         logging.info("Range: {}--{}".format(array.min(), array.max()))
         logging.info("Shape: {},{}".format(array_min.shape, array_max.shape))
 
-        np.savez(output.image_stats, min=array_min, max=array_max, n=n)
+        np.savez(output.image_stats, min=0 * array_min, max=1 + 0 * array_max, n=n) # nullify rescaling
 
     # convert images to RGB and save
     for i in range(nimgs):
