@@ -52,8 +52,8 @@ checkpoint train_stylegan:
         outdir=directory(os.path.join(GENERATED_DIR, "training-output"))
     params:
         augment="color,translation,cutout",
-        kimg=100,
-        gamma=0.1
+        kimg=KIMG,
+        gamma=R1_GAMMA
     resources:
         gpus=1
     conda:

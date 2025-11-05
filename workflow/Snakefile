@@ -57,6 +57,7 @@ SFUNC      = config["sfunc"]
 MTHRESH    = config["marginal_threshold"]
 YEARS      = list(range(YEAR0, YEARN))
 KIMG       = config["kimg"]
+R1_GAMMA   = config["r1_gamma"]
 TIMECOL    = config['setup'][DEVICE]["timecol"]
 RFUNCS     = config["rfuncs_dir"]
 RFUNCS     = os.path.join(WD, RFUNCS) if RFUNCS else None
