@@ -66,7 +66,6 @@ def main(input, output, params):
     assert array.shape[1:] == (params.resx, params.resy, 3), f"Unexpected shape: {array.shape}"
 
     # rescale to (0, 1) if domain is not uniform
-    params.domain = "gaussian" # ! temporary overwrite
     if params.domain is not None:
         array = np.clip(array, params.eps, 1-params.eps) # Avoid log(0)
         array = getattr(stats, params.domain)(array)

@@ -68,8 +68,7 @@ def main(input, output, params):
     image_range  = image_maxima - image_minima
     logging.info(f"Image statistics: min {image_minima}, max {image_maxima}, n {image_n}.")
 
-    # inv_transform = getattr(stats, f"inv_{params.domain}") # temporary overwrite
-    inv_transform = stats.inv_gaussian
+    inv_transform = getattr(stats, f"inv_{params.domain}") # temporary overwrite
 
     # rescale images to marginals scale
     images_y = (images * (image_n + 1) - 1) / (image_n - 1)

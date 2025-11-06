@@ -1,7 +1,7 @@
 dataset: era5
 year0: 2004
 yearn: 2019
-nyears: 500 # to simulate
+nyears: 15 # 500 when ready
 kimg: 100
 r1_gamma: 0.1
 antecedent_buffer_days: 30
@@ -27,7 +27,7 @@ event_subset:
   func: l2norm_max
   value: 20
 marginal_threshold: 0.95
-domain: laplace
+domain: gaussian # for testing
 fields:
   u10_gust:
     init:
