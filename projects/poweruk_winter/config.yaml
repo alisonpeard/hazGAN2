@@ -26,7 +26,7 @@ event_subset:
   func: l2norm_max
   value: 20
 marginal_threshold: 0.95
-domain: laplace
+domain: gaussian # for testing
 fields:
   u10_gust:
     init:
