@@ -3,6 +3,7 @@ Functions for transforming data to other distributions using empirical cdf.
 """
 import numpy as np
 from warnings import warn
+from scipy.stats import norm
 
 
 def frechet(uniform):
@@ -23,6 +24,22 @@ def exp(uniform):
 def inv_exp(uniform):
     """Inverse exponential"""
     return 1 - np.exp(-uniform)
+
+
+def gaussian(uniform):
+    """uniform -> N(0, 1) using probit function approximation."""
+    maxval = np.max(uniform)
+    if maxval == 1:
+        warn("Values == 1 found, scaling by 1e-6")
+        uniform *= 1 - 1e-6
+    if maxval > 1:
+        raise ValueError(f"Some uniform > 1 ({maxval})")
+    return norm.ppf(uniform)
+
+
+def inv_gaussian(x):
+    """N(0, 1) -> uniform using CDF."""
+    return norm.cdf(x)
 
 
 def gumbel(uniform):

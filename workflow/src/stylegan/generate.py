@@ -20,6 +20,8 @@ import torch
 
 import legacy
 
+from training.training_loop import DIST, sample_latent
+
 #----------------------------------------------------------------------------
 
 def num_range(s: str) -> List[int]:
@@ -116,9 +118,9 @@ def generate_images(
     for seed_idx, seed in enumerate(seeds):
         print('Generating image for seed %d (%d/%d) ...' % (seed, seed_idx, len(seeds)))
         
-        z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
+        # z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
+        z = sample_latent( (1, G.z_dim), distribution=DIST, device=device)
         img = G(z, label, truncation_psi=truncation_psi, noise_mode=noise_mode)
-        # img = (img.permute(0, 2, 3, 1) * 127.5 + 128)
         img = img.permute(0, 2, 3, 1)
 
         np.save(f'{outdir}/seed{seed:04d}.npy', img[0].cpu().numpy())
