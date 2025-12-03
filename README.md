@@ -1,5 +1,7 @@
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io) [![Snakemake](https://img.shields.io/badge/snakemake->=8.0.0-9cf.svg?style=flat)](https://snakemake.readthedocs.io) 
 
+> **👋 Get in touch:** This repository is actively being developed. If you're interested in using or contributing to this work, please open an issue or contact me at alison.peard@ouce.ox.ac.uk. Always happy to discuss!
+> 
 # HazGAN2
 
 This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate spatially coherent climate multi-hazard event sets using extreme value theory and generative adversarial networks. The workflow is modular to facilitate new applications. It depends on a [Pytorch implementation]((https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11)) of [StyleGAN2-ADA](https://arxiv.org/abs/2006.06676) with [differentiable augmentation](https://arxiv.org/abs/2006.10738) that provides stable training on small (~100 sample) datasets. 
