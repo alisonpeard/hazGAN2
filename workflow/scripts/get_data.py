@@ -69,21 +69,24 @@ def main(input, output, params):
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
 
-            if "step" in ds.dims and "time" in ds.dims:
-                ds = ds.stack(out_time=("time", "step"))
-                target_times = ds.valid_time.values
-                ds = ds.drop_vars(["time", "step", "valid_time"], errors='ignore')
-                ds = ds.rename({"out_time": "time"})
-                ds = ds.assign_coords(time=target_times)
-            
-            elif "valid_time" in ds.coords:
-                ds = ds.assign_coords(time=ds.valid_time.values)
-                ds = ds.drop_vars(["valid_time", "step"], errors='ignore')
+            if "time" in ds.dims or "time" in ds.coords:
+                if "step" in ds.dims and "time" in ds.dims:
+                    ds = ds.stack(out_time=("time", "step"))
+                    target_times = ds.valid_time.values
+                    # ds = ds.drop_vars(["time", "step", "valid_time"], errors='ignore')
+                    ds = ds.drop_vars(["time", "step", "valid_time", "out_time"], errors='ignore')
+                    ds = ds.rename({"out_time": "time"})
+                    ds = ds.assign_coords(time=target_times)
+                
+                elif "valid_time" in ds.coords:
+                    ds = ds.assign_coords(time=ds.valid_time.values)
+                    ds = ds.drop_vars(["valid_time", "step"], errors='ignore')
 
-            ds = ds.squeeze()
-            ds = ds.sortby("time")
-            _, index = np.unique(ds.time, return_index=True)
-            ds = ds.isel(time=index)
+                ds = ds.squeeze()
+                ds = ds.sortby("time")
+                _, index = np.unique(ds.time, return_index=True)
+                ds = ds.isel(time=index)
+                ds = ds.transpose("time", "latitude", "longitude", ...)
 
             ds = ds.drop_vars([v for v in ["step", "valid_time", "heightAboveGround", "surface"] if v in ds.coords])
             ds = ds.squeeze()
