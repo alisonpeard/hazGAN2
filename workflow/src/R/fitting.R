@@ -20,18 +20,14 @@ setup_logger <- function(log_file, log_level) {
 }
 
 load_distn <- function(distn) {
-
   module <- paste0("workflow/src/R/", distn, ".R")
-
   if (!file.exists(module)) {
-    stop(paste(
-      "Module for distribution not found:", module
+    stop(paste0(
+      "No R module found for distribution: '", module, ".R'"
     ))
   }
-
   env <- new.env()
   source(module, local = env)
-
   return(list(
     cdf = env$cdf,
     threshold_selector = env$threshold_selector
@@ -51,7 +47,6 @@ fit_tails <- function(
 
     fit <- distn$threshold_selector(train$variable, grid_i)
     params <- setNames(fit$params, paste0(names(fit$params), "_upper"))
-
     list(
       params = params,
       p = fit$p.value,
@@ -61,7 +56,7 @@ fit_tails <- function(
   }
   , error = function(e) {
     log_error(paste0(
-      "Upper tail fitting failed for ", grid_i, ":\n", e$message
+      "Upper tail fit failed for ", grid_i, ":\n", e$message
     ))
     list(
       params = list(
@@ -101,7 +96,7 @@ fit_tails <- function(
     }, error = function(e) {
       log_error(
         paste0(
-          "Lower tail fitting failed for grid cell ",
+          "Lower tail fit failed for grid cell ",
           grid_i, ": ", e$message
         )
       )
@@ -256,18 +251,7 @@ marginal_transformer <- function(df, metadata, var,
   log_debug(paste0("Chunksize: ", chunksize))
 
   # check no coordinates are lost
-  gridchunk_sum <- 0
-  for (chunk in gridchunks) {
-    gridchunk_sum <- gridchunk_sum + length(chunk)
-  }
-  if (gridchunk_sum != length(gridcells)) {
-    stop(paste0(
-      "stats::marginal_transformer - ",
-      "Chunking lost some grid cells. ",
-      "Expected: ", length(gridcells), ", got: ", gridchunk_sum
-    ))
-  }
-  rm(gridchunk_sum)
+  stopifnot(sum(lengths(gridchunks)) == length(gridcells))
 
   # save each chunk to RDS for worker access
   tmps <- vector("list", length = nchunks)
