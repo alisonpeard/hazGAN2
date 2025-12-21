@@ -61,7 +61,11 @@ def main(input, output, params):
             ds = dataset.clip_to_bbox(
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
+
             if params.timecol in ds.coords and params.timecol != "time":
+                if "time" in ds.coords:
+                    ds = ds.swap_dims({"time": params.timecol})
+                    ds = ds.drop_vars("time")
                 ds = ds.rename({params.timecol: "time"})
 
             ds = dataset.preprocess(ds)
