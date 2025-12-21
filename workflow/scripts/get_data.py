@@ -62,16 +62,30 @@ def main(input, output, params):
             ds = dataset.preprocess(ds)
 
             return ds
+        
+        for i, file in enumerate(input_files):
+            logging.info(f"Test loading file {i}: {file}")
+            _ = xr.open_dataset(
+                file,
+                engine='cfgrib',
+                preprocess=preprocess,
+                chunks={
+                    "time": "500MB",
+                    'longitude': '500MB',
+                    'latitude': '500MB'
+                    })
+            logging.info(f"Successfully loaded file: {file}")
 
-        data = xr.open_mfdataset(
-            input_files,
-            engine='netcdf4',
-            preprocess=preprocess,
-            chunks={
-                "time": "500MB",
-                'longitude': '500MB',
-                'latitude': '500MB'
-                })
+
+        # data = xr.open_mfdataset(
+        #     input_files,
+        #     engine='cfgrib',
+        #     preprocess=preprocess,
+        #     chunks={
+        #         "time": "500MB",
+        #         'longitude': '500MB',
+        #         'latitude': '500MB'
+        #         })
     
     logging.info("Computing data variables...")
     log_data_summary(data)
@@ -103,8 +117,8 @@ def main(input, output, params):
     logging.info("Resampling data to daily aggregates.\n")
     resampled = {}
     for field, config in params.fields.items():
-        func       = config["init"]["func"]
-        args       = config["init"]["args"]
+        func = config["init"]["func"]
+        args = config["init"]["args"]
 
         logging.info(f"Applying {field} = {func}{*args,}.")
         data[field] = getattr(funcs, func)(data, *args, params=theta)
