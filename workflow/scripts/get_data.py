@@ -68,7 +68,7 @@ def main(input, output, params):
             _ = xr.open_dataset(
                 file,
                 engine='cfgrib',
-                preprocess=preprocess,
+                # preprocess=preprocess,
                 chunks={
                     "time": "500MB",
                     'longitude': '500MB',
@@ -77,15 +77,15 @@ def main(input, output, params):
             logging.info(f"Successfully loaded file: {file}")
 
 
-        # data = xr.open_mfdataset(
-        #     input_files,
-        #     engine='cfgrib',
-        #     preprocess=preprocess,
-        #     chunks={
-        #         "time": "500MB",
-        #         'longitude': '500MB',
-        #         'latitude': '500MB'
-        #         })
+        data = xr.open_mfdataset(
+            input_files,
+            engine='cfgrib',
+            preprocess=preprocess,
+            chunks={
+                "time": "500MB",
+                'longitude': '500MB',
+                'latitude': '500MB'
+                })
     
     logging.info("Computing data variables...")
     log_data_summary(data)
