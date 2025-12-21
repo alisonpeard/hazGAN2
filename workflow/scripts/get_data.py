@@ -62,12 +62,15 @@ def main(input, output, params):
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
 
-            if params.timecol in ds.coords and params.timecol != "time":
-                if "time" in ds.coords:
-                    ds = ds.swap_dims({"time": params.timecol})
-                    ds = ds.drop_vars("time")
-                ds = ds.rename({params.timecol: "time"})
+            if "valid_time" in ds.coords:
+                ds = ds.squeeze()
+                ds = ds.assign_coords(time=ds.valid_time.values)
+                vars_to_drop = [v for v in ["step", "valid_time"] if v in ds.coords]
+                ds = ds.drop_vars(vars_to_drop)
 
+            elif params.timecol in ds.coords and params.timecol != "time":
+                ds = ds.rename({params.timecol: "time"})
+    
             ds = dataset.preprocess(ds)
 
             return ds
