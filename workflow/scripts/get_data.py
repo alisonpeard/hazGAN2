@@ -69,15 +69,16 @@ def main(input, output, params):
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
 
-            if "valid_time" in ds.coords:
-                ds = ds.squeeze()
-                print(f"ds valid_time shape: {ds.valid_time.shape}")
-                ds = ds.assign_coords(time=ds.valid_time.values.ravel())
-                vars_to_drop = [v for v in ["step", "valid_time"] if v in ds.coords]
-                ds = ds.drop_vars(vars_to_drop)
+            if "step" in ds.dims and "time" in ds.dims:
+                ds = ds.stack(out_time=("time", "step"))
+                ds = ds.drop_vars("time").rename({"out_time": "time"})
+                ds = ds.assign_coords(time=ds.valid_time.values)
+            
+            elif "valid_time" in ds.coords and ds.valid_time.ndim == 1:
+                ds = ds.assign_coords(time=ds.valid_time.values)
 
-            elif params.timecol in ds.coords and params.timecol != "time":
-                ds = ds.rename({params.timecol: "time"})
+            ds = ds.drop_vars([v for v in ["step", "valid_time", "heightAboveGround", "surface"] if v in ds.coords])
+            ds = ds.squeeze()
     
             ds = dataset.preprocess(ds)
 
