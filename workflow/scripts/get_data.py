@@ -56,6 +56,13 @@ def main(input, output, params):
             """Rename time coordinate if necessary."""
             logging.info(f"Available coords: {list(ds.coords)}")
             logging.info(f"Available dims: {list(ds.dims)}")
+            
+            # DEBUGGING
+            print("\n" + "="*50)
+            print(f"FILE: {ds.encoding.get('source', 'Unknown')}")
+            print(ds)
+            print("="*50 + "\n")
+
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
             ds = dataset.clip_to_bbox(
@@ -64,7 +71,8 @@ def main(input, output, params):
 
             if "valid_time" in ds.coords:
                 ds = ds.squeeze()
-                ds = ds.assign_coords(time=ds.valid_time.values)
+                print(f"ds valid_time shape: {ds.valid_time.shape}")
+                ds = ds.assign_coords(time=ds.valid_time.values.ravel())
                 vars_to_drop = [v for v in ["step", "valid_time"] if v in ds.coords]
                 ds = ds.drop_vars(vars_to_drop)
 
