@@ -3,7 +3,7 @@ dataset: era5
 # year range (1940 to 2023)
 year0: 1941
 yearn: 2023
-
+nyears: 500
 # geographical boundaries (15.75° x 15.75°)
 longitude:
   min: 80.0
@@ -33,7 +33,7 @@ rfunc: # in r_utils/rfuncs.R
   args:
     - ws
   func: max # https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/match.fun
-
+rfuncs_dir: src/funcs.R
 # event threshold 
 event_subset:
   do: True
