@@ -54,6 +54,8 @@ def main(input, output, params):
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
+            logging.info(f"Available coords: {list(ds.coords)}")
+            logging.info(f"Available dims: {list(ds.dims)}")
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
             ds = dataset.clip_to_bbox(
