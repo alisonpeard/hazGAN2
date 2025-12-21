@@ -38,16 +38,16 @@ rfunc: # in r_utils/rfuncs.R
 event_subset:
   do: True
   field: ws
-  value: 15 # 25.5
+  value: 15 # subjective
   func: max
 
 # marginal threshold (for POT)
 marginal_threshold: 0.95
 
 # training probability space
-domain: gumbel # gumbel, uniform
+domain: gumbel
 
-kimg: 300 # 600
+kimg: 300
 
 # output fields
 fields:
@@ -58,7 +58,7 @@ fields:
     func: wind_speed # defined in py_utils/funcs.py
     hfunc: max # must be xarray compatible
     obj: max
-    distn: weibull
+    distn: genpareto #! weibull is incorrect, need XIMIS
     units: "mps"
     cmap: "viridis"
     title: "Wind Speed"
