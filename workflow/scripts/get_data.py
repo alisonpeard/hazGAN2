@@ -69,6 +69,7 @@ def main(input, output, params):
                 file,
                 engine='cfgrib',
                 # preprocess=preprocess,
+                backend_kwargs={'indexpath': ''},
                 chunks={
                     "time": "500MB",
                     'longitude': '500MB',
