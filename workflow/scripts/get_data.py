@@ -72,15 +72,13 @@ def main(input, output, params):
             if "step" in ds.dims and "time" in ds.dims:
                 ds = ds.stack(out_time=("time", "step"))
                 target_times = ds.valid_time.values
-                ds = ds.drop_vars(["time", "step", "out_time"])
-                ds = ds.assign_coords(time=("out_time", target_times))
+                ds = ds.drop_vars(["time", "step", "valid_time"], errors='ignore')
                 ds = ds.rename({"out_time": "time"})
-                ds = ds.drop_vars("time").rename({"out_time": "time"})
+                ds = ds.assign_coords(time=target_times)
             
-            elif "valid_time" in ds.coords and ds.valid_time.ndim == 1:
+            elif "valid_time" in ds.coords:
                 ds = ds.assign_coords(time=ds.valid_time.values)
-                if "step" in ds.coords:
-                    ds = ds.drop_vars("step")
+                ds = ds.drop_vars(["valid_time", "step"], errors='ignore')
 
             ds = ds.squeeze()
             ds = ds.sortby("time")
@@ -208,7 +206,7 @@ if __name__ == '__main__':
         handlers=[
         logging.FileHandler(snakemake.log.file),
         logging.StreamHandler(sys.stdout)
-    ]
+        ]
     )
 
     # process snakemake
