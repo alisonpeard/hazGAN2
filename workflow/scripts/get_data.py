@@ -11,6 +11,9 @@ import dask
 import time
 import xarray as xr
 import logging
+from tempfile import TemporaryDirectory
+from pathlib import Path
+
 from src import funcs
 from src import datasets
 
@@ -63,31 +66,24 @@ def main(input, output, params):
 
             return ds
         
-        for i, file in enumerate(input_files):
-            logging.info(f"Test loading file {i}: {file}")
-            _ = xr.open_dataset(
-                file,
+        with TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            tmp_input_files = []
+
+            for i, original_file in enumerate(input_files):
+                link_name = tmp_path / f"file_{i}.grb"
+                os.symlink(original_file, link_name)
+                tmp_input_files.append(str(link_name))
+
+            data = xr.open_mfdataset(
+                tmp_input_files,
                 engine='cfgrib',
-                # preprocess=preprocess,
-                backend_kwargs={'indexpath': ''},
+                preprocess=preprocess,
                 chunks={
                     "time": "500MB",
                     'longitude': '500MB',
                     'latitude': '500MB'
                     })
-            logging.info(f"Successfully loaded file: {file}")
-
-
-        data = xr.open_mfdataset(
-            input_files,
-            engine='cfgrib',
-            preprocess=preprocess,
-            backend_kwargs={'indexpath': ''},
-            chunks={
-                "time": "500MB",
-                'longitude': '500MB',
-                'latitude': '500MB'
-                })
     
     logging.info("Computing data variables...")
     log_data_summary(data)
