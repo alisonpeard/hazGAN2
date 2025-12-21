@@ -71,11 +71,21 @@ def main(input, output, params):
 
             if "step" in ds.dims and "time" in ds.dims:
                 ds = ds.stack(out_time=("time", "step"))
+                target_times = ds.valid_time.values
+                ds = ds.drop_vars(["time", "step", "out_time"])
+                ds = ds.assign_coords(time=("out_time", target_times))
+                ds = ds.rename({"out_time": "time"})
                 ds = ds.drop_vars("time").rename({"out_time": "time"})
-                ds = ds.assign_coords(time=ds.valid_time.values)
             
             elif "valid_time" in ds.coords and ds.valid_time.ndim == 1:
                 ds = ds.assign_coords(time=ds.valid_time.values)
+                if "step" in ds.coords:
+                    ds = ds.drop_vars("step")
+
+            ds = ds.squeeze()
+            ds = ds.sortby("time")
+            _, index = np.unique(ds.time, return_index=True)
+            ds = ds.isel(time=index)
 
             ds = ds.drop_vars([v for v in ["step", "valid_time", "heightAboveGround", "surface"] if v in ds.coords])
             ds = ds.squeeze()
@@ -97,92 +107,97 @@ def main(input, output, params):
                 tmp_input_files,
                 engine='cfgrib',
                 preprocess=preprocess,
+                combine="nested",
+                concat_dim="time",
+                parallel=True,
                 chunks={
                     "time": "500MB",
                     'longitude': '500MB',
                     'latitude': '500MB'
                     })
+            
+            # data = data.resample(time='1H').nearest()
     
-    logging.info("Computing data variables...")
-    log_data_summary(data)
+        logging.info("Computing data variables...")
+        log_data_summary(data)
 
-    if params.antecedent_buffer_days:
-        t0 = data["time"].min().data
-        tn = data["time"].max().data
+        if params.antecedent_buffer_days:
+            t0 = data["time"].min().data
+            tn = data["time"].max().data
 
-        logging.info(f"Data time range: {t0} to {tn}.")
+            logging.info(f"Data time range: {t0} to {tn}.")
 
-        buffer = np.timedelta64(params.antecedent_buffer_days+1, 'D')
-        data = data.sortby("time")
-        t0 = np.datetime64(f"{params.year}-01-01")
-        tn = np.datetime64(f"{params.year}-12-31")
-        t0 -= buffer
-        data = data.sel(time=slice(t0, tn))
-        
-        logging.info(f"Clipped data to time range: {t0} to {tn}.")
-        
-        t0 = data["time"].min().data
-        tn = data["time"].max().data
+            buffer = np.timedelta64(params.antecedent_buffer_days+1, 'D')
+            data = data.sortby("time")
+            t0 = np.datetime64(f"{params.year}-01-01")
+            tn = np.datetime64(f"{params.year}-12-31")
+            t0 -= buffer
+            data = data.sel(time=slice(t0, tn))
+            
+            logging.info(f"Clipped data to time range: {t0} to {tn}.")
+            
+            t0 = data["time"].min().data
+            tn = data["time"].max().data
 
-        logging.info(f"Data time range: {t0} to {tn}.")
+            logging.info(f"Data time range: {t0} to {tn}.")
 
-    logging.info(f"Loading parameters from {input.params}.\n")
-    theta = xr.open_dataset(input.params)
-    theta = preprocess(theta)
+        logging.info(f"Loading parameters from {input.params}.\n")
+        theta = xr.open_dataset(input.params)
+        theta = preprocess(theta)
 
-    logging.info("Resampling data to daily aggregates.\n")
-    resampled = {}
-    for field, config in params.fields.items():
-        func = config["init"]["func"]
-        args = config["init"]["args"]
+        logging.info("Resampling data to daily aggregates.\n")
+        resampled = {}
+        for field, config in params.fields.items():
+            func = config["init"]["func"]
+            args = config["init"]["args"]
 
-        logging.info(f"Applying {field} = {func}{*args,}.")
-        data[field] = getattr(funcs, func)(data, *args, params=theta)
+            logging.info(f"Applying {field} = {func}{*args,}.")
+            data[field] = getattr(funcs, func)(data, *args, params=theta)
 
-    for field, config in params.fields.items():
-        hfunc      = config["hfunc"]["func"]
-        hfunc_args = config["hfunc"]["args"]
+        for field, config in params.fields.items():
+            hfunc      = config["hfunc"]["func"]
+            hfunc_args = config["hfunc"]["args"]
 
-        logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
-        resampled[field] = data.resample(time='1D').apply(
-            lambda grouped: getattr(funcs, hfunc)(grouped, *hfunc_args)
-        )
+            logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
+            resampled[field] = data.resample(time='1D').apply(
+                lambda grouped: getattr(funcs, hfunc)(grouped, *hfunc_args)
+            )
     
-    data_resampled = xr.Dataset(resampled)
-    data_resampled = data_resampled.chunk({
-        'time': 30,
-        'latitude': -1, 
-        'longitude': -1
-    })
+        data_resampled = xr.Dataset(resampled)
+        data_resampled = data_resampled.chunk({
+            'time': 30,
+            'latitude': -1, 
+            'longitude': -1
+        })
 
-    if params.antecedent_buffer_days:
-        t0 = np.datetime64(f"{params.year}-01-01")
-        tn = np.datetime64(f"{params.year}-12-31")
-        data_resampled = data_resampled.sel(time=slice(t0, tn))
+        if params.antecedent_buffer_days:
+            t0 = np.datetime64(f"{params.year}-01-01")
+            tn = np.datetime64(f"{params.year}-12-31")
+            data_resampled = data_resampled.sel(time=slice(t0, tn))
 
-    log_data_summary(data_resampled)
+        log_data_summary(data_resampled)
 
-    # data export settings
-    compression = {'zlib': True, 'complevel': 1}
-    encoding = {var: compression for var in data_resampled.data_vars}
+        # data export settings
+        compression = {'zlib': True, 'complevel': 1}
+        encoding = {var: compression for var in data_resampled.data_vars}
 
-    # save data to netcdf
-    logging.info(f"Saving data to {output.netcdf}\n")
-    data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
-    logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
+        # save data to netcdf
+        logging.info(f"Saving data to {output.netcdf}\n")
+        data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+        logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
 
-    data.close()
-    data_resampled.close()
-
-    if VERIFY_TIME_ENCODING:
-        data = xr.open_dataset(output.netcdf, decode_times=False, engine='netcdf4')
-        times = data.isel(time=slice(0, 4)).time.data
-        logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
-        logging.info(f"Encoding metadata: {data.time.attrs}")
         data.close()
+        data_resampled.close()
 
-    end = time.time()
-    logging.info(f"Time taken: {end - start:.2f} seconds.")
+        if VERIFY_TIME_ENCODING:
+            data = xr.open_dataset(output.netcdf, decode_times=False, engine='netcdf4')
+            times = data.isel(time=slice(0, 4)).time.data
+            logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
+            logging.info(f"Encoding metadata: {data.time.attrs}")
+            data.close()
+
+        end = time.time()
+        logging.info(f"Time taken: {end - start:.2f} seconds.")
 
 
 if __name__ == '__main__':
