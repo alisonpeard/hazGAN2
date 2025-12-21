@@ -46,58 +46,47 @@ def subset_func(ds:xr.Dataset, subset:dict):
 def main(input, output, params):
     # load data
     ds = xr.open_dataset(input.data)
-    assert ds.uniform.shape[1:] == (params.resx, params.resy, 3), f"Unexpected shape: {ds.uniform.shape}"
+    assert ds.uniform.shape[1:] == (params.resx, params.resy, 3), \
+        f"Unexpected shape: {ds.uniform.shape}"
 
     # Make a more extreme dataset
     if params["subset"]["do"]:
         ds = subset_func(ds, params["subset"])
-        logging.info(f"\nExtracted {ds.time.size} images.")
+        logging.info(f"\nExtracted {ds.time.size} events.")
 
-    # make PNGs of stacked percentiles
     os.makedirs(output.outdir, exist_ok=True)
-
+    
     nimgs = ds.time.size
     array = ds.uniform.values
-    array = np.flip(array, axis=1) # flip latitude
+    # array = np.flip(array, axis=1) # flip latitude #! deleting... unnecessary extra complexity
 
-    if not ((array.max() <= 1.) and (array.min() >= 0.)):
-            raise ValueError("Percentiles not in [0,1] range")
+    if not ((array.max() < 1.) and (array.min() > 0.)):
+        raise ValueError("Percentiles not in (0,1) range")
 
-    assert array.shape[1:] == (params.resx, params.resy, 3), f"Unexpected shape: {array.shape}"
+    # rescale to (0, 1)
+    ppf = getattr(stats, params.domain) #! will be identify for uniform
+    # array = np.clip(array, params.eps, 1-params.eps) #! this was the culprit ! Need to ensure (0,1) before this step
+    array = ppf(array)
 
-    # rescale to (0, 1) if domain is not uniform
-    if params.domain is not None:
-        ppf = getattr(stats, params.domain)
-        array = np.clip(array, params.eps, 1-params.eps) # Avoid log(0)
-        array = ppf(array)
+    # scaling with explicit min / max
+    array_min = ppf(1 / params.rp_max)
+    array_max = ppf(1 - 1 / params.rp_max)
+    logging.info(f"Using {params.domain} with min {array_min} and max {array_max}")
 
-        # scaling with explicit max / min
-        array_min = ppf(1 / params.rp_max)
-        array_max = ppf(1 - 1 / params.rp_max)
-        logging.info(f"Using {params.domain} with min {array_min} and max {array_max}")
+    array = (array - array_min) / (array_max - array_min)
+    logging.info("Range: {}--{}".format(array.min(), array.max()))
 
-        array = (array - array_min) / (array_max - array_min)
-
-        logging.info("Range: {}--{}".format(array.min(), array.max()))
-        logging.info("Shape: {},{}".format(array_min.shape, array_max.shape))
-
-        np.savez(output.image_stats, min=array_min, max=array_max)#, n=n)
+    np.savez(output.image_stats, min=array_min, max=array_max)
+    logging.info(f"Saved image stats to {output.image_stats}")
 
     # convert images to RGB and save
     for i in range(nimgs):
         arr = array[i]
-        # PNG output
-        # arr = np.uint8(arr * 255)
-        # img = Image.fromarray(arr, 'RGB')
-        # output_path = os.path.join(output.outdir, f"footprint{i}.png")
-        # img.save(output_path)
-
-        # npy output
         output_path = os.path.join(output.outdir, f"footprint{i}.npy")
         np.save(output_path, arr * 255)
 
-    # verify saved image
-    test_load = np.load(output_path)
+    # test load saved image
+    _ = np.load(output_path)
     logging.info(f"Saved {nimgs} npy files to {output.outdir}")
 
     # save to zipfile
