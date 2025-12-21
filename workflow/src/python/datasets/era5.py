@@ -17,7 +17,7 @@ long_names = {
 
 def get_input_file_pattern(indir, field):
     """Parse the input file pattern for the given field."""
-    return os.path.join(indir, long_names[field], 'nc', '*.nc')
+    return os.path.join(indir, long_names[field], 'grb', '*.grb')
 
 
 def filter_files(files, year, antecedent_buffer_days=None):
