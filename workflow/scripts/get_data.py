@@ -38,7 +38,9 @@ def main(input, output, params):
     for field, field_meta in params.fields.items():
         args = field_meta["init"]["args"]
         for arg in args:
+            print(f"{field=}, {arg=}")
             input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
+            print(f"{input_file_pattern=}")
             arg_files = glob(input_file_pattern)
             arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer_days=params.antecedent_buffer_days)
             input_files.update(arg_files)
