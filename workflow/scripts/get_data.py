@@ -50,9 +50,10 @@ def main(input, output, params):
     # create local index dir for reading gribs efficiently
     index_dir = Path(params.tmpdir) / "cfgrib_indexes"
     index_dir.mkdir(parents=True, exist_ok=True)
-    def map_index_path(grib_path):
-        filename = Path(grib_path).stem + ".idx"
-        return str(index_dir / filename)
+    # def map_index_path(grib_path):
+    #     filename = Path(grib_path).stem + ".idx"
+    #     return str(index_dir / filename)
+    index_path = str(index_dir / "{short_hash}.idx")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
@@ -80,7 +81,7 @@ def main(input, output, params):
                 },
             backend_kwargs={
                 'time_dims': ('valid_time',),
-                'indexpath': map_index_path
+                'indexpath': index_path
             }
             ).rename({'valid_time': 'time'})
     
