@@ -50,23 +50,13 @@ def main(input, output, params):
     for i, file in enumerate(input_files):
         logging.debug(f"Input file {i}: {file}")
 
-    # # symlink to input files for grib index files
-    # tmpdir = Path('tmp')
-    # tmpdir.mkdir(exist_ok=True, parents=True)
-
-    # for src in input_files:
-    #     dst = tmpdir / Path(src).name
-    #     if not dst.exists():
-    #         dst.symlink_to(src)
-    
-    # input_files_tmp = sorted(tmpdir.glob("*.grb"))
-
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
+            # convert lon from 0-360 to -180 to 180
             if 'longitude' in ds.coords and ds.longitude.max() > 180:
                 ds.coords['longitude'] = ((ds.coords['longitude']+180)%360-180)
                 ds = ds.sortby(ds.longitude)
-            ds = ds.sel(latitude=slice(params.ymin, params.ymax), longitude=slice(params.xmin, params.xmax))
+            ds = ds.sel(latitude=slice(params.ymax, params.ymin), longitude=slice(params.xmin, params.xmax))
             return ds
         
         logging.info("Loading mfdataset")
