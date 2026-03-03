@@ -63,15 +63,10 @@ def main(input, output, params):
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
-            """Rename time coordinate if necessary."""
-            if params.xmin < 0:
-                ds = funcs.convert_360_to_180(ds)
-            ds = dataset.clip_to_bbox(
-                ds, params.xmin, params.xmax, params.ymin, params.ymax
-            )
-            if params.timecol in ds.coords and params.timecol != "time":
-                ds = ds.rename({params.timecol: "time"})
-            ds = dataset.preprocess(ds)
+            if 'longitude' in ds.coords and ds.longitude.max() > 180:
+                ds.coords['longitude'] = ((ds.coords['longitude']+180)%360-180)
+                ds = ds.sortby(ds.longitude)
+            ds = ds.sel(latitude=slice(params.ymin, params.ymax), longitude=slice(params.xmin, params.xmax))
             return ds
         
         data = xr.open_mfdataset(
