@@ -53,7 +53,7 @@ def main(input, output, params):
     # def map_index_path(grib_path):
     #     filename = Path(grib_path).stem + ".idx"
     #     return str(index_dir / filename)
-    index_path = str(index_dir / "{short_hash}.idx")
+    index_path = str(index_dir / "{path}.{short_hash}.idx")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
