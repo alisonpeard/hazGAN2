@@ -4,6 +4,7 @@ Load gridded data from hourly netcdf files, resample to daily aggregates, and sa
 a single netcdf file in the target directory.
 """
 import os
+from pathlib import Path
 import numpy as np
 import sys
 from glob import glob
@@ -46,6 +47,13 @@ def main(input, output, params):
     for i, file in enumerate(input_files):
         logging.debug(f"Input file {i}: {file}")
 
+    # create local index dir for reading gribs efficiently
+    index_dir = Path(params.tmpdir) / "cfgrib_indexes"
+    index_dir.makedirs(index_dir, parents=True, exist_ok=True)
+    def map_index_path(grib_path):
+        filename = Path(grib_path).stem + ".idx"
+        return index_dir / filename
+
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
@@ -60,7 +68,7 @@ def main(input, output, params):
             ds = dataset.preprocess(ds)
 
             return ds
-
+        
         data = xr.open_mfdataset(
             input_files,
             engine='cfgrib',
@@ -72,7 +80,7 @@ def main(input, output, params):
                 },
             backend_kwargs={
                 'time_dims': ('valid_time',),
-                'indexpath': '' # need to do own index if changing time dims
+                'indexpath': map_index_path
             }
             ).rename({'valid_time': 'time'})
     
