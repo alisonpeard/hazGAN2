@@ -49,7 +49,7 @@ def main(input, output, params):
 
     # create local index dir for reading gribs efficiently
     index_dir = Path(params.tmpdir) / "cfgrib_indexes"
-    index_dir.mkdir(index_dir, parents=True, exist_ok=True)
+    index_dir.mkdir(parents=True, exist_ok=True)
     def map_index_path(grib_path):
         filename = Path(grib_path).stem + ".idx"
         return index_dir / filename
