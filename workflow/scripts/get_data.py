@@ -44,7 +44,7 @@ def main(input, output, params):
             input_files.update(arg_files)
 
     for i, file in enumerate(input_files):
-        logging.info(f"Input file {i}: {file}")
+        logging.debug(f"Input file {i}: {file}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
@@ -70,7 +70,10 @@ def main(input, output, params):
                 'longitude': '500MB',
                 'latitude': '500MB'
                 },
-            backend_kwargs={'time_dims': ('valid_time',)}
+            backend_kwargs={
+                'time_dims': ('valid_time',),
+                'indexpath': '' # need to do own index if changing time dims
+            }
             ).rename({'valid_time': 'time'})
     
     logging.info("Computing data variables...")
