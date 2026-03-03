@@ -47,13 +47,16 @@ def main(input, output, params):
     for i, file in enumerate(input_files):
         logging.debug(f"Input file {i}: {file}")
 
-    # create local index dir for reading gribs efficiently
-    index_dir = Path(params.tmpdir) / "cfgrib_indexes"
-    index_dir.mkdir(parents=True, exist_ok=True)
-    # def map_index_path(grib_path):
-    #     filename = Path(grib_path).stem + ".idx"
-    #     return str(index_dir / filename)
-    index_path = str(index_dir / "{path}.{short_hash}.idx")
+    # symlink to input files for grib index files
+    tmpdir = Path('tmp')
+    tmpdir.mkdir(exist_ok=True, parents=True)
+    
+    for src in input_files:
+        dst = tmpdir / src.name
+        if not dst.exists():
+            dst.symlink_to(src)
+    
+    input_files_tmp = sorted(tmpdir.glob("*.grb"))
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
@@ -65,23 +68,18 @@ def main(input, output, params):
             )
             if params.timecol in ds.coords and params.timecol != "time":
                 ds = ds.rename({params.timecol: "time"})
-
             ds = dataset.preprocess(ds)
-
             return ds
         
         data = xr.open_mfdataset(
-            input_files,
+            input_files_tmp,
             engine='cfgrib',
             preprocess=preprocess,
-            chunks={
-                "time": "500MB",
-                'longitude': '500MB',
-                'latitude': '500MB'
-                },
+            combine="nested",
+            parallel=True,
+            chunks="auto",
             backend_kwargs={
-                'time_dims': ('valid_time',),
-                'indexpath': index_path
+                'time_dims': ('valid_time',)
             }
             ).rename({'valid_time': 'time'})
     
