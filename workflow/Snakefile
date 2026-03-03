@@ -24,12 +24,13 @@ PROCESSING_DIR = os.path.join(RESULTS_DIR, "processing")
 TRAINING_DIR   = os.path.join(RESULTS_DIR, "training")
 GENERATED_DIR  = os.path.join(RESULTS_DIR, "generated")
 FIGURE_DIR     = os.path.join(RESULTS_DIR, "figures")
+TMPDIR         = os.path.join(RESULTS_DIR, "tmp")
 
 # make parent directories
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # make subdirectories (with .gitignore)
-for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR]:
+for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR, TMPDIR]:
     os.makedirs(newdir, exist_ok=True)
     with open(os.path.join(newdir, ".gitignore"), "w") as f:
         f.write("*")
