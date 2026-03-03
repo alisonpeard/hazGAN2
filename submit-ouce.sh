@@ -8,6 +8,6 @@
 source ~/.bashrc
 source activate "/soge-home/users/spet5107/micromamba/envs/snakemake"
 
-snakemake --profile profiles/slurm process_all_data -n
-snakemake --profile profiles/slurm process_all_data --unlock
-snakemake --profile profiles/slurm process_all_data --rerun-incomplete
+snakemake --profile profiles/slurm get_all_years -n
+snakemake --profile profiles/slurm get_all_years --unlock
+snakemake --profile profiles/slurm get_all_years --rerun-incomplete
