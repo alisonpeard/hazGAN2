@@ -50,9 +50,9 @@ def main(input, output, params):
     # symlink to input files for grib index files
     tmpdir = Path('tmp')
     tmpdir.mkdir(exist_ok=True, parents=True)
-    
+
     for src in input_files:
-        dst = tmpdir / src.name
+        dst = tmpdir / Path(src).name
         if not dst.exists():
             dst.symlink_to(src)
     
