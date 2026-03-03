@@ -41,7 +41,10 @@ def main(input, output, params):
         for arg in args:
             input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
             arg_files = glob(input_file_pattern)
-            arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer_days=params.antecedent_buffer_days)
+            arg_files = dataset.filter_files(
+                arg_files, params.year,
+                antecedent_buffer_days=params.antecedent_buffer_days
+            )
             input_files.update(arg_files)
 
     for i, file in enumerate(input_files):
@@ -61,17 +64,13 @@ def main(input, output, params):
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
-            print("Converting to 180°")
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
-            print("Clipping")
             ds = dataset.clip_to_bbox(
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
-            print("Re-indexing time column")
             if params.timecol in ds.coords and params.timecol != "time":
                 ds = ds.rename({params.timecol: "time"})
-            print("Dataset-specific processing")
             ds = dataset.preprocess(ds)
             return ds
         
