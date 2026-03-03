@@ -11,9 +11,6 @@ import dask
 import time
 import xarray as xr
 import logging
-from tempfile import TemporaryDirectory
-from pathlib import Path
-
 from src import funcs
 from src import datasets
 
@@ -41,9 +38,7 @@ def main(input, output, params):
     for field, field_meta in params.fields.items():
         args = field_meta["init"]["args"]
         for arg in args:
-            print(f"{field=}, {arg=}")
             input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
-            print(f"{input_file_pattern=}")
             arg_files = glob(input_file_pattern)
             arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer_days=params.antecedent_buffer_days)
             input_files.update(arg_files)
@@ -54,151 +49,110 @@ def main(input, output, params):
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
-            logging.info(f"Available coords: {list(ds.coords)}")
-            logging.info(f"Available dims: {list(ds.dims)}")
-            
-            # DEBUGGING
-            print("\n" + "="*50)
-            print(f"FILE: {ds.encoding.get('source', 'Unknown')}")
-            print(ds)
-            print("="*50 + "\n")
-
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
             ds = dataset.clip_to_bbox(
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
+            if params.timecol in ds.coords and params.timecol != "time":
+                ds = ds.rename({params.timecol: "time"})
 
-            if "time" in ds.dims or "time" in ds.coords:
-                if "step" in ds.dims and "time" in ds.dims:
-                    ds = ds.stack(out_time=("time", "step"))
-                    target_times = ds.valid_time.values
-                    # ds = ds.drop_vars(["time", "step", "valid_time"], errors='ignore')
-                    ds = ds.drop_vars(["time", "step", "valid_time", "out_time"], errors='ignore')
-                    ds = ds.rename({"out_time": "time"})
-                    ds = ds.assign_coords(time=target_times)
-                
-                elif "valid_time" in ds.coords:
-                    ds = ds.assign_coords(time=ds.valid_time.values)
-                    ds = ds.drop_vars(["valid_time", "step"], errors='ignore')
-
-                ds = ds.squeeze()
-                ds = ds.sortby("time")
-                _, index = np.unique(ds.time, return_index=True)
-                ds = ds.isel(time=index)
-                ds = ds.transpose("time", "latitude", "longitude", ...)
-
-            ds = ds.drop_vars([v for v in ["step", "valid_time", "heightAboveGround", "surface"] if v in ds.coords])
-            ds = ds.squeeze()
-    
             ds = dataset.preprocess(ds)
 
             return ds
+
+        data = xr.open_mfdataset(
+            input_files,
+            engine='cfgrib',
+            preprocess=preprocess,
+            chunks={
+                "time": "500MB",
+                'longitude': '500MB',
+                'latitude': '500MB'
+                },
+            backend_kwargs={'time_dims': ('valid_time',)}
+            ).rename({'valid_time': 'time'})
+    
+    logging.info("Computing data variables...")
+    log_data_summary(data)
+
+    if params.antecedent_buffer_days:
+        t0 = data["time"].min().data
+        tn = data["time"].max().data
+
+        logging.info(f"Data time range: {t0} to {tn}.")
+
+        buffer = np.timedelta64(params.antecedent_buffer_days+1, 'D')
+        data = data.sortby("time")
+        t0 = np.datetime64(f"{params.year}-01-01")
+        tn = np.datetime64(f"{params.year}-12-31")
+        t0 -= buffer
+        data = data.sel(time=slice(t0, tn))
         
-        with TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-            tmp_input_files = []
+        logging.info(f"Clipped data to time range: {t0} to {tn}.")
+        
+        t0 = data["time"].min().data
+        tn = data["time"].max().data
 
-            for i, original_file in enumerate(input_files):
-                link_name = tmp_path / f"file_{i}.grb"
-                os.symlink(original_file, link_name)
-                tmp_input_files.append(str(link_name))
+        logging.info(f"Data time range: {t0} to {tn}.")
 
-            data = xr.open_mfdataset(
-                tmp_input_files,
-                engine='cfgrib',
-                preprocess=preprocess,
-                combine="nested",
-                concat_dim="time",
-                parallel=True,
-                chunks={
-                    "time": "500MB",
-                    'longitude': '500MB',
-                    'latitude': '500MB'
-                    })
-            
-            # data = data.resample(time='1H').nearest()
+    logging.info(f"Loading parameters from {input.params}.\n")
+    theta = xr.open_dataset(input.params)
+    theta = preprocess(theta)
+
+    logging.info("Resampling data to daily aggregates.\n")
+    resampled = {}
+    for field, config in params.fields.items():
+        func       = config["init"]["func"]
+        args       = config["init"]["args"]
+
+        logging.info(f"Applying {field} = {func}{*args,}.")
+        data[field] = getattr(funcs, func)(data, *args, params=theta)
+
+    for field, config in params.fields.items():
+        hfunc      = config["hfunc"]["func"]
+        hfunc_args = config["hfunc"]["args"]
+
+        logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
+        resampled[field] = data.resample(time='1D').apply(
+            lambda grouped: getattr(funcs, hfunc)(grouped, *hfunc_args)
+        )
     
-        logging.info("Computing data variables...")
-        log_data_summary(data)
+    data_resampled = xr.Dataset(resampled)
+    data_resampled = data_resampled.chunk({
+        'time': 30,
+        'latitude': -1, 
+        'longitude': -1
+    })
 
-        if params.antecedent_buffer_days:
-            t0 = data["time"].min().data
-            tn = data["time"].max().data
+    if params.antecedent_buffer_days:
+        t0 = np.datetime64(f"{params.year}-01-01")
+        tn = np.datetime64(f"{params.year}-12-31")
+        data_resampled = data_resampled.sel(time=slice(t0, tn))
 
-            logging.info(f"Data time range: {t0} to {tn}.")
+    log_data_summary(data_resampled)
 
-            buffer = np.timedelta64(params.antecedent_buffer_days+1, 'D')
-            data = data.sortby("time")
-            t0 = np.datetime64(f"{params.year}-01-01")
-            tn = np.datetime64(f"{params.year}-12-31")
-            t0 -= buffer
-            data = data.sel(time=slice(t0, tn))
-            
-            logging.info(f"Clipped data to time range: {t0} to {tn}.")
-            
-            t0 = data["time"].min().data
-            tn = data["time"].max().data
+    # data export settings
+    compression = {'zlib': True, 'complevel': 1}
+    encoding = {var: compression for var in data_resampled.data_vars}
 
-            logging.info(f"Data time range: {t0} to {tn}.")
+    # save data to netcdf
+    logging.info(f"Saving data to {output.netcdf}\n")
+    data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+    logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
 
-        logging.info(f"Loading parameters from {input.params}.\n")
-        theta = xr.open_dataset(input.params)
-        theta = preprocess(theta)
+    data.close()
+    data_resampled.close()
 
-        logging.info("Resampling data to daily aggregates.\n")
-        resampled = {}
-        for field, config in params.fields.items():
-            func = config["init"]["func"]
-            args = config["init"]["args"]
-
-            logging.info(f"Applying {field} = {func}{*args,}.")
-            data[field] = getattr(funcs, func)(data, *args, params=theta)
-
-        for field, config in params.fields.items():
-            hfunc      = config["hfunc"]["func"]
-            hfunc_args = config["hfunc"]["args"]
-
-            logging.info(f"Resampling {field} = {hfunc}{*hfunc_args,}.")
-            resampled[field] = data.resample(time='1D').apply(
-                lambda grouped: getattr(funcs, hfunc)(grouped, *hfunc_args)
-            )
-    
-        data_resampled = xr.Dataset(resampled)
-        data_resampled = data_resampled.chunk({
-            'time': 30,
-            'latitude': -1, 
-            'longitude': -1
-        })
-
-        if params.antecedent_buffer_days:
-            t0 = np.datetime64(f"{params.year}-01-01")
-            tn = np.datetime64(f"{params.year}-12-31")
-            data_resampled = data_resampled.sel(time=slice(t0, tn))
-
-        log_data_summary(data_resampled)
-
-        # data export settings
-        compression = {'zlib': True, 'complevel': 1}
-        encoding = {var: compression for var in data_resampled.data_vars}
-
-        # save data to netcdf
-        logging.info(f"Saving data to {output.netcdf}\n")
-        data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
-        logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
-
+    if VERIFY_TIME_ENCODING:
+        data = xr.open_dataset(output.netcdf, decode_times=False, engine='netcdf4')
+        times = data.isel(time=slice(0, 4)).time.data
+        logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
+        logging.info(f"Encoding metadata: {data.time.attrs}")
         data.close()
-        data_resampled.close()
 
-        if VERIFY_TIME_ENCODING:
-            data = xr.open_dataset(output.netcdf, decode_times=False, engine='netcdf4')
-            times = data.isel(time=slice(0, 4)).time.data
-            logging.info(f"Time encoding: {times[0]}, {times[1]}, ...")
-            logging.info(f"Encoding metadata: {data.time.attrs}")
-            data.close()
-
-        end = time.time()
-        logging.info(f"Time taken: {end - start:.2f} seconds.")
+    end = time.time()
+    logging.info(f"Time taken: {end - start:.2f} seconds.")
 
 
 if __name__ == '__main__':
@@ -209,7 +163,7 @@ if __name__ == '__main__':
         handlers=[
         logging.FileHandler(snakemake.log.file),
         logging.StreamHandler(sys.stdout)
-        ]
+    ]
     )
 
     # process snakemake
