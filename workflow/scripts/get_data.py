@@ -50,16 +50,16 @@ def main(input, output, params):
     for i, file in enumerate(input_files):
         logging.debug(f"Input file {i}: {file}")
 
-    # symlink to input files for grib index files
-    tmpdir = Path('tmp')
-    tmpdir.mkdir(exist_ok=True, parents=True)
+    # # symlink to input files for grib index files
+    # tmpdir = Path('tmp')
+    # tmpdir.mkdir(exist_ok=True, parents=True)
 
-    for src in input_files:
-        dst = tmpdir / Path(src).name
-        if not dst.exists():
-            dst.symlink_to(src)
+    # for src in input_files:
+    #     dst = tmpdir / Path(src).name
+    #     if not dst.exists():
+    #         dst.symlink_to(src)
     
-    input_files_tmp = sorted(tmpdir.glob("*.grb"))
+    # input_files_tmp = sorted(tmpdir.glob("*.grb"))
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
@@ -72,14 +72,15 @@ def main(input, output, params):
         logging.info("Loading mfdataset")
         
         data = xr.open_mfdataset(
-            input_files_tmp,
+            input_files,
             engine='cfgrib',
             preprocess=preprocess,
             combine="nested",
             parallel=True,
             chunks="auto",
             backend_kwargs={
-                'time_dims': ('valid_time',)
+                'time_dims': ('valid_time',),
+                'indexpath': ''
             }
             ).rename({'valid_time': 'time'})
     
