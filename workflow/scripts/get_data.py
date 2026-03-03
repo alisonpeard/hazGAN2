@@ -61,13 +61,17 @@ def main(input, output, params):
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         def preprocess(ds, params=params):
             """Rename time coordinate if necessary."""
+            print("Converting to 180°")
             if params.xmin < 0:
                 ds = funcs.convert_360_to_180(ds)
+            print("Clipping")
             ds = dataset.clip_to_bbox(
                 ds, params.xmin, params.xmax, params.ymin, params.ymax
             )
+            print("Re-indexing time column")
             if params.timecol in ds.coords and params.timecol != "time":
                 ds = ds.rename({params.timecol: "time"})
+            print("Dataset-specific processing")
             ds = dataset.preprocess(ds)
             return ds
         
