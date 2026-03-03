@@ -69,6 +69,8 @@ def main(input, output, params):
             ds = ds.sel(latitude=slice(params.ymin, params.ymax), longitude=slice(params.xmin, params.xmax))
             return ds
         
+        logging.info("Loading mfdataset")
+        
         data = xr.open_mfdataset(
             input_files_tmp,
             engine='cfgrib',
