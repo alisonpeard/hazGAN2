@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 
 `%ni%` <- Negate(`%in%`)
 
-ecdf <- function(x) {
+ecdf_wb <- function(x) {
   # modified to Weibull plotting positions
   x <- sort(x)
   n <- length(x)
@@ -27,7 +27,7 @@ ecdf <- function(x) {
 }
 
 
-scdf <- function(train, params, cdf) {
+scdf_wb <- function(train, params, cdf) {
   # Using excesses and setting loc=0
   # This is for flexibility with cdf choice
   params_upper <- params[
@@ -45,11 +45,13 @@ scdf <- function(train, params, cdf) {
     params_lower, c("thresh", "scale", "shape")
   )
 
-  loc_upper <- params$thresh
-  loc_lower <- params$thresh
+  loc_upper <- params_upper$thresh
+  loc_lower <- params_lower$thresh
 
-  calculator <- function(x) {
-    u <- ecdf(train)(x)
+  calculator <- function(
+    x, loc_lower = loc_lower, loc_upper = loc_upper
+  ) {
+    u <- ecdf_wb(train)(x)
 
     mask_upper <- (x > loc_upper) & !is.na(loc_upper)
     mask_lower <- (x <= loc_lower) & !is.na(loc_lower)
@@ -61,7 +63,7 @@ scdf <- function(train, params, cdf) {
       params_upper <- params_upper[mask_upper]
 
       exceedances_upper <- x_upper - loc_upper
-      pthresh_upper <- ecdf(train)(loc_upper)
+      pthresh_upper <- ecdf_wb(train)(loc_upper)
       u_upper <- 1 - (1 - pthresh_upper)
 
       u_upper <- u_upper * (1 - cdf(exceedances_upper, params_upper))
@@ -75,7 +77,7 @@ scdf <- function(train, params, cdf) {
       params_lower <- params_lower[mask_lower]
 
       exceedances_lower <- loc_lower - x_lower
-      pthresh_lower <- ecdf(train)(loc_lower)
+      pthresh_lower <- ecdf_wb(train)(loc_lower)
       u_lower <- pthresh_lower * (1 - cdf(exceedances_lower, params_lower))
       u[mask_lower] <- u_lower
     }
@@ -92,7 +94,6 @@ ljung_box <- function(variable, threshold, grid_i, tail) {
 
   if (nexcesses < 30) {
     log_warn(paste0(
-      "stats::ljung_box - ",
       "Only ", nexcesses,
       " exceedances in gridcell ",
       grid_i, " (", tail, ")", ". ",
@@ -100,12 +101,10 @@ ljung_box <- function(variable, threshold, grid_i, tail) {
     ))
     p_box <- 0
   } else {
-    # log_debug(paste(excesses, collapse = ", "))
     p_box <- Box.test(excesses)[["p.value"]]
 
     if (is.na(p_box)) {
       log_warn(paste0(
-        "stats::fit_gridcell - ",
         "Ljung-Box test returned NA for gridcell ",
         grid_i, " (", tail, ")", ". Value: ", round(p_box, 4),
         ", Num exceedances: ", nexcesses,
@@ -113,7 +112,6 @@ ljung_box <- function(variable, threshold, grid_i, tail) {
       ))
     } else if (p_box < 0.1) {
       log_warn(paste0(
-        "stats::fit_gridcell - ",
         "p-value ≤ 10% for H0: independent exceedences in ",
         grid_i, " (", tail, ")", ". Value: ", round(p_box, 4),
         ", Num exceedances: ", nexcesses,
@@ -121,7 +119,6 @@ ljung_box <- function(variable, threshold, grid_i, tail) {
       ))
     } else {
       log_success(paste0(
-        "stats::fit_gridcell - ",
         "p-value > 10% for H0: independent exceedences in ",
         grid_i, " (", tail, ")", ". Value: ", round(p_box, 4),
         ", Num exceedances: ", nexcesses,
