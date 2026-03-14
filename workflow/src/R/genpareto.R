@@ -126,7 +126,7 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
   numabove <- numaboves[i_best]
 
   list(
-    thresh     = thresh,
+    thresh     = unname(thresh),
     scale      = scale,
     shape      = shape,
     numabove   = numabove

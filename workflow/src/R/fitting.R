@@ -62,7 +62,8 @@ fit_tail <- function(x, distn, grid_label, label) {
 
 fit_margin_tails <- function(
   margin, distn,
-  two_tailed = FALSE, grid_i = NULL
+  two_tailed = FALSE,
+  grid_i = NULL
 ) {
 
   # fit semiparametric distribution to upper tails
@@ -74,12 +75,20 @@ fit_margin_tails <- function(
   # (optional) fit lower tails of margin too
   if (two_tailed) {
     lower_result <- fit_tail(-margin$variable, distn, grid_i, "_lower")
+    lower_result$params$thresh_lower <- -lower_result$params$thresh_lower
     margin <- margin |> mutate(!!!lower_result$params)
     margin$p_lower <- lower_result$p
     margin$pk_lower <- lower_result$pk
 
   } else {
     # Set lower tail params to NA if not two-tailed
+    lower_result <- list(
+      params = list(
+        thresh_lower = NA,
+        scale_lower = NA,
+        shape_lower = NA
+      )
+    )
     margin$thresh_lower <- NA
     margin$scale_lower  <- NA
     margin$shape_lower  <- NA
@@ -87,12 +96,8 @@ fit_margin_tails <- function(
     margin$pk_lower     <- NA
   }
 
-  # process parameters
-  upper_params <- c("thresh_upper", "scale_upper", "shape_upper")
-  lower_params <- c("thresh_lower", "scale_lower", "shape_lower")
-  params <- c(margin[upper_params], margin[lower_params])
-
   # apply empirical and semiparametric distribution transforms
+  params <- c(upper_result$params, lower_result$params)
   margin$scdf <- scdf_wb(margin$variable, params, cdf = distn$cdf)(margin$variable)
   margin$ecdf <- ecdf_wb(margin$variable)(margin$variable)
 
