@@ -48,9 +48,7 @@ scdf_wb <- function(train, params, cdf) {
   loc_upper <- params_upper$thresh
   loc_lower <- params_lower$thresh
 
-  calculator <- function(
-    x, loc_lower = loc_lower, loc_upper = loc_upper
-  ) {
+  calculator <- function(x) {
     u <- ecdf_wb(train)(x)
 
     mask_upper <- (x > loc_upper) & !is.na(loc_upper)
