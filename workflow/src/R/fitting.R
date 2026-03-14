@@ -205,7 +205,7 @@ marginal_transformer <- function(df, metadata, var,
 
   # load functions for specified extremal distribution
   distn <- load_distn(distn)
-  hfunc <- match.fun(hfunc)
+  # hfunc <- match.fun(hfunc) # already done
 
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
