@@ -22,9 +22,9 @@ set-resources:
         runtime: "2h"
     fit_marginals:
         slurm_partition: "Medium"
-        cpus_per_task: 32
+        cpus_per_task: 48
         mem_mb_per_cpu: 1G
-        runtime: "4h"
+        runtime: "3h"
     train_stylegan:
         slurm_partition: "GPU"
         slurm_extra: "'--gpus=1'"
