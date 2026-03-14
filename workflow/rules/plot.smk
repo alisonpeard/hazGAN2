@@ -1,32 +1,13 @@
-"""Reference: https://github.com/alisonpeard/styleGAN-DA/blob/main/visualise.py"""
-
-rule all_figures:
-    """All figures."""
-    input:
-        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[0]}_upper.png"),
-        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[1]}_upper.png"),
-        os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[2]}_upper.png"),
-        os.path.join(FIGURE_DIR, "samples"),
-        os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png"),
-        os.path.join(FIGURE_DIR, "correlations_field"),
-        os.path.join(FIGURE_DIR, "correlations_spatial"),
-        os.path.join(FIGURE_DIR, "scatterplots")
-    log:
-        file=os.path.join("logs", "all_figures.log")
+from pathlib import Path
 
 
 rule plot_fitted_parameters:
-    """
-    Figure 2: fitted parameters for each variable. Figure 1 in paper.
-
-    >>> snakemake --profile profiles/cluster plot_fitted_parameters
-    """
     input:
-        events=os.path.join(PROCESSING_DIR, "fitted.parquet")
+        events=Path(PROCESSING_DIR) / "event_footprints.parquet"
     output:
-        fig1=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[0]}_upper.png"),
-        fig2=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[1]}_upper.png"),
-        fig3=os.path.join(FIGURE_DIR, "parameters", f"{list(FIELDS.keys())[2]}_upper.png")
+        fig1=Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[0]}_upper.png",
+        fig2=Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[1]}_upper.png",
+        fig3=Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[2]}_upper.png"
     params:
         fields=FIELDS,
         pcrit=0.05,
@@ -34,25 +15,25 @@ rule plot_fitted_parameters:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "plot_parameters.log")
+        file=Path("logs") / "plot_parameters.log"
     script:
-        os.path.join("..", "scripts", "plot_parameters.py")
+        Path("..") / "scripts" / "plot_parameters.py"
 
 
 rule plot_correlations:
     """Correlation plots of storm distribution.
     
-    Swap between train=os.path.join(TRAINING_DIR, "data.nc") and 
-    train=os.path.join(GENERATED_DIR, "netcdf", "train.nc") to 
+    Swap between train=Path(TRAINING_DIR) / "data.nc" and 
+    train=Path(GENERATED_DIR) / "netcdf" / "train.nc" to 
     check transforms working correctly.
     """
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-        # train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        train=Path(TRAINING_DIR) / "data.nc",
+        # train=Path(GENERATED_DIR) / "netcdf" / "train.nc",
+        generated=Path(GENERATED_DIR) / "netcdf" / "data.nc"
     output:
-        dir0=directory(os.path.join(FIGURE_DIR, "correlations_field")),
-        dir1=directory(os.path.join(FIGURE_DIR, "correlations_spatial"))
+        dir0=directory(Path(FIGURE_DIR) / "correlations_field"),
+        dir1=directory(Path(FIGURE_DIR) / "correlations_spatial")
     params:
         fields=FIELDS,
         dataset=DATASET,
@@ -67,26 +48,26 @@ rule plot_correlations:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "plot_correlations.log")
+        file=Path("logs") / "plot_correlations.log"
     script:
-        os.path.join("..", "scripts", "plot_correlations.py")
+        Path("..") / "scripts" / "plot_correlations.py"
 
 
 rule plot_samples:
     """Figure 3: generated and observed (deseasonalised) samples.
     
-    Swap between train=os.path.join(TRAINING_DIR, "data.nc") and 
-    train=os.path.join(GENERATED_DIR, "netcdf", "train.nc") to 
+    Swap between train=Path(TRAINING_DIR) / "data.nc" and 
+    train=Path(GENERATED_DIR) / "netcdf" / "train.nc" to 
     check transforms working correctly.
     
     >>> snakemake --profile profiles/cluster plot_samples
     """
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-        # train=os.path.join(GENERATED_DIR, "netcdf", "train.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        train=Path(TRAINING_DIR) / "data.nc",
+        # train=Path(GENERATED_DIR) / "netcdf" / "train.nc",
+        generated=Path(GENERATED_DIR) / "netcdf" / "data.nc"
     output:
-        outdir=directory(directory(os.path.join(FIGURE_DIR, "samples")))
+        outdir=directory(directory(Path(FIGURE_DIR) / "samples")))
     params:
         fields=FIELDS,
         shuffle=False,
@@ -99,18 +80,18 @@ rule plot_samples:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "plot_samples.log")
+        file=Path("logs") / "plot_samples.log"
     script:
-        os.path.join("..", "scripts", "plot_samples.py")
+        Path("..") / "scripts" / "plot_samples.py"
 
 
 rule plot_barcharts:
     """Saffir-Simpson barcharts of storm distribution."""
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        train=Path(TRAINING_DIR) / "data.nc",
+        generated=Path(GENERATED_DIR) / "netcdf" / "data.nc"
     output:
-        figure=os.path.join(FIGURE_DIR, "barcharts", "event_intensity.png")
+        figure=Path(FIGURE_DIR) / "barcharts" / "event_intensity.png"
     params:
         event_subset=config['event_subset'],
         month="January",
@@ -119,9 +100,9 @@ rule plot_barcharts:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "plot_barcharts.log")
+        file=Path("logs") / "plot_barcharts.log"
     script:
-        os.path.join("..", "scripts", "plot_barcharts.py")
+        Path("..") / "scripts" / "plot_barcharts.py"
 
 
 
@@ -131,10 +112,10 @@ rule plot_scatterplots:
     Need to map coords to datasets properly.
     """
     input:
-        train=os.path.join(TRAINING_DIR, "data.nc"),
-        generated=os.path.join(GENERATED_DIR, "netcdf", "data.nc")
+        train=Path(TRAINING_DIR) / "data.nc",
+        generated=Path(GENERATED_DIR) / "netcdf" / "data.nc"
     output:
-        outdir=directory(os.path.join(FIGURE_DIR, "scatterplots"))
+        outdir=directory(Path(FIGURE_DIR) / "scatterplots")
     params:
         event_subset=config['event_subset'],
         pois=config["points_of_interest"],
@@ -147,6 +128,20 @@ rule plot_scatterplots:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "plot_scatterplots.log")
+        file=Path("logs") / "plot_scatterplots.log"
     script:
-        os.path.join("..", "scripts", "plot_scatterplots.py")
+        Path("..") / "scripts" / "plot_scatterplots.py"
+
+
+rule all_figures:
+    input:
+        Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[0]}_upper.png",
+        Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[1]}_upper.png",
+        Path(FIGURE_DIR) / "parameters" / f"{list(FIELDS.keys())[2]}_upper.png",
+        Path(FIGURE_DIR) / "samples",
+        Path(FIGURE_DIR) / "barcharts" / "event_intensity.png",
+        Path(FIGURE_DIR) / "correlations_field",
+        Path(FIGURE_DIR) / "correlations_spatial",
+        Path(FIGURE_DIR) / "scatterplots"
+    log:
+        file=Path("logs") / "all_figures.log"
