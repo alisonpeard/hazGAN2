@@ -67,7 +67,7 @@ rule plot_samples:
         # train=Path(GENERATED_DIR) / "netcdf" / "train.nc",
         generated=Path(GENERATED_DIR) / "netcdf" / "data.nc"
     output:
-        outdir=directory(directory(Path(FIGURE_DIR) / "samples")))
+        outdir=directory(directory(Path(FIGURE_DIR) / "samples"))
     params:
         fields=FIELDS,
         shuffle=False,
