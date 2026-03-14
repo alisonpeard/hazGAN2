@@ -68,11 +68,13 @@ fit_margin_tails <- function(
 
   # fit semiparametric distribution to upper tails
   upper_result <- fit_tail(margin$variable, distn, grid_i, "_upper")
+
+  # store a copy of params for each row in margin
   margin <- margin |> mutate(!!!upper_result$params)
   margin$p_upper <- upper_result$p
   margin$pk_upper <- upper_result$pk
 
-  # (optional) fit lower tails of margin too
+  # (optional) fit semiparametric distribution to lower tails too
   if (two_tailed) {
     lower_result <- fit_tail(-margin$variable, distn, grid_i, "_lower")
     lower_result$params$thresh_lower <- -lower_result$params$thresh_lower
@@ -81,7 +83,6 @@ fit_margin_tails <- function(
     margin$pk_lower <- lower_result$pk
 
   } else {
-    # Set lower tail params to NA if not two-tailed
     lower_result <- list(
       params = list(
         thresh_lower = NA,
@@ -96,7 +97,7 @@ fit_margin_tails <- function(
     margin$pk_lower     <- NA
   }
 
-  # apply empirical and semiparametric distribution transforms
+  # create vectors of scdf and ecdf-transformed values
   params <- c(upper_result$params, lower_result$params)
   margin$scdf <- scdf_wb(margin$variable, params, cdf = distn$cdf)(margin$variable)
   margin$ecdf <- ecdf_wb(margin$variable)(margin$variable)
@@ -110,7 +111,7 @@ fit_margin <- function(
   distn, two_tailed,
   hfunc, hfunc_args
 ) {
-  # extract marginal
+  # extract observations for grid cell i
   gridcell <- df[df$grid == grid_i, ]
   gridcell <- left_join(
     gridcell,
@@ -118,9 +119,10 @@ fit_margin <- function(
     by = c("time" = "time")
   )
 
+  # collapse time dimension with hfunc
   margin <- hfunc(gridcell, hfunc_args)
 
-  # Return empty if no data
+  # handle no data case
   if (nrow(margin) == 0) {
     log_warn(paste0(
       "Empty footprint dataframe for grid cell ", grid_i
@@ -145,7 +147,7 @@ fit_margin <- function(
     ))
   }
 
-  # main fitting functions happen here
+  # fit the empirical and parametric distributions
   margin <- fit_margin_tails(margin, distn, two_tailed, grid_i)
 
   # validate exceedences are independent
@@ -153,7 +155,6 @@ fit_margin <- function(
     margin$variable, margin$thresh_upper, grid_i, "upper"
   )
   margin$box.test.upper <- pbox_upper
-
   if (two_tailed) {
     pbox_lower <- ljung_box(
       -margin$variable, -margin$thresh_lower, grid_i, "lower"
