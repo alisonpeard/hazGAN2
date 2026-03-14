@@ -129,11 +129,11 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
     thresh     = thresh,
     scale      = scale,
     shape      = shape,
-    numabove   = numabove,
-    diagnostic = list(
-      meandist = meandists[i_best],
-      sddist   = sddists[i_best]
-    )
+    numabove   = numabove
+    # diagnostic = list(
+    #   meandist = meandists[i_best],
+    #   sddist   = sddists[i_best]
+    # )
   )
 }
 
