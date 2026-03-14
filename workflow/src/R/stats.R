@@ -49,31 +49,22 @@ scdf_wb <- function(train, params, cdf) {
   loc_lower <- params_lower$thresh
 
   calculator <- function(x) {
-    u <- ecdf_wb(train)(x)
-
+    u <- ecdf_wb(train)(x) # the empirical cdf for the body
     mask_upper <- (x > loc_upper) & !is.na(loc_upper)
     mask_lower <- (x <= loc_lower) & !is.na(loc_lower)
 
     # fit the upper if there are valid parameters
     if (any(mask_upper)) {
       x_upper <- x[mask_upper]
-      loc_upper <- loc_upper[mask_upper]
-      # params_upper <- params_upper[mask_upper] # typo?
-
       exceedances_upper <- x_upper - loc_upper
       pthresh_upper <- ecdf_wb(train)(loc_upper)
-      u_upper <- 1 - (1 - pthresh_upper)
-
-      u_upper <- u_upper * (1 - cdf(exceedances_upper, params_upper))
+      u_upper <- 1 - (1 - pthresh_upper) * (1 - cdf(exceedances_upper, params_upper))
       u[mask_upper] <- u_upper
     }
 
     # fit the lower if there are valid parameters
     if (any(mask_lower)) {
       x_lower <- x[mask_lower]
-      loc_lower <- loc_lower[mask_lower]
-      # params_lower <- params_lower[mask_lower] # typo?
-
       exceedances_lower <- loc_lower - x_lower
       pthresh_lower <- ecdf_wb(train)(loc_lower)
       u_lower <- pthresh_lower * (1 - cdf(exceedances_lower, params_lower))
