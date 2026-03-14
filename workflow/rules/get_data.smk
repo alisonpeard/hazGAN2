@@ -12,24 +12,11 @@ def get_param_file():
         )
 
 
-rule get_all_years:
-    """
-    Process all input years of input data for the project.
-
-    >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 40
-    """
-    input:
-        expand(
-            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
-            year=YEARS
-        )
-
-
 rule get_year:
     """
     >>> snakemake --profile profiles/slurm/ --executor slurm --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
     >>> snakemake --profile profiles/cluster --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
-    >>> snakemake --profile profiles/slurm --jobs 1 projects/poweruk_winter/results/processing/input/2005.nc
+    >>> snakemake --profile profiles/cluster --jobs 1 projects/poweruk_winter/results/processing/input/2005.nc
     """
     input:
         indir=INDIR,
@@ -56,3 +43,16 @@ rule get_year:
         file="logs/get/{year}.log"
     script:
         "../scripts/get_data.py"
+
+
+rule get_all_years:
+    """
+    Process all input years of input data for the project.
+
+    >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 40
+    """
+    input:
+        expand(
+            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
+            year=YEARS
+        )
