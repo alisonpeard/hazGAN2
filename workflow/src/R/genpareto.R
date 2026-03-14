@@ -27,7 +27,7 @@ nll_genpareto <- function(params, x, max_x) {
   if (shape < 0) {
     if (max_x >= (-scale / shape)) return(1e10)
   }
-  
+
   ll <- sum(eva::dgpd(x, scale = scale, shape = shape, log = TRUE))
 
   # stability check
@@ -74,27 +74,27 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
   scales    <- rep(NA, length(thresh))
   shapes    <- rep(NA, length(thresh))
   numaboves <- rep(NA, length(thresh))
-  
+
   p_grid    <- (1:m) / (m + 1)
-  
+
   for (i in seq_along(thresh)) {
     u <- thresh[i]
     excess <- x[x > u] - u
     numaboves[i] <- length(excess)
-    
+
     if (numaboves[i] > 20) {
       fit0 <- fit_genpareto(excess)
-      if(is.null(fit0)) next
+      if (is.null(fit0)) next
       scales[i] <- fit0$param[1]
       shapes[i] <- fit0$param[2]
-      
+
       par_init <- if (shapes[i] < 0) c(mean(excess), 0.1) else c(scales[i], shapes[i])
-      
+
       # bootstrap
       dists <- vapply(seq_len(nboot), function(b) {
         xb <- sample(excess, numaboves[i], replace = TRUE)
         max_xb <- max(xb)
-      
+
         fit_b <- optim(
           par_init,
           nll_genpareto,
@@ -104,14 +104,14 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
           upper = c(Inf, 0.9),
           max_x = max_xb
         )
-        
+
         if (fit_b$convergence != 0) return(NA)
-        
+
         q_emp <- quantile(xb, probs = p_grid, names = FALSE)
         q_gpd <- eva::qgpd(p_grid, scale = fit_b$par[1], shape = fit_b$par[2])
         mean(abs(q_emp - q_gpd))
       }, FUN.VALUE = numeric(1))
-      
+
       meandists[i] <- mean(dists, na.rm = TRUE)
       sddists[i]   <- sd(dists, na.rm = TRUE)
     }
@@ -119,7 +119,7 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
   i_best <- which.min(meandists)
   if (length(i_best) == 0) return(NULL)
   if (is.infinite(meandists[i_best])) return(NULL)
-  
+
   thresh <- thresh[i_best]
   scale  <- scales[i_best]
   shape  <- shapes[i_best]
@@ -146,7 +146,8 @@ ad_test <- function(x, scale, shape, eps = 0.05) {
 
 
 threshold_selector <- function(
-  x, id, nthresholds = 15, nsim = 30, alpha = 0.05
+  # x, id, nthresholds = 15, nsim = 30, alpha = 0.05
+  x, id, nthresholds = 3, nsim = 2, alpha = 0.05
 ) {
   thresholds <- quantile(
     x, probs = seq(0.7, 0.98, length.out = nthresholds)
@@ -160,7 +161,9 @@ threshold_selector <- function(
       status = "Failure: No valid threshold found with enough data"
     ))
   }
-  
+
+  # manual AD test now that not using
+  # Bader method anymore
   p <- tryCatch(
     ad_test(
       x = x[x > fit$thresh] - fit$thresh,
@@ -178,28 +181,7 @@ threshold_selector <- function(
       # diagnostic = fit$diagnostic
     ),
     p.value = p,
-    pk = NA,
+    pk = p,
     status = "Success"
   ))
-}
-
-
-if (FALSE) {
-  # run diagnostic tests
-  library(eva)
-  print("My case")
-  x <- rnorm(1249)
-  threshold_selector(x, "1249 points");
-  
-  print("too few points case:")
-  x <- rnorm(10)
-  threshold_selector(x, "too-few points");
-  
-  print("zero-variance tail case:")
-  x <- c(rnorm(100), rep(5, 50))
-  threshold_selector(x, "zero-variance tail");
-  
-  print("extremely heavy (Cauchy) tail (ξ<-0.5)")
-  x <- abs(rcauchy(200))
-  threshold_selector(x, "heavy tail");
 }
