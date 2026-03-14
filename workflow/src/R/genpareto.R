@@ -174,8 +174,8 @@ threshold_selector <- function(
     params   = list(
       thresh = fit$thresh,
       scale  = fit$scale,
-      shape  = fit$shape,
-      diagnostic = fit$diagnostic
+      shape  = fit$shape
+      # diagnostic = fit$diagnostic
     ),
     p.value = p,
     pk = NA,

@@ -205,7 +205,8 @@ marginal_transformer <- function(df, metadata, var,
 
   # load functions for specified extremal distribution
   distn <- load_distn(distn)
-  # hfunc <- match.fun(hfunc) # already done
+  hfunc <- if (is.character(hfunc)) match.fun(hfunc) else hfunc
+  force(hfunc)
 
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
@@ -267,7 +268,8 @@ marginal_transformer <- function(df, metadata, var,
           setup_logger = setup_logger,
           ecdf_wb = ecdf_wb,    # Weibull plotting positions (stats.R)
           scdf_wb = scdf_wb,
-          ljung_box = ljung_box
+          ljung_box = ljung_box,
+          hfunc = hfunc
         )
       )
     )
