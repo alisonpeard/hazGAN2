@@ -255,8 +255,7 @@ marginal_transformer <- function(df, metadata, var,
     hfunc_args = hfunc_args
   ))
   log_info(paste0(
-    "Single gridcell took ", round(t["elapsed"], 2), "s. ",
-    "Estimated total: ", round(t["elapsed"] * length(gridcells) / ncores / 60, 1), " min"
+    "Single gridcell took ", round(t["elapsed"], 2), "s. "
   ))
   # END DEBUGGING: time a single gridcell
   rm(df)
