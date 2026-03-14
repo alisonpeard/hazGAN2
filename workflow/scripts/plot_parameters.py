@@ -17,7 +17,8 @@ import scipy.stats
 
 
 def pk(var, tail):
-    return f"pk_{tail}_{var}"
+    return f"p_{tail}_{var}"
+    # return f"pk_{tail}_{var}"
 
 def thresh(var, tail):
     return f"thresh_{tail}_{var}"
