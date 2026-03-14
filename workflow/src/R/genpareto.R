@@ -146,8 +146,7 @@ ad_test <- function(x, scale, shape, eps = 0.05) {
 
 
 threshold_selector <- function(
-  # x, id, nthresholds = 15, nsim = 30, alpha = 0.05
-  x, id, nthresholds = 3, nsim = 2, alpha = 0.05
+  x, id, nthresholds = 15, nsim = 10, alpha = 0.05
 ) {
   thresholds <- quantile(
     x, probs = seq(0.7, 0.98, length.out = nthresholds)
