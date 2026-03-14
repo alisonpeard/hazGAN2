@@ -58,7 +58,7 @@ scdf_wb <- function(train, params, cdf) {
     if (any(mask_upper)) {
       x_upper <- x[mask_upper]
       loc_upper <- loc_upper[mask_upper]
-      params_upper <- params_upper[mask_upper]
+      # params_upper <- params_upper[mask_upper] # typo?
 
       exceedances_upper <- x_upper - loc_upper
       pthresh_upper <- ecdf_wb(train)(loc_upper)
@@ -72,7 +72,7 @@ scdf_wb <- function(train, params, cdf) {
     if (any(mask_lower)) {
       x_lower <- x[mask_lower]
       loc_lower <- loc_lower[mask_lower]
-      params_lower <- params_lower[mask_lower]
+      # params_lower <- params_lower[mask_lower] # typo?
 
       exceedances_lower <- loc_lower - x_lower
       pthresh_lower <- ecdf_wb(train)(loc_lower)
