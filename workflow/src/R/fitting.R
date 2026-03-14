@@ -242,6 +242,23 @@ marginal_transformer <- function(df, metadata, var,
     tmps[[i]] <- tempfile(fileext = ".rds")
     saveRDS(df[df$grid %in% gridchunks[[i]], ], tmps[[i]])
   }
+
+  # DEBUGGING: time a single gridcell
+  log_info("Timing a single gridcell...")
+  t <- system.time(fit_margin(
+    grid_i     = gridcells[1],
+    df         = df[df$grid == gridcells[1], ],
+    metadata   = metadata,
+    distn      = distn,
+    two_tailed = two_tailed,
+    hfunc      = hfunc,
+    hfunc_args = hfunc_args
+  ))
+  log_info(paste0(
+    "Single gridcell took ", round(t["elapsed"], 2), "s. ",
+    "Estimated total: ", round(t["elapsed"] * length(gridcells) / ncores / 60, 1), " min"
+  ))
+  # END DEBUGGING: time a single gridcell
   rm(df)
 
   # Save metadata to file
