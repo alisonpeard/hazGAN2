@@ -52,7 +52,7 @@ events_field1 <- marginal_transformer(
   daily, metadata, fields[1],
   hfunc = hfuncs[[1]], hfunc_args = hfunc_args[[1]],
   distn = distns[[1]], two_tailed = two_tailed[[1]],
-  log_file = log_file, log_level = log_level
+  logfile = log_file, loglevel = log_level
 )
 log_info(paste0("Finished fitting: ", fields[1]))
 
@@ -61,7 +61,7 @@ events_field2 <- marginal_transformer(
   daily, metadata, fields[2],
   hfunc = hfuncs[[2]], hfunc_args = hfunc_args[[2]],
   distn = distns[[2]], two_tailed = two_tailed[[2]],
-  log_file = log_file, log_level = log_level
+  logfile = log_file, loglevel = log_level
 )
 log_info(paste0("Finished fitting: ", fields[2]))
 
@@ -70,7 +70,7 @@ events_field3 <- marginal_transformer(
   daily, metadata, fields[3],
   hfunc = hfuncs[[3]], hfunc_args = hfunc_args[[3]],
   distn = distns[[3]], two_tailed = two_tailed[[3]],
-  log_file = log_file, log_level = log_level
+  logfile = log_file, loglevel = log_level
 )
 log_info(paste0("fit_marginals.R - Finished fitting: ", fields[3]))
 log_success("fit_marginals.R - Done. Putting it all together...")
