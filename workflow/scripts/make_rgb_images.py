@@ -53,6 +53,7 @@ def main(input, output, params):
     os.makedirs(output.outdir, exist_ok=True)
     
     nimgs = ds.time.size
+    x = ds.anomaly.values
     u = ds.uniform.values
 
     if not ((u.max() < 1.) and (u.min() > 0.)):
@@ -68,11 +69,14 @@ def main(input, output, params):
 
     logging.info(f"Using {params.domain} with min {ymin} and max {ymax}")
     assert ymin < y.min() < y.max() < ymax, \
-        f"Data outside expected range. Check rpmax/domain.\n" \
+        f"Data outside expected range.\n" \
         f"Data range: {y.min():.4f} - {y.max():.4f}.\n" \
         f"Expected range: {ymin:.4f} - {ymax:.4f}.\n" \
         f"Current rpmax: {params.rpmax:,.0f}.\n" \
-        f"Uniform range: {u.min()} - {u.max()}. " 
+        f"Uniform range: {u.min():.4f} - {u.max():.4f}.\n" \
+        f"Max u value at index {np.unravel_index(u.argmax(), u.shape)} " \
+        f"with x value {x[np.unravel_index(u.argmax(), u.shape)]}."
+        
     
     y_scaled = (y - ymin) / (ymax - ymin)
     logging.info("Range: {} - {}".format(y_scaled.min(), y_scaled.max()))
