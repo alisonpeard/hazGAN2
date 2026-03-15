@@ -39,7 +39,7 @@ rule resample_year:
         Path("..") / "scripts" / "resample_data.py"
 
 
-rule concatenate_data:
+rule concatenate_resampled:
     """Concatenate all the years into a single netcdf file."""
     input:
         netcdfs=expand(
