@@ -1,18 +1,39 @@
 # %%
-import pandas as pd
+from pathlib import Path
+import glob as glob
+import xarray as xr
 
-path = "/Users/alison/Documents/dphil/data/ecmwf/storm-tracks/storm_track-hodges-raw-194001_202511-all-v1_0.csv"
+input_data = "/Users/alison/Documents/dphil/data/hazGAN2/projects/poweruk_winter/results/training/data.nc"
 
-df = pd.read_csv(path)
-df["fg10"].plot.hist(bins=100)
+ds = xr.open_dataset(input_data)
+ds.uniform.shape
+nimgs = ds.time.size
+u = ds.uniform.values
+# %%
+print(u.max() < 1.)
+print(u.min() > 0.)
+# %%
+
+import sys
+sys.path.append("workflow")
+import src.python.statistics as stats
+import matplotlib.pyplot as plt
+
+domain = "laplace"
+ppf = getattr(stats, domain)
 
 # %%
-path = "/Users/alison/Local/github/hazGAN2/projects/poweruk_winter/resources/cyclones_midlands.csv"
-
-df = pd.read_csv(path)
-df["wind"][df["wind"]>0].plot.hist(bins=100)
-
-
+y = ppf(u)
 # %%
+
+plt.hist(y.flatten(), bins=100)
+# %%
+rp_max = 1e6
+# %%
+ymin = ppf(1 / rp_max)
+ymax = ppf(1 - 1 / rp_max)
+print(ymin, ymax)
+# %%
+y_scaled = (y - ymin) / (ymax - ymin)
 
 # %%
