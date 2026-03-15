@@ -15,6 +15,7 @@ event footprints for training GAN.
 """
 from pathlib import Path
 
+
 rule resample_year:
     """Resample the data to the desired resolution.
     >>> snakemake --profile profiles/cluster/ projects/poweruk/results/processing/resampled/2017.nc

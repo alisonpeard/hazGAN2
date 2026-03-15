@@ -7,9 +7,9 @@ from pathlib import Path
 configfile: "config.yaml"
 
 PROJECT  = config["project"]
-DEVICE   = config["device"]
-LOCATION = config["location"]
-INDIR    = config['setup'][DEVICE]['input']
+OS       = config["os"]
+LOC      = config["loc"]
+INDIR    = config['paths'][LOC]['input']
 WD       = Path(config["projdir"]) / PROJECT
 
 assert WD.exists(), f"Project directory {WD} does not exist."
@@ -34,10 +34,10 @@ for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR, TMPDIR]:
         f.write("*")
 
 # choose device-specific conda environments
-GEOENV  = config['setup'][DEVICE]['geoenv']
-RENV    = config['setup'][DEVICE]['renv']
-GPUENV  = config['setup'][DEVICE]['gpuenv']
-RSUBDIR = config['setup'][DEVICE]['rsubdir']
+GEOENV  = config['envs'][OS]['geoenv']
+RENV    = config['envs'][OS]['renv']
+GPUENV  = config['envs'][OS]['gpuenv']
+RSUBDIR = config['envs'][OS]['rsubdir']
 
 # load project-specific configuration
 configfile: WD / "config.yaml"
@@ -56,7 +56,6 @@ SFUNC      = config["sfunc"]
 MTHRESH    = config["marginal_threshold"]
 YEARS      = list(range(YEAR0, YEARN))
 KIMG       = config["kimg"]
-TIMECOL    = config['setup'][DEVICE]["timecol"]
 RFUNCS     = config["rfuncs_dir"]
 RFUNCS     = WD / RFUNCS if RFUNCS else None
 
@@ -64,15 +63,15 @@ RFUNCS     = WD / RFUNCS if RFUNCS else None
 EXCLUDE = config.get("exclude", None)
 
 # load different rules depending on location
-if LOCATION == "ouce":
+if LOC == "ouce":
     # get data from OUCE storage
     include: "rules/get_data.smk"
 
-if LOCATION in ["local", "ouce"]:
+if LOC in ["local", "ouce"]:
     include: "rules/process_data.smk"
     include: "rules/process_output.smk"
     include: "rules/plot.smk"
 
-if LOCATION == "arc":
+if LOC == "arc":
     # only use ARC for training and generation
     include: "rules/stylegan.smk"

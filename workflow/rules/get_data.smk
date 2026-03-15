@@ -30,7 +30,6 @@ rule get_year:
         xmax=config["longitude"]["max"],
         ymin=config["latitude"]["min"],
         ymax=config["latitude"]["max"],
-        timecol=TIMECOL,
         fields=FIELDS,
         dataset=DATASET,
         antecedent_buffer_days=config.get("antecedent_buffer_days", None),
@@ -49,7 +48,7 @@ rule get_all_years:
     """
     Process all input years of input data for the project.
 
-    >>> snakemake --profile profiles/slurm/ --executor slurm get_all_years --use-conda --jobs 40
+    >>> snakemake --profile profiles/slurm --executor slurm get_all_years --use-conda --jobs 40
     """
     input:
         expand(
