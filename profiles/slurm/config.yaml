@@ -1,4 +1,4 @@
-config: ["device=cluster", "location=ouce"]
+config: ["os=linux", "loc=ouce"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
