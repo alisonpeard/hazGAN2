@@ -13,16 +13,16 @@ event footprints for training GAN.
 >>> snakemake --profile profiles/cluster/ --use-conda process_all_data
 >>> snakemake --profile profiles/slurm/ --executor slurm --use-conda process_all_data
 """
-
+from pathlib import Path
 
 rule resample_year:
     """Resample the data to the desired resolution.
     >>> snakemake --profile profiles/cluster/ projects/poweruk/results/processing/resampled/2017.nc
     """
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
+        netcdf=PROCESSING_DIR / "input" / "{year}.nc"
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled", "{year}.nc")
+        netcdf=PROCESSING_DIR / "resampled" / "{year}.nc"
     params:
         year="{year}",
         resx=RESOLUTION['lon'],
@@ -33,20 +33,20 @@ rule resample_year:
     resources:
         cpus_per_task=4
     log:
-        file=os.path.join("logs", "resample", "{year}.log")
+        file=Path("logs") / "resample" / "{year}.log"
     script:
-        os.path.join("..", "scripts", "resample_data.py")
+        Path("..") / "scripts" / "resample_data.py"
 
 
 rule concatenate_data:
     """Concatenate all the years into a single netcdf file."""
     input:
         netcdfs=expand(
-            os.path.join(PROCESSING_DIR, "resampled", "{year}.nc"),
+            PROCESSING_DIR / "resampled" / "{year}.nc",
             year=YEARS
         )
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled_all.nc")
+        netcdf=PROCESSING_DIR / "resampled_all.nc"
     params:
         exclude=EXCLUDE
     resources:
@@ -54,9 +54,9 @@ rule concatenate_data:
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "concatenate.log")
+        file=Path("logs") / "concatenate.log"
     script:
-        os.path.join("..", "scripts", "concatenate_data.py")
+        Path("..") / "scripts" / "concatenate_data.py"
 
 
 
@@ -75,11 +75,11 @@ rule extract_events:
     >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
-        netcdf=os.path.join(PROCESSING_DIR, "resampled_all.nc")
+        netcdf=PROCESSING_DIR / "resampled_all.nc"
     output:
-        medians=os.path.join(PROCESSING_DIR, "climatology.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "events_metadata.parquet"),
-        daily=os.path.join(PROCESSING_DIR, "event_cubes.parquet")
+        medians=PROCESSING_DIR / "climatology.parquet",
+        metadata=PROCESSING_DIR / "events_metadata.parquet",
+        daily=PROCESSING_DIR / "event_cubes.parquet"
     params:
         resx=RESOLUTION['lon'],
         resy=RESOLUTION['lat'],
@@ -96,9 +96,9 @@ rule extract_events:
     conda:
         RENV
     log:
-        file=os.path.join("logs", "extract_events.log")
+        file=Path("logs") / "extract_events.log"
     script:
-        os.path.join("..", "scripts", "extract_events.R")
+        Path("..") / "scripts" / "extract_events.R"
 
 
 rule fit_marginals:
@@ -109,20 +109,20 @@ rule fit_marginals:
     >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
-        daily=os.path.join(PROCESSING_DIR, "event_cubes.parquet")
+        metadata=PROCESSING_DIR / "event_metadata.parquet",
+        daily=PROCESSING_DIR / "event_cubes.parquet"
     output:
-        events=os.path.join(PROCESSING_DIR, "event_footprints.parquet")
+        events=PROCESSING_DIR / "event_footprints.parquet"
     params:
         fields=FIELDS,
         R_funcs=RFUNCS
     conda:
         RENV
     log:
-        file="logs/fit_marginals.log",
+        file=Path("logs") / "fit_marginals.log",
         level="DEBUG"
     script:
-        os.path.join("..", "scripts", "fit_marginals.R")
+        Path("..") / "scripts" / "fit_marginals.R"
 
 
 
@@ -132,20 +132,20 @@ rule make_training_data:
     >>> snakemake --profile profiles/slurm make_training_data
     """
     input:
-        events=os.path.join(PROCESSING_DIR, "event_footprints.parquet"),
-        metadata=os.path.join(PROCESSING_DIR, "event_metadata.parquet"),
-        medians=os.path.join(PROCESSING_DIR, "climatology.parquet")
+        events=PROCESSING_DIR / "event_footprints.parquet",
+        metadata=PROCESSING_DIR / "event_metadata.parquet",
+        medians=PROCESSING_DIR / "climatology.parquet"
     output:
-        data=os.path.join(TRAINING_DIR, "data.nc")
+        data=PROCESSING_DIR / "data.nc"
     params:
         fields=FIELDS,
         domain=config["domain"]
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "make_training.log")
+        file=Path("logs") / "make_training.log"
     script:
-        os.path.join("..", "scripts", "make_training.py")
+        Path("..") / "scripts" / "make_training.py"
 
 
 checkpoint make_rgb_images:
@@ -154,27 +154,27 @@ checkpoint make_rgb_images:
     >>> snakemake --profile profiles/slurm make_rgb_images
     """
     input:
-        data=os.path.join(TRAINING_DIR, "data.nc")
+        data=PROCESSING_DIR / "data.nc"
     output:
-        outdir=directory(os.path.join(TRAINING_DIR, "rgb")),
-        zipfile=os.path.join(TRAINING_DIR, "images.zip"),
-        image_stats=os.path.join(TRAINING_DIR, "image_stats.npz")
+        outdir=directory(Path(TRAINING_DIR) / "rgb"),
+        zipfile=Path(TRAINING_DIR) / "images.zip",
+        image_stats=Path(TRAINING_DIR) / "image_stats.npz"
     params:
         subset=config['event_subset'],
-        rp_max=1000,
-        eps = 1e-6,
-        domain = config["domain"],
-        resx = RESOLUTION['lon'],
-        resy = RESOLUTION['lat'],
+        rpmax=1e6,
+        eps=1e-6,
+        domain=config["domain"],
+        resx=RESOLUTION['lon'],
+        resy=RESOLUTION['lat'],
     conda:
         GEOENV
     log:
-        file=os.path.join("logs", "make_rgb.log")
+        file=Path("logs") / "make_rgb.log"
     script:
-        os.path.join("..", "scripts", "make_rgb_images.py")
+        Path("..") / "scripts" / "make_rgb_images.py"
 
 
 rule process_all_data:
     """Complete full data processing sequence."""
     input:
-        os.path.join(TRAINING_DIR, "images.zip")
+        Path(TRAINING_DIR) / "images.zip"

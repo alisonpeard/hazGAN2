@@ -12,44 +12,32 @@ setup:
       imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
     geoenv: '../environments/apple-silicon/geo.yaml'
     renv: "../environments/apple-silicon/r.yaml"
-    datadir: "/Users/alison/Local/data/hazGAN2"
+    projdir: "/Users/alison/Documents/dphil/data/hazGAN2/projects"
     gpuenv: ""
     rsubdir: "osx-64"
     timecol: "time"
     metadata:
       description: "Analysis on Apple Silicon M2"
-  imac:
-    input:
-      era5: "/Users/alison/Documents/DPhil/data/era5"
-      imdaa: "/Users/alison/Documents/DPhil/data/imdaa"
-    geoenv: '../environments/apple-silicon/geo.yaml'
-    renv: "../environments/apple-silicon/r.yaml"
-    datadir: "/Users/alison/Local/data/hazGAN2"
-    gpuenv: ""
-    rsubdir: "osx-64"
-    timecol: "time"
-    metadata:
-      description: "Analysis on Apple Silicon M1"
-  cluster:
+  ouce-node:
     input:
       era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
       imdaa: "/soge-home/data/analysis/imdaa/"
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
-    datadir: "/soge-home/projects/mistral/alison/data/hazGAN2"
+    projdir: "/soge-home/users/spet5107/code/hazGAN2/projects/"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: 'valid_time'
     metadata:
       institution: "Oxford School of Geography and the Environment"
       description: "Analysis on departmental cluster"
-  slurm:
+  ouce-slurm:
     input:
       era5: "/soge-home/data/analysis/era5/0.28125x0.28125/hourly/"
       imdaa: "/soge-home/data/analysis/imdaa/"
     geoenv: '../environments/linux/geo.yaml'
     renv: "../environments/linux/r.yaml"
-    datadir: "/soge-home/projects/mistral/alison/data/hazGAN2"
+    projdir: "/soge-home/users/spet5107/code/hazGAN2/projects/"
     gpuenv: '../environments/linux/stylegan.yaml'
     rsubdir: "linux-64"
     timecol: "valid_time"

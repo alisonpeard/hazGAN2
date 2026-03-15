@@ -2,37 +2,35 @@ import os
 import yaml
 import glob
 import sys
+from pathlib import Path
 
-# load device configuration
 configfile: "config.yaml"
-PROJECT = config["project"]
-DEVICE  = config["device"]
+
+PROJECT  = config["project"]
+DEVICE   = config["device"]
 LOCATION = config["location"]
-INDIR   = config['setup'][DEVICE]['input']
-WD      = os.path.join("projects", PROJECT)
+INDIR    = config['setup'][DEVICE]['input']
+WD       = Path(config["projdir"]) / PROJECT
 
-# assert project directory exists
-assert os.path.exists(WD), f"Project directory {WD} does not exist."
-
-# set up project environment
+assert WD.exists(), f"Project directory {WD} does not exist."
 os.environ["SNAKEMAKE_PROJECT"] = PROJECT
 
 # set up directories on device
-RESULTS_DIR    = os.path.join(WD, "results")
-RESOURCES_DIR  = os.path.join(WD, "resources")
-PROCESSING_DIR = os.path.join(RESULTS_DIR, "processing")
-TRAINING_DIR   = os.path.join(RESULTS_DIR, "training")
-GENERATED_DIR  = os.path.join(RESULTS_DIR, "generated")
-FIGURE_DIR     = os.path.join(RESULTS_DIR, "figures")
-TMPDIR         = os.path.join(RESULTS_DIR, "tmp")
+RESULTS_DIR    = WD / "results"
+RESOURCES_DIR  = WD / "resources"
+PROCESSING_DIR = RESULTS_DIR / "processing"
+TRAINING_DIR   = RESULTS_DIR / "training"
+GENERATED_DIR  = RESULTS_DIR / "generated"
+FIGURE_DIR     = RESULTS_DIR / "figures"
+TMPDIR         = RESULTS_DIR / "tmp"
 
-# make parent directories
-os.makedirs(RESULTS_DIR, exist_ok=True)
+
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # make subdirectories (with .gitignore)
 for newdir in [PROCESSING_DIR, TRAINING_DIR, GENERATED_DIR, FIGURE_DIR, TMPDIR]:
-    os.makedirs(newdir, exist_ok=True)
-    with open(os.path.join(newdir, ".gitignore"), "w") as f:
+    newdir.mkdir(parents=True, exist_ok=True)
+    with open(newdir / ".gitignore", "w") as f:
         f.write("*")
 
 # choose device-specific conda environments
@@ -42,7 +40,7 @@ GPUENV  = config['setup'][DEVICE]['gpuenv']
 RSUBDIR = config['setup'][DEVICE]['rsubdir']
 
 # load project-specific configuration
-configfile: f"{WD}/config.yaml"
+configfile: WD / "config.yaml"
 
 DATASET    = config["dataset"]
 INDIR      = INDIR[DATASET]
@@ -60,13 +58,14 @@ YEARS      = list(range(YEAR0, YEARN))
 KIMG       = config["kimg"]
 TIMECOL    = config['setup'][DEVICE]["timecol"]
 RFUNCS     = config["rfuncs_dir"]
-RFUNCS     = os.path.join(WD, RFUNCS) if RFUNCS else None
+RFUNCS     = WD / RFUNCS if RFUNCS else None
 
 # load the dates to select / exclude
 EXCLUDE = config.get("exclude", None)
 
-# load rules (this is spread over devices atm)
-if LOCATION == "ouce": # get data from OUCE storage
+# load different rules depending on location
+if LOCATION == "ouce":
+    # get data from OUCE storage
     include: "rules/get_data.smk"
 
 if LOCATION in ["local", "ouce"]:
@@ -74,5 +73,6 @@ if LOCATION in ["local", "ouce"]:
     include: "rules/process_output.smk"
     include: "rules/plot.smk"
 
-if LOCATION == "arc": # had to add this due to issues with OUCE GPUs
+if LOCATION == "arc":
+    # only use ARC for training and generation
     include: "rules/stylegan.smk"
