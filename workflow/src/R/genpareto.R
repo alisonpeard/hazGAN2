@@ -1,5 +1,6 @@
 # Threshold selection EQD method
 # GPD nll + penalty terms => strict CDF(x) < 1
+# NB: Hardcoded to avoid negative shape params
 # doi:10.1080/00401706.2024.2421744
 
 suppressPackageStartupMessages({
@@ -36,7 +37,9 @@ nll_genpareto <- function(params, x, max_x) {
 }
 
 
-fit_genpareto <- function(x) {
+fit_genpareto <- function(
+  x, lower = c(1e-6, -0.9), upper = c(Inf, 0.9)
+) {
   init_scale <- mean(x)
   init_shape <- 0.1
 
@@ -46,8 +49,8 @@ fit_genpareto <- function(x) {
       nll_genpareto,
       x = x,
       method = "L-BFGS-B",
-      lower = c(1e-6, -0.9),
-      upper = c(Inf, 0.9),
+      lower = lower,
+      upper = upper,
       max_x = max(x)
     )
   },
@@ -83,12 +86,16 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
     numaboves[i] <- length(excess)
 
     if (numaboves[i] > 20) {
-      fit0 <- fit_genpareto(excess)
+      fit0 <- fit_genpareto(excess, lower = c(1e-6, 1e-6))
       if (is.null(fit0)) next
       scales[i] <- fit0$param[1]
       shapes[i] <- fit0$param[2]
 
-      par_init <- if (shapes[i] < 0) c(mean(excess), 0.1) else c(scales[i], shapes[i])
+      par_init <- if (shapes[i] < 0) {
+        c(mean(excess), 0.1) 
+      } else {
+        c(scales[i], shapes[i])
+      }
 
       # bootstrap
       dists <- vapply(seq_len(nboot), function(b) {
@@ -100,7 +107,7 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
           nll_genpareto,
           x = xb,
           method = "L-BFGS-B",
-          lower = c(1e-6, -0.9),
+          lower = c(1e-6, 1e-6),
           upper = c(Inf, 0.9),
           max_x = max_xb
         )
@@ -130,10 +137,6 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
     scale      = scale,
     shape      = shape,
     numabove   = numabove
-    # diagnostic = list(
-    #   meandist = meandists[i_best],
-    #   sddist   = sddists[i_best]
-    # )
   )
 }
 
