@@ -1,10 +1,10 @@
 dataset: era5
-year0: 2004
-yearn: 2019
-nyears: 50 # to simulate
-kimg: 900
-antecedent_buffer_days: 30
-longitude: # geographical boundaries (15.75° x 15.75°) (-10.875° to 4.875°) 
+year0: 1900
+yearn: 2000
+nyears: 100 # to simulate
+kimg: 300   # number of epochs * dataset size / 1000 for StyleGAN2
+antecedent_buffer_days: 30 # if using antecedent accumulations of predictions
+longitude:
   min: -10.875
   max: 5.125
 latitude:
@@ -14,61 +14,61 @@ exclude:
 resolution:
   lon: 64
   lat: 64
-sfunc: winter # or [spring, summer, autumn, winter, additive]
+sfunc: additive # [spring, summer, autumn, winter, additive]
 rfunc:
   args:
   func: dummy
   desc: using custom func defined in src/funcs.R
 rfuncs_dir: src/funcs.R
-event_subset:
+event_subset: # filter events according to func + threshold
   do: False
-  args: [u10, v10]
+  args: [u10_gust, v10_gust]
   func: l2norm_max
-  value: 25
+  value: 20
 marginal_threshold: 0.95
-domain: laplace
-fields:
-  u10:
+domain: gumbel # final data transform before training
+fields: #how to construct fields for multi-hazard footprints
+  u10_gust:
     init:
-      func: identity
-      args: [u10]
+      func: scale_to_gust
+      args: [u10, v10, i10fg]
     hfunc:
       func: l2norm_argmax
-      args: [u10, v10]
+      args: [u10_gust, v10_gust]
     resample:
       func: max
     obj: max
-    distn: weibull
+    distn: genpareto
     two_tailed: True
-    title: "Maximum eastward component of 10 m wind"
+    title: "Maximum eastward component of 10 m wind (scaled to gust)"
     units: "m/s"
     cmap: "cmocean.cm.speed"
-  v10:
+  v10_gust:
     init:
-      func: identity
-      args: [v10]
+      func: scale_to_gust
+      args: [v10, u10, i10fg]
     hfunc:
       func: l2norm_argmax
-      args: [v10, u10]
+      args: [v10_gust, u10_gust]
     resample:
       func: max
     obj: max
-    distn: weibull
+    distn: genpareto
     two_tailed: True
-    title: "Maximum northward component of 10 m wind"
+    title: "Maximum northward component of 10 m wind (scaled to gust)"
     units: "m/s"
-    cmap: "cmocean.cm.speed"
+    cmap: "Spectral_r"
   r30:
     init:
       func: sum_30_days
       args: [tp]
     hfunc:
-      func: mean
+      func: first
       args: [r30]
     resample:
       func: average
     obj: max
-    distn: genpareto # exponential (not implemented yet)
+    distn: genpareto
     two_tailed: False
     title: "30-day antecedant rainfall"
     units: "m"

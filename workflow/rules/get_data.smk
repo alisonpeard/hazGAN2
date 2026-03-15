@@ -3,11 +3,12 @@ Get ERA5 data from the SoGE cluster. Run rules from repository root.
 """
 def get_param_file():
     """Get a parameter file for the project, or a grid file for the dataset."""
-    if os.path.exists(os.path.join(RESOURCES_DIR, "params.nc")):
-        return os.path.join(RESOURCES_DIR, "params.nc")
+    param_file = RESOURCES_DIR / "params.nc"
+    if param_file.exists():
+        return param_file
     else:
         raise FileNotFoundError(
-            f"Parameter file not found in {RESOURCES_DIR}. "
+            f"Parameter file not found in {str(RESOURCES_DIR)}. "
             "Please create the file first. This can be empty if no paramaters are needed."
         )
 
@@ -22,7 +23,7 @@ rule get_year:
         indir=INDIR,
         params=get_param_file()
     output:
-        netcdf=os.path.join(PROCESSING_DIR, "input", "{year}.nc")
+        netcdf=PROCESSING_DIR / "input" / "{year}.nc"
     params:
         year="{year}",
         xmin=config["longitude"]["min"],
@@ -36,13 +37,12 @@ rule get_year:
         tmpdir=TMPDIR
     resources:
         cpus_per_task=4,
-        # slurm_extra="--output=sbatch_dump/get_%A_%a.out --error=sbatch_dump/get_%A_%a.err" 
     conda:
         GEOENV
     log:
-        file="logs/get/{year}.log"
+        file=Path("logs") / "get" / "{year}.log"
     script:
-        "../scripts/get_data.py"
+        Path("..") / "scripts" / "get_data.py"
 
 
 rule get_all_years:
@@ -53,6 +53,6 @@ rule get_all_years:
     """
     input:
         expand(
-            os.path.join(PROCESSING_DIR, "input", "{year}.nc"),
+            PROCESSING_DIR / "input" / "{year}.nc",
             year=YEARS
         )
