@@ -9,7 +9,8 @@ def get_param_file():
     else:
         raise FileNotFoundError(
             f"Parameter file not found in {str(RESOURCES_DIR)}. "
-            "Please create the file first. This can be empty if no paramaters are needed."
+            "Please create the file first. "
+            "This can be empty if no parameters are needed."
         )
 
 
@@ -17,7 +18,7 @@ rule get_year:
     """
     >>> snakemake --profile profiles/slurm/ --executor slurm --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
     >>> snakemake --profile profiles/cluster --jobs 1 projects/bayofbengal_era5/results/processing/input/2020.nc
-    >>> snakemake --profile profiles/cluster --jobs 1 projects/poweruk_winter/results/processing/input/2005.nc
+    >>> snakemake --profile profiles/cluster --jobs 1 /soge-home/users/spet5107/code/hazGAN2/projects/poweruk_winter/results/processing/input/2005.nc -n
     """
     input:
         indir=INDIR,
