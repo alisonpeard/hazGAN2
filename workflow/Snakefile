@@ -10,7 +10,7 @@ PROJECT  = config["project"]
 OS       = config["os"]
 LOC      = config["loc"]
 INDIR    = config['paths'][LOC]['input']
-WD       = Path(config["projdir"]) / PROJECT
+WD       = Path(config['paths'][LOC]["projdir"]) / PROJECT
 
 assert WD.exists(), f"Project directory {WD} does not exist."
 os.environ["SNAKEMAKE_PROJECT"] = PROJECT
