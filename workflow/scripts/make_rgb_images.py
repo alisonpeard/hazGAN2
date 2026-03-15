@@ -69,9 +69,10 @@ def main(input, output, params):
     logging.info(f"Using {params.domain} with min {ymin} and max {ymax}")
     assert ymin < y.min() < y.max() < ymax, \
         f"Data outside expected range. Check rpmax/domain." \
-        f"Data range: {y.min()}--{y.max()}" \
-        f"Expected range: {ymin}--{ymax}" \
-        f"Current rpmax: {params.rpmax}"
+        f"Data range: {y.min()} - {y.max()}. " \
+        f"Expected range: {ymin} - {ymax}. " \
+        f"Current rpmax: {params.rpmax:,f}. " \
+        f"Uniform range: {u.min()} - {u.max()}. " 
     
     y_scaled = (y - ymin) / (ymax - ymin)
     logging.info("Range: {}--{}".format(y_scaled.min(), y_scaled.max()))
