@@ -15,7 +15,6 @@ workflow.svg
 .snakemake/
 conda/
 roughwork.py
-rw.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -66,13 +66,14 @@ def main(input, output, params):
             engine='cfgrib',
             preprocess=preprocess,
             combine="nested",
+            concat_dim="valid_time",
             parallel=True,
             chunks="auto",
             backend_kwargs={
                 'time_dims': ('valid_time',),
                 'indexpath': ''
             }
-            ).rename({'valid_time': 'time'})
+        ).rename({'valid_time': 'time'})
     
     logging.info("Computing data variables...")
     log_data_summary(data)
