@@ -23,12 +23,11 @@ def get_input_file_pattern(indir, field):
 def filter_files(files, year, antecedent_buffer_days=None):
     """Filter the files for the given year."""
     files_year = [f for f in files if str(year) in f]
-
     if antecedent_buffer_days:
         nyears = 1 + (antecedent_buffer_days // 365)
         for dyear in range(1, nyears + 1):
             antecedent_files = [f for f in files if str(eval(year) - dyear) in f]
-        files_year.extend(antecedent_files)
+            files_year.extend(antecedent_files)
 
     return files_year
 
