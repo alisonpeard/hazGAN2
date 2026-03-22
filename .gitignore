@@ -13,6 +13,7 @@ sbatch_dump/
 workflow.svg
 .snakemake/
 conda/
+rw.py # for roughwork
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
