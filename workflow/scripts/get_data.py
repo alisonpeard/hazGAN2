@@ -51,7 +51,10 @@ def main(input, output, params):
         logging.debug(f"Input file {i}: {file}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+        counter = [0]
         def preprocess(ds, params=params):
+            counter[0] += 1
+            logging.info(f"Preprocessing file {counter[0]} of {len(input_files)}")
             # convert lon from 0-360 to -180 to 180
             if 'longitude' in ds.coords and ds.longitude.max() > 180:
                 ds.coords['longitude'] = ((ds.coords['longitude']+180)%360-180)
@@ -67,7 +70,7 @@ def main(input, output, params):
             preprocess=preprocess,
             combine="nested",
             concat_dim="valid_time",
-            parallel=True,
+            parallel=False,
             chunks="auto",
             backend_kwargs={
                 'time_dims': ('valid_time',),

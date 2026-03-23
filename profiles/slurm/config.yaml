@@ -17,8 +17,6 @@ default-resources:
 
 # # here only rules, which require different (more) resources:
 set-resources:
-    get_year:
-        mem: "32G"
     extract_events:
         cpus_per_task: 32
         runtime: "2h"
