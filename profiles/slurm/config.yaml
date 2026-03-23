@@ -17,11 +17,13 @@ default-resources:
 
 # # here only rules, which require different (more) resources:
 set-resources:
+    get_year:
+      mem: "16G"
     extract_events:
         cpus_per_task: 32
         runtime: "2h"
     fit_marginals:
-        slurm_partition: "Long"
+        slurm_partition: "Short"
         cpus_per_task: 20
         mem: "20G"
         runtime: "3h"
