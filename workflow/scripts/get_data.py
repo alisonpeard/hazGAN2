@@ -146,7 +146,7 @@ def main(input, output, params):
 
     # save data to netcdf
     logging.info(f"Saving data to {output.netcdf}\n")
-    data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+    data_resampled.to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
     logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
 
     data.close()
