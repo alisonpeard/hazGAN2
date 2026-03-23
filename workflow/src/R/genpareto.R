@@ -86,7 +86,7 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
     numaboves[i] <- length(excess)
 
     if (numaboves[i] > 20) {
-      fit0 <- fit_genpareto(excess, lower = c(1e-6, 1e-6))
+      fit0 <- fit_genpareto(excess, lower = c(1e-6, -0.9))
       if (is.null(fit0)) next
       scales[i] <- fit0$param[1]
       shapes[i] <- fit0$param[2]
@@ -107,7 +107,7 @@ eqd_genpareto <- function(x, thresh, nboot = 100, m = 100) {
           nll_genpareto,
           x = xb,
           method = "L-BFGS-B",
-          lower = c(1e-6, 1e-6),
+          lower = c(1e-6, -0.9),
           upper = c(Inf, 0.9),
           max_x = max_xb
         )
