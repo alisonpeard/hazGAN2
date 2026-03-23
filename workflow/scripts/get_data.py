@@ -35,20 +35,19 @@ def main(input, output, params):
     start = time.time()
     dataset = getattr(datasets, params.dataset)
 
-    input_files = set()
+    input_files = dict()
     for field, field_meta in params.fields.items():
-        args = field_meta["init"]["args"]
-        for arg in args:
-            input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
-            arg_files = glob(input_file_pattern)
-            arg_files = dataset.filter_files(
-                arg_files, params.year,
-                antecedent_buffer_days=params.antecedent_buffer_days
-            )
-            input_files.update(arg_files)
+        for arg in field_meta["init"]["args"]:
+            if arg not in input_files:
+                input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
+                arg_files = glob(input_file_pattern)
+                arg_files = dataset.filter_files(
+                    arg_files, params.year,
+                    antecedent_buffer_days=params.antecedent_buffer_days
+                )
+                input_files[arg] = arg_files
 
-    for i, file in enumerate(input_files):
-        logging.debug(f"Input file {i}: {file}")
+    logging.debug(f"Input file {-1}: {input_files[arg][-1]}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
         counter = [0]
@@ -62,24 +61,28 @@ def main(input, output, params):
             ds = ds.sel(latitude=slice(params.ymax, params.ymin), longitude=slice(params.xmin, params.xmax))
             return ds
         
-        logging.info("Loading mfdataset")
+        ds_list = []
+        for arg, arg_files in input_files.items():
+            logging.info(f"Loading mfdataset for {arg}")
+            ds = xr.open_mfdataset(
+                arg_files,
+                engine='cfgrib',
+                preprocess=preprocess,
+                combine="nested",
+                concat_dim="valid_time",
+                parallel=False,
+                chunks="auto",
+                backend_kwargs={
+                    'time_dims': ('valid_time',),
+                    'indexpath': ''
+                }
+            )
+            ds_list.append(ds)
         
-        data = xr.open_mfdataset(
-            input_files,
-            engine='cfgrib',
-            preprocess=preprocess,
-            combine="nested",
-            concat_dim="valid_time",
-            parallel=False,
-            chunks="auto",
-            backend_kwargs={
-                'time_dims': ('valid_time',),
-                'indexpath': ''
-            }
-        ).rename({'valid_time': 'time'})
-    
-    logging.info("Computing data variables...")
+    data = xr.merge(ds_list).rename({'valid_time': 'time'})
     log_data_summary(data)
+
+    logging.info("Computing data variables...")
 
     if params.antecedent_buffer_days:
         t0 = data["time"].min().data
