@@ -43,47 +43,46 @@ SFUNC        <- snakemake@params[["sfunc"]]
 FIELD_NAMES  <- names(FIELDS)
 
 # ====== 1.LOAD AND DESEASONALIZE DATA =========================================
-log_info("Loading data")
+log_info("loading data")
 src <- tidync(INPUT)
-daily  <- src |> hyper_tibble(force = TRUE)
-
-# negate any variables where minimum is of interest
-log_info("Negating any variables where minimum is of interest")
-daily <- daily[, c("lat", "lon", "time", FIELD_NAMES)]
-for (k in seq_along(FIELDS)) {
-  if (FIELDS[[k]]$obj == "min") {
-    daily[[FIELD_NAMES[k]]] <- (-1) * daily[[FIELD_NAMES[k]]]
-  }
-}
-
-# additional processing
-daily$time <- as.Date(daily$time)
-log_info(paste0("Dataframe rows: ", nrow(daily)))
-log_info(paste0("Dataframe columns: ", ncol(daily)))
-
-# remove seasonality (sfuncs)
-log_info("Removing seasonality")
-
-# faster (hopefully)
-lats <- unique(daily$lat)
-lons <- unique(daily$lon)
-
 params_list <- list()
+deseasonalized_all <- NULL
 
 # deseasonalize each field
 for (k in seq_along(FIELD_NAMES)) {
   field <- FIELD_NAMES[k]
-  log_info(paste0("Deseasonalizing field: ", field))
+  log_info(paste0("processing field: ", field))
+  daily  <- src |> hyper_tibble(select_var = field, force = TRUE)
+  log_info(paste0(
+    "loaded object size: ",
+    format(object.size(daily), units = "GB")
+  ))
 
+  daily <- daily[, c("lat", "lon", "time", field)]
+  if (FIELDS[[k]]$obj == "min") {
+    daily[field] <- (-1) * daily[field]
+  }
+  daily$time <- as.Date(daily$time)
+  lats <- unique(daily$lat)
+  lons <- unique(daily$lon)
+
+  log_info(paste0("deseasonalizing field: ", field))
   deseasonalized <- deseasonalize(daily, field, method = SFUNC)
+
   log_info("Finished deseasonalizing, assigning parameters")
-
-  daily <- deseasonalized$df |>
-    left_join(daily, by = c("lat", "lon", "time"), suffix = c("", "_seasonal")) |>
-    rename(!!field := !!sym(field))
-
   params_list[[k]] <- deseasonalized$params[, c("month", "lat", "lon", field)]
 
+  if (is.null(output)) {
+    deseasonalized_all <- deseasonalized$df
+  } else {
+    deseasonalized_all <- output |>
+      left_join(
+        deseasonalized$df[, c("lat", "lon", "time", field)],
+        by = c("lat", "lon", "time"),
+        suffix = c("", paste0("_", field))
+      )
+  }
+  rm(daily, deseasonalized); gc()
 }
 
 params <- Reduce(
@@ -91,15 +90,23 @@ params <- Reduce(
   params_list
 )
 
+log_info(paste0(
+  "Finished deseasonalizing. Saving ",
+  DAILY_OUT, " ..."
+))
+
+write_parquet(deseasonalized_all, DAILY_OUT)
+write_parquet(params, MEDIANS_OUT)
+
+stop("not finished debugging")
+
 # ====== 2.EXTRACT EVENTS ======================================================
 log_info("Extracting events")
 metadata <- identify_events(daily, RFUNC)
 
-# ====== 3.SAVE RESULTS ========================================================
 log_info(paste0(
   "Finished event extraction. Saving ",
-  METADATA_OUT, ", and ", DAILY_OUT, " ..."
+  METADATA_OUT, " ..."
 ))
+
 write_parquet(metadata, METADATA_OUT)
-write_parquet(params, MEDIANS_OUT)
-write_parquet(daily, DAILY_OUT)
