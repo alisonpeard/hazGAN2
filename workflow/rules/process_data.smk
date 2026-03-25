@@ -79,7 +79,7 @@ rule extract_events:
         netcdf=PROCESSING_DIR / "resampled_all.nc"
     output:
         medians=PROCESSING_DIR / "climatology.parquet",
-        metadata=PROCESSING_DIR / "events_metadata.parquet",
+        metadata=PROCESSING_DIR / "event_metadata.parquet",
         daily=PROCESSING_DIR / "event_cubes.parquet"
     params:
         resx=RESOLUTION['lon'],
@@ -111,7 +111,7 @@ rule fit_marginals:
     """
     input:
         metadata=PROCESSING_DIR / "event_metadata.parquet",
-        daily=PROCESSING_DIR / "event_cubes.parquet"
+        cubes=PROCESSING_DIR / "event_cubes.parquet"
     output:
         events=PROCESSING_DIR / "event_footprints.parquet"
     params:
