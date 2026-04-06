@@ -178,7 +178,6 @@ write_parquet(deseas, DAILY_OUT)
 write_parquet(params, MEDIANS_OUT)
 
 dbDisconnect(con)
-stop("not finished debugging")
 
 # ====== 2.EXTRACT EVENTS ======================================================
 log_info("Extracting events")
