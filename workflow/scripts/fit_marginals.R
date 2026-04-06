@@ -37,8 +37,6 @@ log_info(paste0("memory after metadata: ", gc()[[2, 2]], " MB"))
 log_info(paste0("cubes dims: ", nrow(cubes), " x ", ncol(cubes)))
 log_info(paste0("metadata dims: ", nrow(metadata), " x ", ncol(metadata)))
 
-stop("deliberate early exit")
-
 # get functions and args for resampling time dimension
 fields  <- names(FIELDS)
 distns  <- sapply(FIELDS, function(x) x$distn)
