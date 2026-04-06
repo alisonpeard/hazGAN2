@@ -76,7 +76,7 @@ rule extract_events:
     >>> snakemake --profile profiles/cluster projects/poweruk2/results/processing/events.parquet
     """
     input:
-        netcdf=PROCESSING_DIR / "resampled_all.nc"
+        netcdf=PROCESSING_DIR / "resampled_all.parquet"
     output:
         medians=PROCESSING_DIR / "climatology.parquet",
         metadata=PROCESSING_DIR / "event_metadata.parquet",
