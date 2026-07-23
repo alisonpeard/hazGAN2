@@ -312,10 +312,13 @@ marginal_transformer <- function(df, metadata, var,
   fields <- c("event", "variable", "time", "event.rp",
               "lat", "lon",
               "thresh_upper", "scale_upper", "shape_upper",
-              "p_upper", "pk_upper", "box.test.upper",
+              "p_upper", "box.test.upper",
               "thresh_lower", "scale_lower", "shape_lower",
-              "p_lower", "pk_lower", "box.test.lower",
+              "p_lower", "box.test.lower",
+              #"pk_upper", "pk_lower", 
               "ecdf", "scdf")
+
+  print(head(transformed))
 
   transformed <- transformed[, fields]
   return(transformed)
