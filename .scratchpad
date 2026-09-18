@@ -1,0 +1,10 @@
+git branch -m z/wip-gaussians z/gaussians
+git branch -m z/wip-latents z/latents
+git branch -m z/wip-rescaling z/rescaling
+git branch -m z/wip-ximis z/ximis
+
+
+
+  
+  
+  
