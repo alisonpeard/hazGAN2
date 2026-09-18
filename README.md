@@ -1,58 +1,22 @@
 [![Python](https://img.shields.io/badge/python-3.12.9-9cf.svg?style=flat)](https://snakemake.readthedocs.io) [![Snakemake](https://img.shields.io/badge/snakemake->=8.0.0-9cf.svg?style=flat)](https://snakemake.readthedocs.io) 
 
-> **👋 Get in touch:** This repository is actively being developed. If you're interested in using or contributing to this work, please open an issue or contact me at alison.peard@ouce.ox.ac.uk. Always happy to discuss!
-> 
 # HazGAN2
 
-This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate spatially coherent climate multi-hazard event sets using extreme value theory and generative adversarial networks. The workflow is modular to facilitate new applications. It depends on a [Pytorch implementation]((https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11)) of [StyleGAN2-ADA](https://arxiv.org/abs/2006.06676) with [differentiable augmentation](https://arxiv.org/abs/2006.10738) that provides stable training on small (~100 sample) datasets. 
+This repository contains a [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow to generate spatially coherent climate multi-hazard event sets using extreme value theory and generative adversarial networks. The workflow has been modular to facilitate new applications. It depends on a [Pytorch implementation]((https://github.com/NVlabs/stylegan2-ada-pytorch/issues/11)) of [StyleGAN2-ADA](https://arxiv.org/abs/2006.06676) with [differentiable augmentation](https://arxiv.org/abs/2006.10738), that provides stable training on small (~100 sample) datasets. 
 
-The workflow is described in [this manuscript](https://egusphere.copernicus.org/preprints/2025/egusphere-2025-3217/) and the rest of this README outlines basic usage.
+The workflow is described in [this paper](https://egusphere.copernicus.org/preprints/2025/egusphere-2025-3217/) and the rest of this README outlines basic usage.
 
 ## Branch management
 
 The git branches are organised as follows:
 
-- `main`: stable version
-- `development`:
+- **main**: stable version
+- **development**:
     - minor changes and bug fixes are added here first
     - feature branches are merged into here
     - periodically merge into `main` when stable
-- `wip/<newfeature>`: branches for new features with potentially breaking changes
+- **wip/\<newfeature\>**: branches for new features with potentially breaking changes
 
-###  Checkpoint tags
-
-Use tags to mark successful StyleGAN training runs, making it easy to return to working versions after breaking changes.
-
-Tag a successful run:
-```bash
-git tag -a success-<yyyy-mm-dd>
-```
-
-In the editor, document what worked and what didn't:
-```text
-Successful run: feature 1, feature 2
-
-Results:
-- result 1
-- result 2
-- ...
-```
-
-Push the tag:
-```bash
-git push origin success-<yyyy-mm-dd>
-```
-
-View tag details:
-```bash
-git show success-<yyyy-mm-dd>
-```
-
-To find all checkpoints:
-
-```bash
-git tag -l "successs-*"
-```
 
 ## Current status
 
@@ -103,7 +67,7 @@ snakemake --profile profiles/local -n
 This workflow is only for generating event sets. To keep it tidy, downstream analysis should be done externally with code in a `projects/<project>/analysis` directory. This includes:
 
 - Generating a `params.nc` file for the project
-- All extra analysis (in `<project>/analysis`)
+- All extra analysis (in scripts/Jupyter notebooks)
 
 ## Setup
 

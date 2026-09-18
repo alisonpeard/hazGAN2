@@ -26,3 +26,4 @@ dependencies:
   # the following packages are incompatible:
   - r-CFtime # r-base >= 4.0
   # - r::r-pot # r-base <= 3.6
+  - r-duckdb
