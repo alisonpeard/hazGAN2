@@ -1,4 +1,4 @@
-config: ["device=cluster", "location=arc"]
+config: ["os=linux", "loc=arc"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
@@ -9,7 +9,7 @@ slurm-logdir: sbatch_dump
 slurm-delete-logfiles-older-than: 1
 default-resources:
     slurm_partition: "short"
-    slurm_account: "ouce-opsis" # needed for ARC quota tracking
+    slurm_account: "ouce-opsis"
     mem: "16G"
     runtime: "4h"
 
@@ -23,13 +23,13 @@ set-resources:
         runtime: "4h"
     train_stylegan:
         slurm_partition: "short,interactive,medium"    
-        slurm_extra: "'--gres=gpu:v100:1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
+        slurm_extra: "'--gres=gpu:v100:1 --mail-type=END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 4
         mem: "24G"
         runtime: "6h"
     generate_stylegan:
         slurm_partition: "short,interactive,medium"
-        slurm_extra: "'--gres=gpu:v100:1 --mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
+        slurm_extra: "'--gres=gpu:v100:1 --mail-type=END,FAIL --mail-user=spet5107@ox.ac.uk'"
         cpus_per_task: 4
         mem: "24G"
         runtime: "2h"

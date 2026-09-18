@@ -4,6 +4,7 @@ Load gridded data from hourly netcdf files, resample to daily aggregates, and sa
 a single netcdf file in the target directory.
 """
 import os
+from pathlib import Path
 import numpy as np
 import sys
 from glob import glob
@@ -34,45 +35,54 @@ def main(input, output, params):
     start = time.time()
     dataset = getattr(datasets, params.dataset)
 
-    input_files = set()
+    input_files = dict()
     for field, field_meta in params.fields.items():
-        args = field_meta["init"]["args"]
-        for arg in args:
-            input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
-            arg_files = glob(input_file_pattern)
-            arg_files = dataset.filter_files(arg_files, params.year, antecedent_buffer_days=params.antecedent_buffer_days)
-            input_files.update(arg_files)
+        for arg in field_meta["init"]["args"]:
+            if arg not in input_files:
+                input_file_pattern = dataset.get_input_file_pattern(input.indir, arg)
+                arg_files = glob(input_file_pattern)
+                arg_files = dataset.filter_files(
+                    arg_files, params.year,
+                    antecedent_buffer_days=params.antecedent_buffer_days
+                )
+                input_files[arg] = arg_files
 
-    for i, file in enumerate(input_files):
-        logging.info(f"Input file {i}: {file}")
+    logging.debug(f"Input file {-1}: {input_files[arg][-1]}")
 
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+        counter = [0]
         def preprocess(ds, params=params):
-            """Rename time coordinate if necessary."""
-            if params.xmin < 0:
-                ds = funcs.convert_360_to_180(ds)
-            ds = dataset.clip_to_bbox(
-                ds, params.xmin, params.xmax, params.ymin, params.ymax
-            )
-            if params.timecol in ds.coords and params.timecol != "time":
-                ds = ds.rename({params.timecol: "time"})
-
-            ds = dataset.preprocess(ds)
-
+            counter[0] += 1
+            logging.info(f"Preprocessing file {counter[0]} of {len(input_files)}")
+            # convert lon from 0-360 to -180 to 180
+            if 'longitude' in ds.coords and ds.longitude.max() > 180:
+                ds.coords['longitude'] = ((ds.coords['longitude']+180)%360-180)
+                ds = ds.sortby(ds.longitude)
+            ds = ds.sel(latitude=slice(params.ymax, params.ymin), longitude=slice(params.xmin, params.xmax))
             return ds
-
-        data = xr.open_mfdataset(
-            input_files,
-            engine='netcdf4',
-            preprocess=preprocess,
-            chunks={
-                "time": "500MB",
-                'longitude': '500MB',
-                'latitude': '500MB'
-                })
-    
-    logging.info("Computing data variables...")
+        
+        ds_list = []
+        for arg, arg_files in input_files.items():
+            logging.info(f"Loading mfdataset for {arg}")
+            ds = xr.open_mfdataset(
+                arg_files,
+                engine='cfgrib',
+                preprocess=preprocess,
+                combine="nested",
+                concat_dim="valid_time",
+                parallel=False,
+                chunks="auto",
+                backend_kwargs={
+                    'time_dims': ('valid_time',),
+                    'indexpath': ''
+                }
+            )
+            ds_list.append(ds)
+        
+    data = xr.merge(ds_list).rename({'valid_time': 'time'})
     log_data_summary(data)
+
+    logging.info("Computing data variables...")
 
     if params.antecedent_buffer_days:
         t0 = data["time"].min().data
@@ -136,7 +146,7 @@ def main(input, output, params):
 
     # save data to netcdf
     logging.info(f"Saving data to {output.netcdf}\n")
-    data_resampled.compute().to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
+    data_resampled.to_netcdf(output.netcdf, engine='netcdf4', encoding=encoding)
     logging.info(f"Saved. File size: {os.path.getsize(output.netcdf) * 1e-6:.2f} MB\n")
 
     data.close()

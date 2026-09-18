@@ -2,13 +2,10 @@
 import os
 import numpy as np
 import xarray as xr
-from PIL import Image
 import matplotlib.pyplot as plt
-from PIL import Image
 import zipfile
 import numpy as np
 import logging
-
 
 from src import funcs
 import src.python.statistics as stats
@@ -44,62 +41,60 @@ def subset_func(ds:xr.Dataset, subset:dict):
 
 
 def main(input, output, params):
-    # load data
     ds = xr.open_dataset(input.data)
-    assert ds.uniform.shape[1:] == (params.resx, params.resy, 3), f"Unexpected shape: {ds.uniform.shape}"
+    assert ds.uniform.shape[1:] == (params.resx, params.resy, 3), \
+        f"Unexpected shape: {ds.uniform.shape}"
 
-    # Make a more extreme dataset
     if params["subset"]["do"]:
+        # Make a more extreme dataset
         ds = subset_func(ds, params["subset"])
-        logging.info(f"\nExtracted {ds.time.size} images.")
+        logging.info(f"\nExtracted {ds.time.size} events.")
 
-    # make PNGs of stacked percentiles
     os.makedirs(output.outdir, exist_ok=True)
-
+    
     nimgs = ds.time.size
-    array = ds.uniform.values
-    array = np.flip(array, axis=1) # flip latitude
+    x = ds.anomaly.values
+    u = ds.uniform.values
 
-    if not ((array.max() <= 1.) and (array.min() >= 0.)):
-            raise ValueError("Percentiles not in [0,1] range")
+    if not ((u.max() < 1.) and (u.min() > 0.)):
+        raise ValueError("Percentiles not in (0,1) range")
 
-    assert array.shape[1:] == (params.resx, params.resy, 3), f"Unexpected shape: {array.shape}"
+    # transform to reduced variate
+    ppf = getattr(stats, params.domain)
+    y = ppf(u)
 
-    # rescale to (0, 1) if domain is not uniform
-    if params.domain is not None:
-        array = np.clip(array, params.eps, 1-params.eps) # Avoid log(0)
-        array = getattr(stats, params.domain)(array)
-        array_min = np.min(array, axis=(0, 1, 2), keepdims=True)
-        array_max = np.max(array, axis=(0, 1, 2), keepdims=True)
-        n = len(array)
+    # scale back to (0, 1) with rp-based scaling
+    ymin = ppf(1 / params.rpmax)
+    ymax = ppf(1 - 1 / params.rpmax)
 
-        # scale to (0, 1)
-        array = (array - array_min) / (array_max - array_min)
-        array = (array * (n - 1) + 1) / (n + 1)
-
-        logging.info("Range: {}--{}".format(array.min(), array.max()))
-        logging.info("Shape: {},{}".format(array_min.shape, array_max.shape))
-
-        np.savez(output.image_stats, min=array_min, max=array_max, n=n)
+    logging.info(f"Using {params.domain} with min {ymin} and max {ymax}")
+    assert ymin < y.min() < y.max() < ymax, \
+        f"Data outside expected range.\n" \
+        f"Data range: {y.min():.4f} - {y.max():.4f}.\n" \
+        f"Expected range: {ymin:.4f} - {ymax:.4f}.\n" \
+        f"Current rpmax: {params.rpmax:,.0f}.\n" \
+        f"Uniform range: {u.min():.4f} - {u.max():.4f}.\n" \
+        f"Max u value at index {np.unravel_index(u.argmax(), u.shape)} " \
+        f"with x value {x[np.unravel_index(u.argmax(), u.shape)]}."
+        
+    
+    y_scaled = (y - ymin) / (ymax - ymin)
+    logging.info("Range: {} - {}".format(y_scaled.min(), y_scaled.max()))
+    
+    # save image stats for inverse scaling
+    np.savez(output.image_stats, min=ymin, max=ymax)
+    logging.info(f"Saved image stats to {output.image_stats}")
 
     # convert images to RGB and save
     for i in range(nimgs):
-        arr = array[i]
-        # PNG output
-        # arr = np.uint8(arr * 255)
-        # img = Image.fromarray(arr, 'RGB')
-        # output_path = os.path.join(output.outdir, f"footprint{i}.png")
-        # img.save(output_path)
-
-        # npy output
         output_path = os.path.join(output.outdir, f"footprint{i}.npy")
-        np.save(output_path, arr * 255)
+        np.save(output_path, y_scaled[i] * 255)
 
-    # verify saved image
-    test_load = np.load(output_path)
+    # test load saved image
+    _ = np.load(output_path)
     logging.info(f"Saved {nimgs} npy files to {output.outdir}")
 
-    # save to zipfile
+    # zip everything for easier file transfer
     with zipfile.ZipFile(output.zipfile, 'w') as zipf:
         for root, dirs, files in os.walk(output.outdir):
             for file in files:
@@ -108,7 +103,6 @@ def main(input, output, params):
                     zipf.write(file_path, os.path.relpath(file_path, output.outdir))
     
     logging.info(f"Saved {output.zipfile} with {len(files)} images")
-
     
 
 if __name__ == "__main__":

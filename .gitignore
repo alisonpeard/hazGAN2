@@ -1,4 +1,5 @@
 # Custom
+tmp/
 logs/
 sbatch_dump/
 *.err
@@ -11,9 +12,10 @@ sbatch_dump/
 *.so
 *.lock
 workflow.svg
+.ipynb_checkpoints/
 .snakemake/
 conda/
-rw.py # for roughwork
+roughwork/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -6,32 +6,27 @@ suppressPackageStartupMessages({
   library(logger, quietly = TRUE)
 })
 
-source("workflow/src/R/stats.R")
+source("workflow/src/R/stats.R") # provides: ecdf_wb, scdf_wb, ljung_box
 
-`%ni%` <- Negate(`%in%`)
 
-setup_logger <- function(log_file, log_level) {
+setup_logger <- function(logfile, loglevel) {
   # setup logger in each function
-  if (!is.null(log_file) && !is.null(log_level)) {
-    log_appender(appender_file(log_file, append = TRUE))
+  if (!is.null(logfile) && !is.null(loglevel)) {
+    log_appender(appender_file(logfile, append = TRUE))
     log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-    log_threshold(log_level)
+    log_threshold(loglevel)
   }
 }
 
 load_distn <- function(distn) {
-
   module <- paste0("workflow/src/R/", distn, ".R")
-
   if (!file.exists(module)) {
-    stop(paste(
-      "Module for distribution not found:", module
+    stop(paste0(
+      "No R module found for distribution: '", module
     ))
   }
-
   env <- new.env()
   source(module, local = env)
-
   return(list(
     cdf = env$cdf,
     threshold_selector = env$threshold_selector
@@ -39,124 +34,84 @@ load_distn <- function(distn) {
 }
 
 
-fit_tails <- function(
-  footprint, train, distn,
-  two_tailed = FALSE, grid_i = NULL,
-  log_file = NULL, log_level = NULL
-) {
-
-  setup_logger(log_file, log_level)
-
-  upper_result <- tryCatch({
-
-    fit <- distn$threshold_selector(train$variable, grid_i)
-    params <- setNames(fit$params, paste0(names(fit$params), "_upper"))
-
+fit_tail <- function(x, distn, grid_label, label) {
+  tryCatch({
+    fit <- distn$threshold_selector(x, grid_label)
     list(
-      params = params,
+      params = setNames(fit$params, paste0(names(fit$params), label)),
       p = fit$p.value,
       pk = fit$pk,
       success = TRUE
     )
-  }
-  , error = function(e) {
+  }, error = function(e) {
     log_error(paste0(
-      "Upper tail fitting failed for ", grid_i, ":\n", e$message
+      "Tail fit failed for ", grid_label, label, ":\n", e$message
     ))
     list(
-      params = list(
-        thresh_upper = NA,
-        scale_upper = NA,
-        shape_upper = NA
+      params = setNames(
+        list(NA, NA, NA),
+        paste0(c("thresh", "scale", "shape"), label)
       ),
       p = 0,
       pk = 0,
       success = FALSE
     )
   })
-
-  # add upper tail results to footprint
-  footprint <- footprint |> mutate(!!!upper_result$params)
-  footprint$p_upper <- upper_result$p
-  footprint$pk_upper <- upper_result$pk
-
-  if (two_tailed) {
-    lower_result <- tryCatch({
-      fit <- distn$threshold_selector(-train$variable, grid_i)
-      log_info(paste0(
-        "Lower tail parameters for ", grid_i, ": ",
-        paste(fit$params, collapse = ", ")
-      ))
-
-      params_lower <- setNames(
-        fit$params, paste0(names(fit$params), "_lower")
-      )
-
-      list(
-        params = params_lower,
-        p = fit$p.value,
-        pk = fit$pk,
-        success = TRUE
-      )
-    }, error = function(e) {
-      log_error(
-        paste0(
-          "Lower tail fitting failed for grid cell ",
-          grid_i, ": ", e$message
-        )
-      )
-      list(
-        params = list(thresh_lower = NA, scale_lower = NA, shape_lower = NA),
-        p = 0,
-        pk = 0,
-        success = FALSE
-      )
-    })
-    # add lower tail results to footprint
-    footprint <- footprint |> mutate(!!!lower_result$params)
-    footprint$p_lower <- lower_result$p
-    footprint$pk_lower <- lower_result$pk
-
-  } else {
-    # Set lower tail params to NA if not two-tailed
-    footprint$thresh_lower <- NA
-    footprint$scale_lower <- NA
-    footprint$shape_lower <- NA
-    footprint$p_lower <- NA
-    footprint$pk_lower <- NA
-  }
-
-  # semiparametric CDF
-  # if (upper_result$success || lower_result$success) {
-  upper_params <- c("thresh_upper", "scale_upper", "shape_upper")
-  lower_params <- c("thresh_lower", "scale_lower", "shape_lower")
-
-  params <- c(
-    footprint[upper_params],
-    footprint[lower_params]
-  )
-
-  footprint$scdf <- scdf(
-    train$variable, params, cdf = distn$cdf
-  )(footprint$variable)
-
-  # empirical CDF
-  footprint$ecdf <- ecdf(train$variable)(footprint$variable)
-
-  return(footprint)
 }
 
 
-fit_gridcell <- function(
+fit_margin_tails <- function(
+  margin, distn,
+  two_tailed = FALSE,
+  grid_i = NULL
+) {
+
+  # fit semiparametric distribution to upper tails
+  upper_result <- fit_tail(margin$variable, distn, grid_i, "_upper")
+
+  # store a copy of params for each row in margin
+  margin <- margin |> mutate(!!!upper_result$params)
+  margin$p_upper <- upper_result$p
+  margin$pk_upper <- upper_result$pk
+
+  # (optional) fit semiparametric distribution to lower tails too
+  if (two_tailed) {
+    lower_result <- fit_tail(-margin$variable, distn, grid_i, "_lower")
+    lower_result$params$thresh_lower <- -lower_result$params$thresh_lower
+    margin <- margin |> mutate(!!!lower_result$params)
+    margin$p_lower <- lower_result$p
+    margin$pk_lower <- lower_result$pk
+
+  } else {
+    lower_result <- list(
+      params = list(
+        thresh_lower = NA,
+        scale_lower = NA,
+        shape_lower = NA
+      )
+    )
+    margin$thresh_lower <- NA
+    margin$scale_lower  <- NA
+    margin$shape_lower  <- NA
+    margin$p_lower      <- NA
+    margin$pk_lower     <- NA
+  }
+
+  # create vectors of scdf and ecdf-transformed values
+  params <- c(upper_result$params, lower_result$params)
+  margin$scdf <- scdf_wb(margin$variable, params, cdf = distn$cdf)(margin$variable)
+  margin$ecdf <- ecdf_wb(margin$variable)(margin$variable)
+
+  return(margin)
+}
+
+
+fit_margin <- function(
   grid_i, df, metadata,
   distn, two_tailed,
-  hfunc, hfunc_args,
-  log_file = NULL, log_level = NULL
+  hfunc, hfunc_args
 ) {
-  # fit marginals using POT methods
-  setup_logger(log_file, log_level)
-
-  # extract marginal
+  # extract observations for grid cell i
   gridcell <- df[df$grid == grid_i, ]
   gridcell <- left_join(
     gridcell,
@@ -164,23 +119,22 @@ fit_gridcell <- function(
     by = c("time" = "time")
   )
 
-  footprint <- hfunc(gridcell, hfunc_args)
+  # collapse time dimension with hfunc
+  margin <- hfunc(gridcell, hfunc_args)
 
-  # Check for no footprints early
-  if (nrow(footprint) == 0) {
+  # handle no data case
+  if (nrow(margin) == 0) {
     log_warn(paste0(
-      "stats::fit_gridcell - Empty footprint dataframe for grid cell ",
-      grid_i
+      "Empty footprint dataframe for grid cell ", grid_i
     ))
-    # Create a dummy frame
     unique_events <- gridcell |>
       select(event, event.rp, lat, lon) |>
       distinct()
-    
+
     return(data.frame(
       event = unique_events$event,
       variable = NA,  # No meaningful variable value since hfunc failed
-      time = NA,      # No meaningful time since hfunc failed  
+      time = NA,      # No meaningful time since hfunc failed
       event.rp = unique_events$event.rp,
       lat = unique_events$lat,
       lon = unique_events$lon,
@@ -193,29 +147,54 @@ fit_gridcell <- function(
     ))
   }
 
-  train <- footprint # legacy from previous train/test split
-
-  # main fitting functions happen here
-  footprint <- fit_tails(
-    footprint, train, distn, two_tailed, grid_i, log_file, log_level
-  )
+  # fit the empirical and parametric distributions
+  margin <- fit_margin_tails(margin, distn, two_tailed, grid_i)
 
   # validate exceedences are independent
   pbox_upper <- ljung_box(
-    footprint$variable, footprint$thresh_upper, grid_i, "upper"
+    margin$variable, margin$thresh_upper, grid_i, "upper"
   )
-  footprint$box.test.upper <- pbox_upper
-
+  margin$box.test.upper <- pbox_upper
   if (two_tailed) {
     pbox_lower <- ljung_box(
-      -footprint$variable, -footprint$thresh_lower, grid_i, "lower"
+      -margin$variable, -margin$thresh_lower, grid_i, "lower"
     )
-    footprint$box.test.lower <- pbox_lower
+    margin$box.test.lower <- pbox_lower
   } else {
-    footprint$box.test.lower <- NA
+    margin$box.test.lower <- NA
   }
 
-  return(footprint)
+  return(margin)
+}
+
+
+fit_chunk <- function(
+  i, tmps, metadata_file, gridchunks,
+  distn, two_tailed, hfunc, hfunc_args,
+  logfile, loglevel
+) {
+
+  suppressPackageStartupMessages({
+    library(dplyr)
+    library(lubridate)
+    library(logger)
+  })
+
+  setup_logger(logfile, loglevel)
+
+  df <- readRDS(tmps[[i]]) # load subset of df for grid chunk
+  meta <- readRDS(metadata_file)
+
+  gridchunk <- gridchunks[[i]]
+
+  footprints <- lapply(gridchunk, function(grid_i) {
+    fit_margin(
+      grid_i, df, meta,
+      distn, two_tailed,
+      hfunc, hfunc_args
+    )
+  })
+  bind_rows(footprints)
 }
 
 
@@ -225,25 +204,24 @@ marginal_transformer <- function(df, metadata, var,
                                  distn = "genpareto",
                                  two_tailed = FALSE,
                                  chunksize = 128,
-                                 log_file = tempfile(fileext = ".log"),
-                                 log_level = INFO) {
+                                 logfile = tempfile(fileext = ".log"),
+                                 loglevel = INFO) {
 
   log_info(paste0("Starting marginals transformation for ", var))
 
   # load functions for specified extremal distribution
   distn <- load_distn(distn)
+  hfunc <- if (is.character(hfunc)) match.fun(hfunc) else hfunc
+  force(hfunc)
 
   # only take days when an event is occurring
   df <- df[df$time %in% metadata$time, ]
   log_debug(paste0("Extracted ", nrow(df), " rows for variable ", var))
 
   # make a grid for easy chunking
-  log_info("Creating grid for chunking")
   df$grid <- paste(df$lat, df$lon, sep = "_")
   df$grid <- as.integer(factor(df$grid))
-  coords  <- df[df$time == min(df$time), ]
-  coords  <- coords[, c("lat", "lon", "grid")]
-  coords  <- coords[!duplicated(coords), ]
+  coords <- unique(df[, c("lat", "lon", "grid")])
 
   # chunk data for memory efficiency
   log_info("Chunking data")
@@ -256,18 +234,7 @@ marginal_transformer <- function(df, metadata, var,
   log_debug(paste0("Chunksize: ", chunksize))
 
   # check no coordinates are lost
-  gridchunk_sum <- 0
-  for (chunk in gridchunks) {
-    gridchunk_sum <- gridchunk_sum + length(chunk)
-  }
-  if (gridchunk_sum != length(gridcells)) {
-    stop(paste0(
-      "stats::marginal_transformer - ",
-      "Chunking lost some grid cells. ",
-      "Expected: ", length(gridcells), ", got: ", gridchunk_sum
-    ))
-  }
-  rm(gridchunk_sum)
+  stopifnot(sum(lengths(gridchunks)) == length(gridcells))
 
   # save each chunk to RDS for worker access
   tmps <- vector("list", length = nchunks)
@@ -275,6 +242,22 @@ marginal_transformer <- function(df, metadata, var,
     tmps[[i]] <- tempfile(fileext = ".rds")
     saveRDS(df[df$grid %in% gridchunks[[i]], ], tmps[[i]])
   }
+
+  # DEBUGGING: time a single gridcell
+  log_info("Timing a single gridcell...")
+  t <- system.time(fit_margin(
+    grid_i     = gridcells[1],
+    df         = df[df$grid == gridcells[1], ],
+    metadata   = metadata,
+    distn      = distn,
+    two_tailed = two_tailed,
+    hfunc      = hfunc,
+    hfunc_args = hfunc_args
+  ))
+  log_info(paste0(
+    "Single gridcell took ", round(t["elapsed"], 2), "s. "
+  ))
+  # END DEBUGGING: time a single gridcell
   rm(df)
 
   # Save metadata to file
@@ -289,58 +272,26 @@ marginal_transformer <- function(df, metadata, var,
   log_debug(paste0("Available cores: ", availableCores()))
   log_debug(paste0("Number of chunks: ", nchunks, " and cores: ", ncores))
 
-  fit_gridchunk <- function(i) {
-
-    suppressPackageStartupMessages({
-      library(dplyr)
-      library(lubridate)
-      library(logger)
-    })
-
-    log_appender(appender_file(log_file, append = TRUE))
-    log_layout(layout_glue_generator(format = "{time} - {level} - {msg}"))
-    log_threshold(log_level)
-
-    df <- readRDS(tmps[[i]]) # load subset of df for grid chunk
-    meta <- readRDS(metadata_file)
-
-    gridchunk <- gridchunks[[i]]
-
-    footprints <- lapply(gridchunk, function(grid_i) {
-      fit_gridcell(
-        grid_i, df, meta,
-        distn, two_tailed,
-        hfunc, hfunc_args,
-        log_file, log_level
-      )
-    })
-    bind_rows(footprints)
-  }
-
   # fit gridcells with multiprocessing
-  tryCatch({
-    transformed <- future_map_dfr(
+  transformed <- tryCatch({
+    future_map_dfr(
       .x = seq_along(tmps),
-      .f = fit_gridchunk,
+      .f = fit_chunk,
+      tmps, metadata_file, gridchunks,
+      distn, two_tailed, hfunc, hfunc_args,
+      logfile, loglevel,
       .options = furrr_options(
         seed = TRUE,
         scheduling = 1,
         globals = list(
-          tmps = tmps,
-          metadata_file = metadata_file,
-          gridchunks = gridchunks,
-          fit_gridcell = fit_gridcell,
-          fit_tails = fit_tails,
-          distn = distn,
-          two_tailed = two_tailed,
-          hfunc = hfunc,
-          hfunc_args = hfunc_args,
+          fit_margin = fit_margin,
+          fit_margin_tails = fit_margin_tails,
+          fit_tail = fit_tail,
           setup_logger = setup_logger,
-          log_file = log_file,
-          log_level = log_level,
-          ecdf = ecdf,
-          scdf = scdf,
-          ljung_box = ljung_box
+          ecdf_wb = ecdf_wb,    # Weibull plotting positions (stats.R)
+          scdf_wb = scdf_wb,
+          ljung_box = ljung_box,
+          hfunc = hfunc
         )
       )
     )
@@ -355,14 +306,9 @@ marginal_transformer <- function(df, metadata, var,
 
   # map gridcell back to lat/lon
   log_info("Mapping gridcell back to lat/lon")
-  transformed <- left_join(
-    transformed,
-    coords,
-    by = c("grid" = "grid")
-  )
-  log_debug(paste0("536: Mapped transformed has ", nrow(transformed), " rows."))
+  transformed <- left_join(transformed, coords, by = "grid")
+  log_debug(paste0("Mapped transformed has ", nrow(transformed), " rows."))
 
-  # return transformed variable
   fields <- c("event", "variable", "time", "event.rp",
               "lat", "lon",
               "thresh_upper", "scale_upper", "shape_upper",
@@ -372,6 +318,5 @@ marginal_transformer <- function(df, metadata, var,
               "ecdf", "scdf")
 
   transformed <- transformed[, fields]
-
   return(transformed)
 }

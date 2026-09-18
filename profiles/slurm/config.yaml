@@ -1,4 +1,4 @@
-config: ["device=cluster", "location=ouce"]
+config: ["os=linux", "loc=ouce"]
 use-conda: true
 rerun-incomplete: true
 jobs: 20 # number of rules to run in parallel
@@ -8,23 +8,25 @@ latency-wait: 60
 executor: slurm
 slurm-logdir: sbatch_dump
 slurm-delete-logfiles-older-than: 1
-slurm-no-account: true # to avoid conflict with SoGE cluster settings
+slurm-no-account: true
 default-resources:
     slurm_partition: "Short"
-    mem: "16G"
+    # mem: "16G"
     runtime: "4h"
-    slurm_extra: "'--mail-type=BEGIN,END,FAIL --mail-user=spet5107@ox.ac.uk'"
+    slurm_extra: "'--mail-type=END,FAIL --mail-user=spet5107@ox.ac.uk'"
 
 # # here only rules, which require different (more) resources:
 set-resources:
+    get_year:
+      mem: "16G"
     extract_events:
         cpus_per_task: 32
         runtime: "2h"
     fit_marginals:
-        slurm_partition: "Medium"
-        cpus_per_task: 32
-        mem_mb_per_cpu: 1G
-        runtime: "4h"
+        slurm_partition: "Short"
+        cpus_per_task: 20
+        mem: "20G"
+        runtime: "12h"
     train_stylegan:
         slurm_partition: "GPU"
         slurm_extra: "'--gpus=1'"

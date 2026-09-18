@@ -128,7 +128,9 @@ def main(input, output, params):
     
     logging.info("Loading data...")
     medians = load_medians(input.medians)
-    gdf, times, rate = load_events(input.events, input.metadata, fields)
+    gdf, times, rate = load_events(
+        input.events, input.metadata, fields
+    )
     
     logging.info("Validating and processing...")
     validate_data(gdf, fields)
