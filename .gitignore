@@ -2,6 +2,7 @@
 tmp/
 logs/
 sbatch_dump/
+.scratchpad #for preparing linux commands
 *.err
 *.log
 *.out
